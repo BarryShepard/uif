@@ -7,9 +7,18 @@ export const menuCss = css`
   .ant-layout-sider-children {
     display: flex;
     flex-direction: column;
-    max-height: 100vh;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
     padding: 16px 0;
     gap: 8px;
+  }
+
+  .uif-nav.nav-scrollable {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 100%;
   }
 
   &.menu-submenu-margin {

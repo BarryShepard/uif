@@ -23,6 +23,13 @@ export const NavItem = (rawProps: NavItemProps): JSX.Element => {
   const { testAttributes, ...rest } = useTestAttribute(themedProps)
   return <StyledNavItem {...testAttributes} {...rest} {...rawProps}/>
 }
+
+const isIconComponentType = (value: unknown): value is ElementType => (
+  typeof value === 'function' ||
+  typeof value === 'string' ||
+  (typeof value === 'object' && value !== null && '$$typeof' in value)
+)
+
 const NavItemComponent = ({
   data,
   className,
@@ -152,7 +159,7 @@ const NavItemComponent = ({
       return icon
     }
 
-    if (typeof icon !== 'function' && typeof icon !== 'string') {
+    if (!isIconComponentType(icon)) {
       return null
     }
 

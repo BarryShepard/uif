@@ -32,6 +32,14 @@ const BottomWrapper = styled.div`
   ${bottomWrapperCss}
 `
 
+const FooterArea = styled.div`
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+`
+
 export const MenuContext = createContext<MenuContextProps>({
   menuActiveItem: '',
   setMenuActiveItem: () => undefined,
@@ -66,6 +74,7 @@ export const Menu = (rawProps: MenuProps): JSX.Element => {
   const [menuActiveItem, setMenuActiveItem] = useState('')
   const [menuActivePopupItem, setMenuActivePopupItem] = useState('')
   const [collapsed, setCollapsed] = useState(extCollapsed)
+  const hasFooterArea = Boolean(navUserItems) || Boolean(minimizerBottom)
 
   useEffect(() => {
     setCollapsed(extCollapsed)
@@ -105,17 +114,21 @@ export const Menu = (rawProps: MenuProps): JSX.Element => {
         unpinIcon={unpinIcon}
         favIcon={favIcon}
       />
-      { Boolean(navUserItems) && <UserNav
-        navItems={navUserItems}
-        minimized={collapsed}
-        childPop={true}
-      /> }
-      { minimizerBottom && <BottomWrapper><Hamburger
-        role="button"
-        name="hamburger"
-        collapsed={collapsed}
-        onClick={() => setCollapsed(prevSate => !prevSate)}
-      /></BottomWrapper> }
+      { hasFooterArea && (
+        <FooterArea>
+          { Boolean(navUserItems) && <UserNav
+            navItems={navUserItems}
+            minimized={collapsed}
+            childPop={true}
+          /> }
+          { minimizerBottom && <BottomWrapper><Hamburger
+            role="button"
+            name="hamburger"
+            collapsed={collapsed}
+            onClick={() => setCollapsed(prevSate => !prevSate)}
+          /></BottomWrapper> }
+        </FooterArea>
+      ) }
       { Boolean(submenuItems.length) && <SubmenuWrapper
         items={submenuItems}
         active={submenuActive}

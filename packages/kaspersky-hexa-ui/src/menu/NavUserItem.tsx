@@ -38,6 +38,12 @@ export const getStatusIcon = (status?: UserStatus, theme?: Theme) => {
   }
 }
 
+const isIconComponentType = (value: unknown): value is ElementType => (
+  typeof value === 'function' ||
+  typeof value === 'string' ||
+  (typeof value === 'object' && value !== null && '$$typeof' in value)
+)
+
 const NavUserItemComponent = ({
   theme,
   data: { icon, state, onClick, active, userProps: { role, name, status: userStatus } = {} },
@@ -74,7 +80,7 @@ const NavUserItemComponent = ({
               ? <StatusIcon testId="userIconStatus" klId="userIconStatus" />
               : React.isValidElement(icon)
                 ? icon
-                : (typeof icon !== 'function' && typeof icon !== 'string')
+                : !isIconComponentType(icon)
                     ? null
                 : (() => {
                     const IconComponent = icon as ElementType

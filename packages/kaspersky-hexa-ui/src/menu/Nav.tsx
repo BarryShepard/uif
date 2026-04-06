@@ -200,7 +200,6 @@ export const Nav = styled(NavComponent)`
 `
 
 export const UserNav = styled(NavComponent)`
-  margin-top: auto;
   ${navCss}
   ${navSeparator}
 `

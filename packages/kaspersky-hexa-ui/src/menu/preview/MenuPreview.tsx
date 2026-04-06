@@ -68,11 +68,13 @@ export const MenuPreviewHeader = ({
   description = DEFAULT_MENU_PREVIEW_DESCRIPTION
 }: MenuPreviewHeaderProps): JSX.Element => (
   <StyledMenuPreviewHeader className={className}>
-    {logo}
+    <div className="logo-slot">
+      {logo}
+    </div>
     {(title || description) && (
       <div className="logo-text">
         {title && <Text type="BTM3" className="logo-text-osmp">{title}</Text>}
-        {description && <Text type="BTR4">{description}</Text>}
+        {description && <Text type="BTR4" className="logo-text-description">{description}</Text>}
       </div>
     )}
   </StyledMenuPreviewHeader>
@@ -211,6 +213,7 @@ const StyledMenuPreview = styled(HexaMenu)`
     height: 100%;
     min-height: 100%;
     max-height: none;
+    overflow: hidden;
     padding: 16px 0;
     gap: 24px;
   }
@@ -221,8 +224,9 @@ const StyledMenuPreview = styled(HexaMenu)`
   }
 
   .uif-nav.nav-scrollable {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
+    max-height: 100%;
   }
 
   .uxpin-menu-item-hover > .uif-nav-item-entry {
@@ -248,15 +252,47 @@ const StyledMenuPreviewHeader = styled.div`
   position: relative;
   transition: opacity 0.1s .15s ease;
 
+  .logo-slot {
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
   .logo-text {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex: 1 1 auto;
     min-width: 0;
   }
 
   .logo-text .kl6-text {
     color: var(--menu--text--logo);
+  }
+
+  .logo-text-osmp,
+  .logo-text-description {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .logo-text-osmp {
+    display: -webkit-box;
+    white-space: normal;
+    word-break: break-word;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .logo-text-description {
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 15px;
   }
 
   .ant-layout-sider-collapsed & {
