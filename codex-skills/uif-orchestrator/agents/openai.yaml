@@ -1,0 +1,7 @@
+interface:
+  display_name: "UIF Orchestrator"
+  short_description: "Route UIF repo work with minimal prompting"
+  default_prompt: "Use $uif-orchestrator to route my UIF task, audit the affected area, and propose the smallest safe change set."
+
+policy:
+  allow_implicit_invocation: false

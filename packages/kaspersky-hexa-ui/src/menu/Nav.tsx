@@ -1,6 +1,6 @@
 import { useLocalization } from '@helpers/localization/useLocalization'
 import { navCss, navSeparator } from '@src/menu/navCss'
-import { NavItemData, NavItemProps, NavProps, StateActions } from '@src/menu/types'
+import { MenuNavigationState, NavItemData, NavProps, StateActions } from '@src/menu/types'
 import cn from 'classnames'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import styled from 'styled-components'
@@ -32,7 +32,7 @@ const NavComponent = ({
   unpinIcon,
   favIcon
 }: NavProps) => {
-  const [navFavItems, setNavFavItems] = useState(favItems)
+  const [navFavItems, setNavFavItems] = useState<NavItemData[]>(favItems)
   const {
     menuActiveItem,
     setMenuActiveItem,
@@ -56,15 +56,15 @@ const NavComponent = ({
     return favSection
   }
 
-  const resolveNavStateArr = () => {
+  const resolveNavStateArr = (): NavItemData[] => {
     return [
-      Boolean(navFavItems.length) && processingFavSection(favSection),
+      navFavItems.length ? processingFavSection(favSection) : null,
       ...navItems
         .filter((el:NavItemData) => el.state !== FAVORITES_ITEM_STATE)
-    ].filter(Boolean)
+    ].filter((item): item is NavItemData => Boolean(item))
   }
 
-  const [navState, setNavState] = useState(resolveNavStateArr())
+  const [navState, setNavState] = useState<NavItemData[]>(resolveNavStateArr())
   const collapseAll = () => {
     setMenuActivePopupItem('' as string)
   }
@@ -149,7 +149,7 @@ const NavComponent = ({
     setNavFavItems(favItems)
   }, [favItems])
 
-  const menuState = {
+  const menuState: MenuNavigationState = {
     updateNavState,
     collapseAll,
     minimized,
@@ -175,7 +175,7 @@ const NavComponent = ({
     }
   )}>
     {
-      [...beforeItems, ...navState].map((item: NavItemProps) => {
+      [...beforeItems, ...navState].map((item: NavItemData) => {
         const ItemCustomComponent = item.component
         if (ItemCustomComponent) return <ItemCustomComponent key={item.key} />
         if (item.userProps) return <NavUserItem key={item.key} data={item} menuState={menuState} />

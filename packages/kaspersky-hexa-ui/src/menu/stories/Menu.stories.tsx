@@ -1,10 +1,9 @@
 import { ThemedPalette, ThemedPaletteProps } from '@design-system/palette'
 import { badges } from '@sb/badges'
 import { withDesignControls } from '@sb/components/designControls'
-import { withMeta } from '@sb/components/Meta'
+import { MetaDocsBlocks, withMeta } from '@sb/components/Meta'
 import { Button } from '@src/button'
-import { ServicesNav } from '@src/menu'
-import { getStatusIcon } from '@src/menu/NavUserItem'
+import { MenuPreviewShell, cloneNavItems, withPreviewUserAvailabilityItems } from '@src/menu/preview/MenuPreview'
 import { Notification } from '@src/notification'
 import { Space } from '@src/space'
 import { Meta, StoryObj } from '@storybook/react'
@@ -13,19 +12,22 @@ import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 
 import { componentColors } from '@kaspersky/hexa-ui-core/colors/js'
-import { AppUpdate, BookmarkOutline, BookmarkSolid, Help, Moon } from '@kaspersky/hexa-ui-icons/16'
+import { AppUpdate, BookmarkOutline, BookmarkSolid } from '@kaspersky/hexa-ui-icons/16'
 
 import MetaData from '../__meta__/meta.json'
-import { Hamburger, Menu as MenuComponent } from '../Menu'
-import { AppLogo } from '../stories/AppLogo'
+import { Menu as MenuComponent } from '../Menu'
 import { clickHandler } from '../stories/CustomItem'
 import { beforeItems, favItems, navItems, navUserItems } from '../stories/menu-items'
-import { getNotificationsIcon } from '../stories/Notifications'
-import { MenuProps, UserStatus } from '../types'
+import { MenuProps, NavItemData, UserStatus } from '../types'
 
 export type MenuStoryProps = {
+  /** Shows the application logo/header block in the preview shell */
   showLogo?: boolean
 }
+
+const MenuDocsPage = (): JSX.Element => (
+  <MetaDocsBlocks apiOf={MenuComponent} />
+)
 
 const storySettings: Meta<MenuProps & MenuStoryProps> = {
   args: {
@@ -38,13 +40,19 @@ const storySettings: Meta<MenuProps & MenuStoryProps> = {
   },
   argTypes: {
     collapsible: { control: false },
-    submenuMarginActive: { control: false }
+    submenuMarginActive: { control: false },
+    showLogo: {
+      description: 'Показывает логотип и заголовок приложения в preview header'
+    },
+    minimizerBottom: {
+      description: 'Показывает кнопку сворачивания в нижней части меню'
+    }
   },
   parameters: {
     actions: { argTypesRegex: '^(on.*)' },
     badges: [badges.stable, badges.reviewedByDesign],
     docs: {
-      page: withMeta(MetaData)
+      page: withMeta(MetaData, MenuDocsPage)
     }
   }
 }
@@ -71,13 +79,17 @@ const Section = styled(Space)`
 `
 
 const MockMenuStory = (args: MenuProps & MenuStoryProps) => {
-  const [collapsed, setCollapsed] = useState(false)
-  const [menuNavState, setMenuNavState] = useState(navItems)
-  const [userMenuState, setUserMenuState] = useState(args.navUserItems)
+  const [menuNavState, setMenuNavState] = useState<NavItemData[]>(() => cloneNavItems(navItems))
+  const [userMenuState, setUserMenuState] = useState<NavItemData[] | undefined>(() => (
+    withPreviewUserAvailabilityItems(args.navUserItems ?? navUserItems, {
+      onAvailable: () => changeUserStatus('available'),
+      onUnavailable: () => changeUserStatus('unavailable')
+    })
+  ))
   const [isAdded, setIsAdded] = useState(false)
 
   const addMenuItem = () => {
-    setMenuNavState([{
+    setMenuNavState((currentItems) => ([{
       state: 'new',
       weight: 100,
       key: 'New item',
@@ -86,106 +98,104 @@ const MockMenuStory = (args: MenuProps & MenuStoryProps) => {
       items: [],
       isRoot: true,
       onClick: () => clickHandler('New item')
-    }, ...menuNavState.filter(item => item.state !== 'new')])
+    }, ...currentItems.filter(item => item.state !== 'new')]))
     setIsAdded(true)
   }
 
   const removeMenuItem = () => {
-    setMenuNavState([...menuNavState.filter(item => item.state !== 'new')])
+    setMenuNavState((currentItems) => currentItems.filter(item => item.state !== 'new'))
     setIsAdded(false)
   }
 
+  const hydratePreviewUserItems = (items: NavItemData[] | undefined): NavItemData[] | undefined => {
+    if (!items) {
+      return items
+    }
+
+    return withPreviewUserAvailabilityItems(items, {
+      onAvailable: () => changeUserStatus('available'),
+      onUnavailable: () => changeUserStatus('unavailable')
+    })
+  }
+
   const toggleUser = () => {
-    userMenuState && setUserMenuState([...userMenuState.map((item) => {
-      if (item.state === 'user') {
-        if (item.userProps?.role !== 'Administrator') {
-          item.userProps = {
+    setUserMenuState((currentItems) => hydratePreviewUserItems(currentItems?.map((item) => {
+      if (item.state !== 'user') {
+        return item
+      }
+
+      if (item.userProps?.role !== 'Administrator') {
+        return {
+          ...item,
+          userProps: {
             role: 'Administrator',
             name: 'Leonardo'
           }
-        } else {
-          item.userProps = {
-            role: 'Operator',
-            name: 'Raphael'
-          }
         }
       }
-      return item
-    })])
+
+      return {
+        ...item,
+        userProps: {
+          role: 'Operator',
+          name: 'Raphael'
+        }
+      }
+    })))
     setIsAdded(false)
   }
 
   const changeUserStatus = (status?: UserStatus) => {
-    userMenuState && setUserMenuState([...userMenuState.map((item) => {
-      if (item.state === 'user' && item.userProps) {
-        if (status) {
-          item.userProps && (item.userProps.status = status)
-        } else {
-          switch (item.userProps?.status) {
-            case 'available':
-              item.userProps.status = 'unavailable'
-              break
-            case 'unavailable':
-              item.userProps.status = undefined
-              break
-            case undefined:
-              item.userProps.status = 'available'
-              break
-          }
+    setUserMenuState((currentItems) => hydratePreviewUserItems(currentItems?.map((item) => {
+      if (item.state !== 'user' || !item.userProps) {
+        return item
+      }
+
+      const nextStatus = status ?? (() => {
+        switch (item.userProps?.status) {
+          case 'available':
+            return 'unavailable'
+          case 'unavailable':
+            return undefined
+          default:
+            return 'available'
+        }
+      })()
+
+      return {
+        ...item,
+        userProps: {
+          ...item.userProps,
+          status: nextStatus
         }
       }
-      return item
-    })])
+    })))
   }
 
   useEffect(() => {
-    if (userMenuState?.[0]?.items?.[0].key !== 'Availability') {
-      userMenuState?.[0]?.items?.unshift(
-        {
-          key: 'Availability',
-          isCaption: true
-        },
-        {
-          key: 'Available',
-          icon: getStatusIcon('available', 'dark'),
-          onClick: () => changeUserStatus('available')
-        },
-        {
-          key: 'Unavailable',
-          icon: getStatusIcon('unavailable', 'dark'),
-          onClick: () => changeUserStatus('unavailable')
-        }
-      )
-      userMenuState && setUserMenuState([...userMenuState])
-    }
-  }, [])
+    setUserMenuState(hydratePreviewUserItems(args.navUserItems ?? navUserItems))
+  }, [args.navUserItems])
+
+  useEffect(() => {
+    setMenuNavState(cloneNavItems(args.navItems ?? navItems))
+  }, [args.navItems])
 
   return (
     <RootLayout>
-      <MenuComponent
+      <MenuPreviewShell
         {...args}
-        collapsed={collapsed}
         beforeItems={beforeItems}
         favItems={favItems}
         navItems={menuNavState}
         navUserItems={userMenuState}
+        showHeader={args.showLogo}
+        showServicesNav={!args.minimizerBottom}
+        onHelpClick={() => clickHandler('open online help')}
+        onNotificationClick={() => clickHandler('Notifications')}
+        onThemeClick={() => clickHandler('change theme')}
         pinIcon={<BookmarkOutline />}
         unpinIcon={<BookmarkSolid />}
-      >
-        { !args.minimizerBottom && <ServicesNav>
-          <Hamburger
-            className="item left"
-            role="button"
-            name="hamburger"
-            collapsed={collapsed}
-            onClick={() => setCollapsed(prevSate => !prevSate)}
-          />
-          {getNotificationsIcon(true)}
-          <Moon className="item" role="button" onClick={ () => clickHandler('change theme') } />
-          <Help className="item" role="button" onClick={ () => clickHandler('open online help') } />
-        </ServicesNav>}
-        { args.showLogo && <AppLogo/> }
-      </MenuComponent>
+      />
       <Section gap={10} align="auto" direction="vertical">
         <Notification />
         <Space gap={10} justify="space-between">

@@ -3,7 +3,7 @@ import { useTestAttribute } from '@helpers/hooks/useTestAttribute'
 import { useLocalization } from '@helpers/localization/useLocalization'
 import { Tooltip } from '@src/tooltip'
 import cn from 'classnames'
-import React, { useContext } from 'react'
+import React, { ElementType, useContext } from 'react'
 import styled from 'styled-components'
 
 import { productColors } from '@kaspersky/hexa-ui-core/colors/js'
@@ -47,7 +47,6 @@ const NavUserItemComponent = ({
   const { setMenuActiveItem } = useContext(MenuContext)
   const localizedUserStatus = userStatus && useLocalization(`menu.navUserItem.userProps.status.${userStatus}`)
   const StatusIcon = getStatusIcon(userStatus, theme)
-  const NavItemIcon = StatusIcon || icon
   const {
     updateNavState,
     minimized,
@@ -70,8 +69,17 @@ const NavUserItemComponent = ({
         { active }
       )} onClick={itemClick}>
         <Tooltip text={minimized && localizedUserStatus} theme={theme} placement="right">
-          { icon && <div className="uif-nav-item-entry-icon">
-            <NavItemIcon testId="userIconStatus" klId="userIconStatus" />
+        { icon && <div className="uif-nav-item-entry-icon">
+            {StatusIcon
+              ? <StatusIcon testId="userIconStatus" klId="userIconStatus" />
+              : React.isValidElement(icon)
+                ? icon
+                : (typeof icon !== 'function' && typeof icon !== 'string')
+                    ? null
+                : (() => {
+                    const IconComponent = icon as ElementType
+                    return <IconComponent testId="userIconStatus" klId="userIconStatus" />
+                  })()}
           </div> }
         </Tooltip>
         <div className="uif-nav-item-user-entry-wrapper">

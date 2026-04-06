@@ -5,7 +5,7 @@
     "unitTests": true,
     "screenshotTests": false,
     "migration": true,
-    "apiTable": false,
+    "apiTable": true,
     "storybook": true,
     "pixsoView": true
   },

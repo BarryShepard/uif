@@ -54,6 +54,8 @@
     "changelog": "conventional-changelog -n ./.changelog/changelog.config.js -i Changelog.mdx -s -r 1 -t \"product/osmp/@kaspersky/hexa-ui@\"",
     "tag": "node .changelog/scripts/create-tag.mts",
     "changelog:ai": "node .changelog/scripts/changelogs-ai.mts",
+    "audit:contracts": "node scripts/audit-component-contracts.mjs",
+    "audit:contracts:strict": "node scripts/audit-component-contracts.mjs --strict",
     "uxpin:dev": "uxpin-merge --disable-tunneling",
     "uxpin:push": "uxpin-merge push",
     "uxpin:sync-components": "node uxpin/scripts/generate-components.mjs"

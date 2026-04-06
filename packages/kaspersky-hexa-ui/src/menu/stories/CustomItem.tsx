@@ -4,7 +4,12 @@ import { openNotification } from '@src/notification'
 import cn from 'classnames'
 import React from 'react'
 import styled from 'styled-components'
-const CustomComponent = ({ className }: any) => {
+
+type CustomComponentProps = {
+  className?: string
+}
+
+const CustomComponent = ({ className }: CustomComponentProps) => {
   return (
     <>
       <div className={cn(className, 'uif-nav-item')}>

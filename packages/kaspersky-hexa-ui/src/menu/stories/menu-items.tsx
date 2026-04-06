@@ -21,7 +21,7 @@ export const beforeItems: NavItemData[] = [
   }
 ]
 
-export const navItems: Record<string, unknown>[] = [
+export const navItems: NavItemData[] = [
   {
     state: 'monitoring',
     weight: 100,
@@ -599,7 +599,7 @@ export const navUserItems: NavItemData[] = [
   }
 ]
 
-export const favItems: Record<string, unknown>[] = [
+export const favItems: NavItemData[] = [
   {
     state: 'cloud-protection-wizard',
     weight: 400,

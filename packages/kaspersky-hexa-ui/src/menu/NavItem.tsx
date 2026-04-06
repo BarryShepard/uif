@@ -5,7 +5,7 @@ import { Badge } from '@src/badge'
 import { Indicator } from '@src/indicator'
 import { Tooltip } from '@src/tooltip'
 import cn from 'classnames'
-import React, { Dispatch, ReactNode, SetStateAction, useContext } from 'react'
+import React, { ElementType, ReactNode, useContext } from 'react'
 import styled from 'styled-components'
 
 import { ArrowRightMini, Pin, Unpin } from '@kaspersky/hexa-ui-icons/16'
@@ -119,7 +119,6 @@ const NavItemComponent = ({
     data,
     navFavItems: navFavItems,
     setNavFavItems: setNavFavItems,
-    updateFavState: updateNavState,
     pinIcon,
     unpinIcon
   }
@@ -153,13 +152,12 @@ const NavItemComponent = ({
       return icon
     }
 
-    if (typeof icon === 'function') {
-      const NavItemIcon = icon
-
-      return <NavItemIcon />
+    if (typeof icon !== 'function' && typeof icon !== 'string') {
+      return null
     }
 
-    return null
+    const NavItemIcon = icon as ElementType
+    return <NavItemIcon />
   }
 
   const navEntry = (
@@ -230,8 +228,7 @@ const NavItemComponent = ({
                   return <NavCaptionItem
                     className={cn({ 'caption-root': isRoot })}
                     key={`${item.key}-child`}
-                    data={item}
-                    menuState={menuState} />
+                    data={item} />
                 }
                 return (
                   <NavItem
@@ -268,8 +265,7 @@ const AddToFavs = ({
 }: {
   data: NavItemData,
   navFavItems: NavItemData[],
-  setNavFavItems: Dispatch<SetStateAction<NavItemData[]>>,
-  updateFavState: () => void,
+  setNavFavItems: (favs: NavItemData[]) => void,
   pinIcon?: ReactNode
   unpinIcon?: ReactNode
 }) => {
