@@ -36,6 +36,7 @@ const NavComponent = ({
   const {
     menuActiveItem,
     setMenuActiveItem,
+    menuActivePopupItem,
     setMenuActivePopupItem
   } = useContext(MenuContext)
 
@@ -84,9 +85,9 @@ const NavComponent = ({
       }
 
       if (toggleExpandItem && (currentItem === toggleExpandItem)) {
-        navItem.expanded = !expanded
+        navItem.expanded = minimized || childPop ? false : !expanded
         if (minimized || childPop) {
-          setMenuActivePopupItem(currentItem)
+          setMenuActivePopupItem(menuActivePopupItem === currentItem ? '' : currentItem)
         }
         return navItem
       }

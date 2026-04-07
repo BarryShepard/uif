@@ -1,4 +1,25 @@
 
+### 2026-04-07
+* feat: [hexa-ui][menu][table] improve prototyping workflow for Storybook and UXPin
+<details>
+<summary>description</summary>
+
+- Для `Menu` добавлен общий preview-слой, который теперь используется и в Storybook, и в UXPin. За счет этого выровнены структура шапки, слот логотипа, нижняя зона меню, поведение footer-элементов, внутренний скролл длинного дерева и открытие `Settings` как правого popup-списка. Также уточнена типографика подзаголовка, чтобы превью было ближе к дизайн-макетам.
+
+- Для `Table` добавлен prototype-builder: таблицу теперь можно собирать через описание колонок целиком, а не через ручную работу с отдельными ячейками. В preview-слое и UXPin-обвязке появилась поддержка типовых header/cell-вариантов, что делает прототипирование и подготовку макетов заметно быстрее.
+
+- Для `hexa-ui` добавлены инфраструктурные улучшения вокруг компонентных контрактов: новый аудит публичных компонентов, общие docs-блоки для Storybook API-страниц, более строгие типы `Menu`, а также недостающие реэкспорты `LockGroupProps`, `NotificationProps`, `NotificationContainerProps` и `NotificationApiParams`.
+
+- Затронутые файлы/компоненты
+    - Menu
+    - Table
+    - Notification
+    - Lock-group
+    - Storybook
+    - scripts
+
+</details>
+
 
 ### 2026-02-16
 * fix: [hexa-ui][table] add showFilterItem 
@@ -3082,5 +3103,4 @@
 * fix 
 
 * fix [HexaUI] Add SegmentedButton isStretch prop 
-
 

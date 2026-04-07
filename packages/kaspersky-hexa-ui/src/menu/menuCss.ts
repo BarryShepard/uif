@@ -10,7 +10,7 @@ export const menuCss = css`
     height: 100%;
     min-height: 0;
     max-height: 100%;
-    overflow: hidden;
+    overflow: visible;
     padding: 16px 0;
     gap: 8px;
   }

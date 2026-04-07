@@ -74,7 +74,7 @@ export const MenuPreviewHeader = ({
     {(title || description) && (
       <div className="logo-text">
         {title && <Text type="BTM3" className="logo-text-osmp">{title}</Text>}
-        {description && <Text type="BTR4" className="logo-text-description">{description}</Text>}
+        {description && <Text type="BTM4" className="logo-text-description">{description}</Text>}
       </div>
     )}
   </StyledMenuPreviewHeader>
@@ -213,7 +213,7 @@ const StyledMenuPreview = styled(HexaMenu)`
     height: 100%;
     min-height: 100%;
     max-height: none;
-    overflow: hidden;
+    overflow: visible;
     padding: 16px 0;
     gap: 24px;
   }
@@ -291,8 +291,6 @@ const StyledMenuPreviewHeader = styled.div`
 
   .logo-text-description {
     white-space: nowrap;
-    font-size: 11px;
-    line-height: 15px;
   }
 
   .ant-layout-sider-collapsed & {
