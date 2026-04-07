@@ -39,6 +39,11 @@ export type UsePaginationConfig = (config: (
 ) => UsePaginationConfigReturn
 
 export const usePaginationConfig: UsePaginationConfig = ({ pagination, ...rest }) => {
+  const existingPagination = useExistingPagination({
+    pagination: pagination || {},
+    ...rest
+  })
+
   if (pagination === false) {
     return {
       pagination: {
@@ -49,7 +54,8 @@ export const usePaginationConfig: UsePaginationConfig = ({ pagination, ...rest }
       additional: undefined
     }
   }
-  return useExistingPagination({ pagination, ...rest })
+
+  return existingPagination
 }
 
 const useExistingPagination: UseExistingPagination = ({
@@ -58,9 +64,10 @@ const useExistingPagination: UseExistingPagination = ({
     current: propsCurrent = FIRST_PAGE,
     pageSize: propsPageSize,
     total: propsTotal,
-    total: propsTotalRoot,
+    totalRoot: propsTotalRoot,
     onChange: propsOnChange,
     onShowSizeChange: propsOnShowSizeChange,
+    showTotalSummary = true,
     cursor = false,
     simple = false,
     jumper = false,
@@ -76,8 +83,8 @@ const useExistingPagination: UseExistingPagination = ({
   storageKey
 }) => {
   const [current, setCurrent] = useStateProps(propsCurrent)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [total, setTotal] = useState(propsTotal)
+  const [pageSize, setPageSize] = useState(propsPageSize ?? DEFAULT_PAGE_SIZE)
+  const [total, setTotal] = useState(propsTotalRoot ?? propsTotal)
   const [hideOnSinglePage, setHideOnSinglePage] = useStateProps(hideOnSinglePageProps)
 
   useEffect(() => {
@@ -158,6 +165,7 @@ const useExistingPagination: UseExistingPagination = ({
       pageSize,
       pageSizeOptions,
       restoreCurrentWhenDataChange,
+      showTotalSummary,
       showOnlyTotalSummary,
       showSelected,
       showSizeChanger: propsShowSizeChanger,
@@ -173,4 +181,3 @@ const useExistingPagination: UseExistingPagination = ({
     }
   }
 }
-

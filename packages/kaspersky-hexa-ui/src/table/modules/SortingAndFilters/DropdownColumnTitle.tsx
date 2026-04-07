@@ -101,7 +101,7 @@ interface ISortInfo {
   icon: React.ReactElement
 }
 
-interface IDropdownColumnTitleProps extends Pick<TableColumn, 'showFilterIcon'> {
+interface IDropdownColumnTitleProps extends Pick<TableColumn, 'showFilterIcon' | 'hideDefaultMenuIcon'> {
   testId?: string,
   klId?: string,
   dataIndex: string,
@@ -135,6 +135,7 @@ export const DropdownColumnTitle: FC<IDropdownColumnTitleProps> = ({
   setActiveSorting,
   closeDropdownOnSelect = true,
   showFilterIcon,
+  hideDefaultMenuIcon,
   allowMultipleFilters
 }): React.ReactElement => {
   const { cssConfig } = useTableContext()
@@ -365,7 +366,7 @@ export const DropdownColumnTitle: FC<IDropdownColumnTitleProps> = ({
     >
       <StyledColumn className={cn(classNames)} cssConfig={cssConfig} isPressed={dropdownOpened}>
         <TitleLine>
-          {title} {!sortIcon && !filterIcon && <StyledArrowDownMini />} {sortIcon} {filterIcon}
+          {title} {!hideDefaultMenuIcon && !sortIcon && !filterIcon && <StyledArrowDownMini />} {sortIcon} {filterIcon}
         </TitleLine>
       </StyledColumn>
     </Dropdown>

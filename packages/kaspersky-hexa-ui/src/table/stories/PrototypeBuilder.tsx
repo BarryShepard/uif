@@ -1,67 +1,60 @@
 import { TablePrototype, TablePrototypeColumnConfig } from '@src/table/preview/TablePrototype'
+import { tablePrototypeRichManualDataJson } from '@src/table/preview/manualDataExamples'
 import React from 'react'
 
 import { Story } from './_commonConstants'
 
 const prototypeColumns: TablePrototypeColumnConfig[] = [
   {
-    key: 'select',
-    width: 88,
-    headerVariant: 'checkbox',
-    headerState: 'active',
-    cellVariant: 'checkbox'
+    key: 'enabled',
+    field: 'enabled',
+    width: 22,
+    title: '',
+    cellType: 'checkbox'
   },
   {
     key: 'asset',
+    field: 'asset',
     width: 240,
-    headerText: 'Asset',
-    headerVariant: 'text+filters+sort',
-    headerState: 'enabled',
+    title: 'Asset',
+    sortable: true,
+    filterable: true,
     sort: 'ascending',
     filter: 'applied',
-    cellVariant: 'treeLink',
-    elementBefore: true,
-    text: 'Endpoint'
+    cellType: 'treeLink'
   },
   {
     key: 'owner',
+    field: 'owner',
     width: 220,
-    headerText: 'Owner',
-    headerVariant: 'text+filters+sort',
-    headerState: 'hover',
-    sort: 'notApplied',
-    filter: 'notApplied',
-    buttonInfo: true,
-    cellVariant: 'text',
-    elementBefore: true,
-    elementAfter: true,
-    text: 'Operator'
+    title: 'Owner',
+    sortable: true,
+    filterable: true,
+    infoButton: true,
+    infoText: 'Owner column displays the responsible person for the entity shown in the row.',
+    cellType: 'text'
   },
   {
     key: 'status',
+    field: 'status',
     width: 180,
-    headerText: 'Status',
-    headerVariant: 'text',
-    headerState: 'enabled',
-    cellVariant: 'status',
-    text: 'Protected'
+    title: 'Status',
+    cellType: 'status'
   },
   {
     key: 'tags',
+    field: 'tags',
     width: 240,
-    headerText: 'Tags',
-    headerVariant: 'text',
-    headerState: 'disabled',
-    cellVariant: 'tag-group',
-    text: 'Region'
+    title: 'Tags',
+    filterable: true,
+    cellType: 'tag-group'
   },
   {
     key: 'actions',
+    field: 'actions',
     width: 152,
-    headerText: 'Actions',
-    headerVariant: 'text',
-    headerState: 'active',
-    cellVariant: 'actions'
+    title: 'Actions',
+    cellType: 'actions'
   }
 ]
 
@@ -69,7 +62,11 @@ export const PrototypeBuilder: Story = {
   render: () => (
     <TablePrototype
       columns={prototypeColumns}
-      rows={6}
+      dataMode="manual"
+      dataSourceJson={tablePrototypeRichManualDataJson}
+      rowsPerPage={4}
+      selectionMode="checkbox"
+      showPagination={true}
       size="standard"
     />
   ),

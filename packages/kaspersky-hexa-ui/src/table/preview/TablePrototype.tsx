@@ -2,36 +2,35 @@ import { ActionButton } from '@src/action-button'
 import { Checkbox } from '@src/checkbox'
 import { Textbox } from '@src/input'
 import { Link } from '@src/link'
+import { Tooltip } from '@src/tooltip'
 import { Radio } from '@src/radio'
 import { Select } from '@src/select'
 import { Status } from '@src/status'
+import type { StatusMode } from '@src/status'
 import { Table } from '@src/table'
-import { TableColumn } from '@src/table/types'
+import { TableColumn, TableRecord } from '@src/table/types'
 import { TagReductionGroup } from '@src/tag'
 import { Toggle } from '@src/toggle'
-import React, { CSSProperties, ReactNode, useMemo } from 'react'
+import React, { CSSProperties, Key, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 
 import {
-  ArrowDown1,
-  ArrowRightMini,
-  ArrowUp1,
-  ArrowUpAndDown,
-  Filter,
-  FilterActive,
-  Help,
   Placeholder,
   Search,
-  SettingsGear
+  SettingsGear,
+  StatusInfoOutline
 } from '@kaspersky/hexa-ui-icons/16'
 
 const noop = (): void => undefined
 
 export type TablePrototypeSize = 'standard' | 'compact'
+export type TablePrototypeSelectionMode = 'none' | 'checkbox' | 'radio'
+
 export type TablePrototypeHeaderVariant = 'checkbox' | 'empty' | 'text' | 'text+filters+sort'
 export type TablePrototypeHeaderState = 'enabled' | 'hover' | 'active' | 'disabled'
 export type TablePrototypeSortState = 'notApplied' | 'ascending' | 'descending'
 export type TablePrototypeFilterState = 'notApplied' | 'applied'
+
 export type TablePrototypeCellVariant =
   | 'checkbox'
   | 'text'
@@ -48,220 +47,1297 @@ export type TablePrototypeCellVariant =
   | 'input-select'
   | 'input-multiselect'
 
+export type TablePrototypeCellType = TablePrototypeCellVariant
+
+export type TablePrototypeDataMode = 'generated' | 'manual'
+
+export type TablePrototypeOption = {
+  label: string,
+  value: string
+}
+
+export type TablePrototypeTextValue = {
+  text?: string,
+  before?: ReactNode,
+  after?: ReactNode
+}
+
+export type TablePrototypeLinkValue = {
+  text?: string,
+  href?: string,
+  before?: ReactNode,
+  after?: ReactNode
+}
+
+export type TablePrototypeStatusValue = {
+  label?: string,
+  mode?: StatusMode
+}
+
+export type TablePrototypeToggleValue = {
+  checked?: boolean,
+  text?: string
+}
+
+export type TablePrototypeChoiceValue = {
+  checked?: boolean
+}
+
+export type TablePrototypeTagGroupValue = {
+  items?: Array<string | { label: string }>
+}
+
+export type TablePrototypeSelectValue = {
+  value?: string | string[],
+  options?: TablePrototypeOption[]
+}
+
+export type TablePrototypeIconValue = {
+  icon?: ReactNode
+}
+
+export type TablePrototypeCellValue =
+  | string
+  | number
+  | boolean
+  | ReactNode
+  | TablePrototypeChoiceValue
+  | TablePrototypeIconValue
+  | TablePrototypeLinkValue
+  | TablePrototypeSelectValue
+  | TablePrototypeStatusValue
+  | TablePrototypeTagGroupValue
+  | TablePrototypeTextValue
+  | TablePrototypeToggleValue
+
+export type TablePrototypeRow = TableRecord & {
+  key?: Key,
+  children?: TablePrototypeRow[]
+}
+
 export type TablePrototypeColumnConfig = {
   key?: string,
-  width?: number,
+  field?: string,
+  dataIndex?: string,
+  title?: string,
   headerText?: string,
+  width?: number,
+  fill?: boolean,
+  cellType?: TablePrototypeCellType,
+  cellVariant?: TablePrototypeCellVariant,
+  sortable?: boolean,
+  filterable?: boolean,
+  infoButton?: boolean,
+  infoText?: string,
+  buttonInfo?: boolean,
+  sampleValue?: TablePrototypeCellValue,
+  text?: string,
+  options?: TablePrototypeOption[],
+  elementBefore?: boolean,
+  elementBeforeSlot?: ReactNode,
+  elementAfter?: boolean,
+  elementAfterSlot?: ReactNode,
   headerVariant?: TablePrototypeHeaderVariant,
   headerState?: TablePrototypeHeaderState,
   sort?: TablePrototypeSortState,
-  filter?: TablePrototypeFilterState,
-  buttonInfo?: boolean,
-  cellVariant?: TablePrototypeCellVariant,
-  elementBefore?: boolean,
-  elementBeforeSlot?: ReactNode,
-  text?: string,
-  elementAfter?: boolean,
-  elementAfterSlot?: ReactNode
+  filter?: TablePrototypeFilterState
 }
 
 export type TablePrototypeProps = {
   columns?: TablePrototypeColumnConfig[],
+  dataMode?: TablePrototypeDataMode,
+  dataSource?: TablePrototypeRow[],
+  /** Preferred manual authoring format in UXPin. Expects a JSON array of rows. */
+  dataSourceJson?: string,
+  /** @deprecated Use rowsCount instead. Kept for backward compatibility in stories. */
   rows?: number,
+  /** Total number of generated rows when dataMode is "generated". */
+  rowsCount?: number,
   size?: TablePrototypeSize,
+  showPagination?: boolean,
+  /** @deprecated Use rowsPerPage instead. Kept for backward compatibility in stories. */
+  pageSize?: number,
+  /** How many rows should be shown on a page when pagination is enabled. */
+  rowsPerPage?: number,
+  /** Whether to show the summary block near pagination controls. */
+  showPaginationSummary?: boolean,
+  /** Whether to show the rows-per-page selector near pagination controls. */
+  showRowsPerPageSelector?: boolean,
+  selectionMode?: TablePrototypeSelectionMode,
   style?: CSSProperties
 }
 
-const SELECT_OPTIONS = [
+type ResolvedTextValue = {
+  text: string,
+  before?: ReactNode,
+  after?: ReactNode
+}
+
+type ResolvedLinkValue = {
+  text: string,
+  href: string,
+  before?: ReactNode,
+  after?: ReactNode
+}
+
+type ResolvedSelectValue = {
+  value: string[],
+  options: TablePrototypeOption[]
+}
+
+type ResolvedToggleValue = {
+  checked: boolean,
+  text: string
+}
+
+type NormalizedColumn = {
+  key: string,
+  field: string,
+  title: string,
+  width: number,
+  fill: boolean,
+  cellType: TablePrototypeCellType,
+  sortable: boolean,
+  filterable: boolean,
+  infoButton: boolean,
+  infoText: string,
+  sampleValue: TablePrototypeCellValue,
+  hasCustomSampleValue: boolean,
+  options: TablePrototypeOption[],
+  elementBefore: boolean,
+  elementBeforeSlot?: ReactNode,
+  elementAfter: boolean,
+  elementAfterSlot?: ReactNode,
+  defaultSort: TablePrototypeSortState,
+  defaultFilter: TablePrototypeFilterState
+}
+
+const SELECT_OPTIONS: TablePrototypeOption[] = [
   { label: 'Option 1', value: 'option-1' },
   { label: 'Option 2', value: 'option-2' },
   { label: 'Option 3', value: 'option-3' }
 ]
 
+const DEFAULT_PAGE_SIZE = 5
+const PROTOTYPE_PAGE_SIZE_OPTIONS = ['5', '10', '25', '50', '100']
+
 export const defaultTablePrototypeColumns: TablePrototypeColumnConfig[] = [
   {
     key: 'asset',
-    width: 220,
-    headerText: 'Asset',
-    headerVariant: 'text+filters+sort',
-    sort: 'ascending',
-    filter: 'applied',
-    cellVariant: 'treeLink',
-    elementBefore: true,
-    text: 'Workstation'
+    field: 'asset',
+    width: 240,
+    title: 'Asset',
+    sortable: true,
+    filterable: true,
+    cellType: 'treeLink',
+    sampleValue: { text: 'Workstation' }
   },
   {
     key: 'status',
+    field: 'status',
     width: 180,
-    headerText: 'Status',
-    headerVariant: 'text',
-    cellVariant: 'status',
-    text: 'Protected'
+    title: 'Status',
+    cellType: 'status',
+    sampleValue: { label: 'Protected', mode: 'positive' }
   },
   {
     key: 'owner',
-    width: 200,
-    headerText: 'Owner',
-    headerVariant: 'text+filters+sort',
-    sort: 'notApplied',
-    filter: 'notApplied',
-    buttonInfo: true,
-    cellVariant: 'text',
-    elementBefore: true,
-    text: 'Operator'
+    field: 'owner',
+    width: 220,
+    title: 'Owner',
+    sortable: true,
+    filterable: true,
+    infoButton: true,
+    cellType: 'text',
+    sampleValue: { text: 'Operator' }
   },
   {
     key: 'controls',
-    width: 160,
-    headerText: 'Controls',
-    headerVariant: 'text',
-    cellVariant: 'actions',
-    text: 'Actions'
+    field: 'controls',
+    width: 152,
+    title: 'Actions',
+    cellType: 'actions'
   }
 ]
 
 export const TablePrototype = ({
   columns = defaultTablePrototypeColumns,
-  rows = 5,
+  dataMode,
+  dataSource,
+  dataSourceJson,
+  rows = 6,
+  rowsCount,
   size = 'standard',
+  showPagination = false,
+  pageSize = DEFAULT_PAGE_SIZE,
+  rowsPerPage,
+  showPaginationSummary = true,
+  showRowsPerPageSelector = true,
+  selectionMode = 'none',
   style
 }: TablePrototypeProps): JSX.Element => {
-  const sanitizedColumns = columns.length ? columns : defaultTablePrototypeColumns
+  const rootRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+  const resolvedRowsCount = normalizePositiveInteger(rowsCount ?? rows, rows)
+  const resolvedRowsPerPage = normalizePositiveInteger(rowsPerPage ?? pageSize, DEFAULT_PAGE_SIZE)
+  const [activeRowsPerPage, setActiveRowsPerPage] = useState(resolvedRowsPerPage)
+  const [currentPage, setCurrentPage] = useState(1)
   const normalizedColumns = useMemo(
-    () => sanitizedColumns.map((column, index) => normalizePrototypeColumn(column, index)),
-    [sanitizedColumns]
+    () => {
+      const sourceColumns = columns.length ? columns : defaultTablePrototypeColumns
+      return sourceColumns.map((column, index) => normalizePrototypeColumn(column, index))
+    },
+    [columns]
   )
-  const rowCount = Math.max(1, Math.min(rows, 12))
-  const dataSource = useMemo(
-    () => Array.from({ length: rowCount }, (_, index) => ({ key: `row-${index + 1}` })),
-    [rowCount]
+  const resolvedManualData = useMemo(
+    () => resolveManualDataSource({ dataSource, dataSourceJson }),
+    [dataSource, dataSourceJson]
   )
-  const previewColumns = useMemo<TableColumn[]>(() => (
-    normalizedColumns.map((column, index) => ({
+  const resolvedDataMode = resolveDataMode(dataMode, dataSource, dataSourceJson)
+  const resolvedDataSource = useMemo<TablePrototypeRow[]>(
+    () => resolvedDataMode === 'manual'
+      ? patchPrototypeRowKeys(resolvedManualData.rows)
+      : buildGeneratedRows(normalizedColumns, resolvedRowsCount),
+    [normalizedColumns, resolvedDataMode, resolvedManualData.rows, resolvedRowsCount]
+  )
+  const rowKeys = useMemo(() => collectRowKeys(resolvedDataSource), [resolvedDataSource])
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
+
+  useEffect(() => {
+    setSelectedRowKeys((prevKeys) => prevKeys.filter((key) => rowKeys.includes(key)))
+  }, [rowKeys])
+
+  useEffect(() => {
+    setActiveRowsPerPage(resolvedRowsPerPage)
+    setCurrentPage(1)
+  }, [resolvedRowsPerPage])
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(resolvedDataSource.length / activeRowsPerPage))
+
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [activeRowsPerPage, currentPage, resolvedDataSource.length])
+
+  useEffect(() => {
+    if (!rootRef.current) {
+      return
+    }
+
+    const element = rootRef.current
+    const updateWidth = () => {
+      setContainerWidth(element.getBoundingClientRect().width)
+    }
+
+    updateWidth()
+
+    const resizeObserver = new ResizeObserver(() => updateWidth())
+    resizeObserver.observe(element)
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  const prototypeFilters = useMemo(
+    () => createPrototypeFilters(resolvedDataSource, normalizedColumns),
+    [normalizedColumns, resolvedDataSource]
+  )
+  const initialSorting = useMemo(() => {
+    const sortedColumn = normalizedColumns.find((column) => column.defaultSort !== 'notApplied')
+
+    if (!sortedColumn) {
+      return undefined
+    }
+
+    return {
+      field: sortedColumn.field,
+      direction: sortedColumn.defaultSort === 'descending' ? 'desc' as const : 'asc' as const
+    }
+  }, [normalizedColumns])
+  const initialFilters = useMemo(() => {
+    const appliedFilters = normalizedColumns.reduce<Record<string, Record<string, (row: TablePrototypeRow) => boolean>>>(
+      (acc, column) => {
+        if (column.defaultFilter !== 'applied') {
+          return acc
+        }
+
+        const fieldFilters = prototypeFilters[column.field]
+        if (!fieldFilters?.length) {
+          return acc
+        }
+
+        acc[column.field] = {
+          [fieldFilters[0].name]: fieldFilters[0].filter
+        }
+
+        return acc
+      },
+      {}
+    )
+
+    return Object.keys(appliedFilters).length ? appliedFilters : undefined
+  }, [normalizedColumns, prototypeFilters])
+  const selectionColumnWidth = selectionMode === 'none' ? 0 : 22
+  const layoutColumns = useMemo(
+    () => resolvePrototypeLayoutColumns(normalizedColumns, containerWidth, selectionColumnWidth),
+    [normalizedColumns, containerWidth, selectionColumnWidth]
+  )
+  const allRowsSelected = selectionMode !== 'none' && rowKeys.length > 0 && rowKeys.every((rowKey) => selectedRowKeys.includes(rowKey))
+  const partiallySelected = selectionMode === 'checkbox' && selectedRowKeys.length > 0 && !allRowsSelected
+  const toggleAllRows = (checked: boolean) => {
+    setSelectedRowKeys(checked ? rowKeys : [])
+  }
+  const toggleSingleRow = (rowKey: Key, checked: boolean) => {
+    setSelectedRowKeys((prevKeys) => {
+      if (selectionMode === 'radio') {
+        return checked ? [rowKey] : []
+      }
+
+      return checked
+        ? Array.from(new Set([...prevKeys, rowKey]))
+        : prevKeys.filter((key) => key !== rowKey)
+    })
+  }
+  const tableColumns = useMemo<TableColumn[]>(() => (
+    [
+      ...(selectionMode === 'none'
+        ? []
+        : [{
+            key: '__prototype-selection__',
+            dataIndex: '__prototype-selection__',
+            columnId: '__prototype-selection__',
+            title: selectionMode === 'checkbox'
+              ? (
+                  <PrototypeSelectionHeader
+                    checked={allRowsSelected}
+                    indeterminate={partiallySelected}
+                    onChange={toggleAllRows}
+                  />
+                )
+              : '',
+            width: selectionColumnWidth,
+            align: 'center' as const,
+            className: 'table-prototype-column table-prototype-column--selection',
+            resizing: { disabled: true },
+            render: (_value: unknown, record: TableRecord) => (
+              <PrototypeSelectionCell
+                selectionMode={selectionMode}
+                checked={record.key !== undefined && selectedRowKeys.includes(record.key)}
+                onChange={(checked) => {
+                  if (record.key !== undefined) {
+                    toggleSingleRow(record.key, checked)
+                  }
+                }}
+              />
+            )
+          }]),
+      ...layoutColumns.map((column) => ({
+        key: column.key,
+        dataIndex: column.field,
+        columnId: column.key,
+        title: <PrototypeHeaderTitle title={column.title} infoButton={column.infoButton} infoText={column.infoText} size={size} />,
+        hideDefaultMenuIcon: !(column.sortable || column.filterable),
+        showFilterIcon: column.filterable || undefined,
+        width: column.width,
+        className: `table-prototype-column table-prototype-column--${column.cellType}`,
+        align: column.cellType === 'checkbox' || column.cellType === 'radio' || column.cellType === 'icon'
+          ? 'center' as const
+          : undefined,
+        resizing: column.cellType === 'checkbox' || column.cellType === 'radio'
+          ? { disabled: true }
+          : undefined,
+        isSortable: column.sortable,
+        sorter: column.sortable ? createPrototypeSorter(column) : undefined,
+        filters: column.filterable ? prototypeFilters[column.field] : undefined,
+        allowMultipleFilters: false,
+        render: (value: unknown, _record: TableRecord, rowIndex: number) => (
+          <TablePrototypeCell
+            column={column}
+            value={value}
+            rowIndex={rowIndex}
+          />
+        )
+      }))
+    ]
+  ), [
+    allRowsSelected,
+    layoutColumns,
+    partiallySelected,
+    prototypeFilters,
+    selectedRowKeys,
+    selectionColumnWidth,
+    selectionMode,
+    size,
+    rowKeys
+  ])
+  const treeColumn = layoutColumns.find((column) => (
+    column.cellType === 'tree' || column.cellType === 'treeLink'
+  ))
+  const minWidth = layoutColumns.reduce((sum, column) => sum + column.width, selectionColumnWidth)
+  const horizontalScrollX = containerWidth > 0 && minWidth > containerWidth + 1 ? minWidth : undefined
+  const pagination = showPagination
+    ? {
+        current: currentPage,
+        pageSize: activeRowsPerPage,
+        pageSizeOptions: PROTOTYPE_PAGE_SIZE_OPTIONS,
+        showSizeChanger: showRowsPerPageSelector,
+        showTotalSummary: showPaginationSummary,
+        restoreCurrentWhenDataChange: true,
+        total: resolvedDataSource.length,
+        onChange: (page: number, pageSizeValue: number) => {
+          setCurrentPage(page)
+
+          if (pageSizeValue !== activeRowsPerPage) {
+            setActiveRowsPerPage(pageSizeValue)
+          }
+        },
+        onShowSizeChange: (page: number, pageSizeValue: number) => {
+          setCurrentPage(page)
+          setActiveRowsPerPage(pageSizeValue)
+        }
+      }
+    : false
+  const tableInstanceKey = useMemo(() => JSON.stringify({
+    columns: layoutColumns.map((column) => ({
       key: column.key,
-      dataIndex: column.key,
-      title: <TablePrototypeHeader column={column} />,
       width: column.width,
-      render: (_value, _record, rowIndex) => (
-        <TablePrototypeCell column={column} rowIndex={rowIndex} />
-      ),
-      columnId: `prototype-column-${index}`
-    }))
-  ), [normalizedColumns])
-  const minWidth = normalizedColumns.reduce((sum, column) => sum + column.width, 0)
+      fill: column.fill,
+      cellType: column.cellType,
+      sortable: column.sortable,
+      filterable: column.filterable
+    })),
+    activeRowsPerPage,
+    selectionMode,
+    showPagination,
+    showPaginationSummary,
+    showRowsPerPageSelector,
+    size
+  }), [activeRowsPerPage, layoutColumns, selectionMode, showPagination, showPaginationSummary, showRowsPerPageSelector, size])
+  const emptyText = resolvedManualData.error
+    ? <ManualDataError>{resolvedManualData.error}</ManualDataError>
+    : resolvedDataMode === 'manual' && resolvedDataSource.length === 0
+      ? <ManualDataHint example={buildManualDataHintExample(normalizedColumns)} />
+      : undefined
 
   return (
-    <PreviewRoot style={{ minWidth, ...style }}>
+    <PreviewRoot ref={rootRef} style={style}>
       <Table
-        columns={previewColumns}
-        dataSource={dataSource}
-        pagination={false}
-        resizingMode="scroll"
+        key={tableInstanceKey}
+        columns={tableColumns}
+        dataSource={resolvedDataSource}
+        expandable={treeColumn ? { expandColumnName: treeColumn.field } : undefined}
+        emptyText={emptyText}
+        initialFilters={initialFilters}
+        initialSorting={initialSorting}
+        pagination={pagination}
+        resizingMode="manual"
         rowMode={size}
-        scroll={{ x: minWidth }}
-        showHeader={true}
+        scroll={horizontalScrollX ? { x: horizontalScrollX } : undefined}
       />
     </PreviewRoot>
   )
 }
 
-type NormalizedColumn = Required<
-  Pick<
-    TablePrototypeColumnConfig,
-    'buttonInfo' |
-    'cellVariant' |
-    'elementAfter' |
-    'elementBefore' |
-    'filter' |
-    'headerState' |
-    'headerText' |
-    'headerVariant' |
-    'key' |
-    'sort' |
-    'text' |
-    'width'
-  >
-> &
-Pick<TablePrototypeColumnConfig, 'elementAfterSlot' | 'elementBeforeSlot'>
+const resolveDataMode = (
+  dataMode: TablePrototypeDataMode | undefined,
+  dataSource: TablePrototypeRow[] | undefined,
+  dataSourceJson: string | undefined
+): TablePrototypeDataMode => {
+  if (dataMode) {
+    return dataMode
+  }
+
+  return (dataSource?.length || dataSourceJson?.trim()) ? 'manual' : 'generated'
+}
 
 const normalizePrototypeColumn = (
   column: TablePrototypeColumnConfig,
   index: number
 ): NormalizedColumn => {
-  const cellVariant = column.cellVariant ?? 'text'
+  const cellType = column.cellType ?? column.cellVariant ?? 'text'
+  const title = column.title ?? column.headerText ?? `Column ${index + 1}`
+  const field = column.field ?? column.dataIndex ?? column.key ?? `column_${index + 1}`
+  const sortable = column.sortable ?? Boolean(
+    column.headerVariant === 'text+filters+sort' ||
+    column.sort
+  )
+  const filterable = column.filterable ?? Boolean(
+    column.headerVariant === 'text+filters+sort' ||
+    column.filter
+  )
+  const hasCustomSampleValue = column.sampleValue !== undefined || column.text !== undefined
 
   return {
-    buttonInfo: column.buttonInfo ?? false,
-    cellVariant,
-    elementAfter: column.elementAfter ?? false,
-    elementAfterSlot: column.elementAfterSlot,
+    key: column.key ?? field,
+    field,
+    title,
+    width: resolveFixedWidth(cellType, column.width),
+    fill: cellType === 'checkbox' || cellType === 'radio' ? false : (column.fill ?? false),
+    cellType,
+    sortable,
+    filterable,
+    infoButton: column.infoButton ?? column.buttonInfo ?? false,
+    infoText: column.infoText ?? `About ${title}`,
+    sampleValue: column.sampleValue ?? column.text ?? resolveDefaultSampleValue(cellType),
+    hasCustomSampleValue,
+    options: column.options?.length ? column.options : SELECT_OPTIONS,
     elementBefore: column.elementBefore ?? false,
     elementBeforeSlot: column.elementBeforeSlot,
-    filter: column.filter ?? 'notApplied',
-    headerState: column.headerState ?? 'enabled',
-    headerText: column.headerText ?? `Column ${index + 1}`,
-    headerVariant: column.headerVariant ?? 'text',
-    key: column.key ?? `column-${index + 1}`,
-    sort: column.sort ?? 'notApplied',
-    text: column.text ?? resolveDefaultText(cellVariant),
-    width: column.width ?? resolveDefaultColumnWidth(cellVariant)
+    elementAfter: column.elementAfter ?? false,
+    elementAfterSlot: column.elementAfterSlot,
+    defaultSort: column.sort ?? 'notApplied',
+    defaultFilter: column.filter ?? 'notApplied'
   }
 }
 
-const resolveDefaultText = (cellVariant: TablePrototypeCellVariant): string => {
-  switch (cellVariant) {
+const resolvePrototypeLayoutColumns = (
+  columns: NormalizedColumn[],
+  containerWidth: number,
+  selectionColumnWidth: number
+): NormalizedColumn[] => {
+  if (containerWidth <= 0) {
+    return columns
+  }
+
+  const availableWidth = Math.max(containerWidth - selectionColumnWidth, 0)
+  const totalWidth = columns.reduce((sum, column) => sum + column.width, 0)
+  const remainingWidth = Math.max(availableWidth - totalWidth, 0)
+
+  if (remainingWidth === 0) {
+    return columns
+  }
+
+  const fillColumns = columns.filter((column) => column.fill)
+  const stretchTargets = fillColumns.length
+    ? fillColumns
+    : [findStretchTarget(columns)].filter((column): column is NormalizedColumn => Boolean(column))
+
+  if (!stretchTargets.length) {
+    return columns
+  }
+
+  const targetExtraWidth = new Map(
+    stretchTargets.map((column, index) => [
+      column.key,
+      Math.floor(remainingWidth / stretchTargets.length) + (index < (remainingWidth % stretchTargets.length) ? 1 : 0)
+    ])
+  )
+
+  return columns.map((column) => ({
+    ...column,
+    width: column.width + (targetExtraWidth.get(column.key) ?? 0)
+  }))
+}
+
+const findStretchTarget = (columns: NormalizedColumn[]): NormalizedColumn | undefined => (
+  [...columns].reverse().find((column) => (
+    column.cellType !== 'checkbox' &&
+    column.cellType !== 'radio'
+  )) ?? columns[columns.length - 1]
+)
+
+const normalizePositiveInteger = (
+  value: number | undefined,
+  fallback: number
+): number => {
+  const parsedValue = Number(value)
+
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return fallback
+  }
+
+  return Math.round(parsedValue)
+}
+
+const resolveDefaultSampleValue = (cellType: TablePrototypeCellType): TablePrototypeCellValue => {
+  switch (cellType) {
     case 'status':
-      return 'Protected'
+      return { label: 'Protected', mode: 'positive' }
     case 'link':
     case 'treeLink':
-      return 'Open details'
+      return { text: 'Open details', href: '#' }
+    case 'tag-group':
+      return { items: ['Region', 'HQ', 'Critical'] }
+    case 'toggle':
+      return { checked: true, text: 'On' }
+    case 'checkbox':
+    case 'radio':
+      return { checked: true }
     case 'input-select':
+      return { value: SELECT_OPTIONS[0].value, options: SELECT_OPTIONS }
     case 'input-multiselect':
-      return 'Assigned'
+      return { value: [SELECT_OPTIONS[0].value, SELECT_OPTIONS[1].value], options: SELECT_OPTIONS }
     case 'actions':
       return 'Actions'
+    case 'tree':
+      return { text: 'Node' }
+    case 'input-text':
+      return { text: 'Value' }
     default:
-      return 'Value'
+      return { text: 'Value' }
   }
 }
 
-const resolveDefaultColumnWidth = (cellVariant: TablePrototypeCellVariant): number => {
-  switch (cellVariant) {
+const resolveDefaultColumnWidth = (cellType: TablePrototypeCellType): number => {
+  switch (cellType) {
     case 'checkbox':
     case 'radio':
+      return 22
     case 'icon':
-      return 88
+      return 48
     case 'actions':
-      return 144
+      return 152
     case 'toggle':
-      return 124
+      return 140
     case 'status':
-      return 160
+      return 180
     case 'tag-group':
       return 240
     case 'input-text':
     case 'input-select':
     case 'input-multiselect':
-      return 200
+      return 220
     default:
-      return 180
+      return 200
   }
 }
 
-const resolveRowText = (
-  text: string,
-  rowIndex: number,
-  cellVariant: TablePrototypeCellVariant
+const resolveFixedWidth = (
+  cellType: TablePrototypeCellType,
+  width: number | undefined
+): number => {
+  if (cellType === 'checkbox' || cellType === 'radio') {
+    return 22
+  }
+
+  return width ?? resolveDefaultColumnWidth(cellType)
+}
+
+const resolveManualDataSource = ({
+  dataSource,
+  dataSourceJson
+}: {
+  dataSource?: TablePrototypeRow[],
+  dataSourceJson?: string
+}): {
+  rows: TablePrototypeRow[],
+  error?: string
+} => {
+  const rawJson = dataSourceJson?.trim()
+
+  if (rawJson) {
+    try {
+      const parsed = JSON.parse(rawJson)
+
+      if (!Array.isArray(parsed)) {
+        return {
+          rows: [],
+          error: 'dataSourceJson must be a JSON array of rows'
+        }
+      }
+
+      return {
+        rows: parsed as TablePrototypeRow[]
+      }
+    } catch {
+      return {
+        rows: [],
+        error: 'dataSourceJson contains invalid JSON'
+      }
+    }
+  }
+
+  return {
+    rows: dataSource || []
+  }
+}
+
+const buildManualDataHintExample = (
+  columns: NormalizedColumn[]
 ): string => {
-  switch (cellVariant) {
+  const exampleRow: TablePrototypeRow = {
+    key: 'row-1'
+  }
+
+  columns.forEach((column) => {
+    exampleRow[column.field] = createManualHintCellValue(column)
+  })
+
+  return JSON.stringify([exampleRow], null, 2)
+}
+
+const createManualHintCellValue = (
+  column: NormalizedColumn
+): TablePrototypeCellValue => {
+  switch (column.cellType) {
+    case 'checkbox':
+    case 'radio':
+      return { checked: true }
+    case 'status':
+      return { label: 'Protected', mode: 'positive' }
+    case 'link':
+    case 'treeLink':
+      return { text: column.title, href: '#' }
+    case 'tag-group':
+      return { items: ['Region', 'HQ'] }
+    case 'toggle':
+      return { checked: true, text: 'On' }
+    case 'actions':
+      return 'Actions'
+    case 'input-select':
+      return { value: column.options[0]?.value ?? 'option-1' }
+    case 'input-multiselect':
+      return { value: column.options.slice(0, 2).map((option) => option.value) }
+    case 'icon':
+      return { icon: 'Placeholder' }
+    case 'tree':
+    case 'input-text':
+    case 'text':
+    default:
+      return { text: column.title }
+  }
+}
+
+const buildGeneratedRows = (
+  columns: NormalizedColumn[],
+  rows: number
+): TablePrototypeRow[] => {
+  const safeRows = Math.max(1, Math.min(rows, 50))
+  const hasTreeColumn = columns.some((column) => (
+    column.cellType === 'tree' || column.cellType === 'treeLink'
+  ))
+
+  return Array.from({ length: safeRows }, (_, index) => createGeneratedRow({
+    columns,
+    hasTreeColumn,
+    path: [index + 1]
+  }))
+}
+
+const createGeneratedRow = ({
+  columns,
+  hasTreeColumn,
+  path
+}: {
+  columns: NormalizedColumn[],
+  hasTreeColumn: boolean,
+  path: number[]
+}): TablePrototypeRow => {
+  const rowKey = path.join('.')
+  const row: TablePrototypeRow = { key: rowKey }
+
+  columns.forEach((column) => {
+    row[column.field] = createGeneratedCellValue(column, path)
+  })
+
+  const depth = path.length - 1
+  const topLevelIndex = path[0]
+  const shouldCreateChildren = hasTreeColumn && depth === 0 && topLevelIndex <= 3
+
+  if (shouldCreateChildren) {
+    row.children = [
+      createGeneratedRow({ columns, hasTreeColumn, path: [...path, 1] }),
+      createGeneratedRow({ columns, hasTreeColumn, path: [...path, 2] })
+    ]
+  }
+
+  if (hasTreeColumn && depth === 1 && topLevelIndex === 1 && path[1] === 1) {
+    row.children = [
+      createGeneratedRow({ columns, hasTreeColumn, path: [...path, 1] })
+    ]
+  }
+
+  return row
+}
+
+const createGeneratedCellValue = (
+  column: NormalizedColumn,
+  path: number[]
+): TablePrototypeCellValue => {
+  const displayId = path.join('.')
+  const isEvenRow = path[path.length - 1] % 2 === 0
+  const textSeed = extractTextContent(column.sampleValue, column.title)
+  const withDisplayId = `${textSeed} ${displayId}`
+
+  if (column.hasCustomSampleValue) {
+    switch (column.cellType) {
+      case 'checkbox':
+      case 'radio':
+        return { checked: resolveCheckedValue(column.sampleValue) }
+      case 'icon':
+        return { icon: extractIconValue(column.sampleValue) ?? column.elementBeforeSlot ?? <Placeholder /> }
+      case 'status':
+        return extractStatusValue(column.sampleValue)
+      case 'link':
+      case 'treeLink':
+        return extractLinkValue(column.sampleValue)
+      case 'tag-group':
+        return { items: extractTagGroupItems(column.sampleValue).map((item) => item.label) }
+      case 'toggle':
+        return extractToggleValue(column.sampleValue)
+      case 'input-select':
+      case 'input-multiselect':
+        return extractSelectValue(column.sampleValue)
+      case 'input-text':
+      case 'tree':
+      case 'text':
+      default:
+        return extractTextValue(column.sampleValue, column)
+    }
+  }
+
+  switch (column.cellType) {
+    case 'checkbox':
+    case 'radio':
+      return { checked: isEvenRow }
+    case 'icon':
+      return { icon: column.elementBeforeSlot ?? <Placeholder /> }
+    case 'status':
+      return {
+        label: withDisplayId,
+        mode: isEvenRow ? 'positive' : 'critical'
+      }
+    case 'link':
+    case 'treeLink':
+      return {
+        text: withDisplayId,
+        href: '#',
+        before: column.elementBefore ? resolveSlotContent(true, column.elementBeforeSlot) : undefined,
+        after: column.elementAfter ? resolveSlotContent(true, column.elementAfterSlot) : undefined
+      }
+    case 'tag-group':
+      return {
+        items: [`${textSeed} ${displayId}`, `Scope ${path[0]}`, isEvenRow ? 'Primary' : 'Secondary']
+      }
+    case 'toggle':
+      return {
+        checked: isEvenRow,
+        text: isEvenRow ? 'On' : 'Off'
+      }
+    case 'input-select':
+      return {
+        value: column.options[0]?.value,
+        options: column.options
+      }
+    case 'input-multiselect':
+      return {
+        value: column.options.slice(0, 2).map((option) => option.value),
+        options: column.options
+      }
+    case 'input-text':
+      return { text: withDisplayId }
+    case 'tree':
+    case 'text':
+    default:
+      return {
+        text: withDisplayId,
+        before: column.elementBefore ? resolveSlotContent(true, column.elementBeforeSlot) : undefined,
+        after: column.elementAfter ? resolveSlotContent(true, column.elementAfterSlot) : undefined
+      }
+  }
+}
+
+const patchPrototypeRowKeys = (
+  rows: TablePrototypeRow[],
+  parentPath: number[] = []
+): TablePrototypeRow[] => (
+  rows.map((row, index) => {
+    const currentPath = [...parentPath, index + 1]
+    const nextRow: TablePrototypeRow = {
+      ...row,
+      key: row.key ?? currentPath.join('.')
+    }
+
+    if (Array.isArray(row.children) && row.children.length) {
+      nextRow.children = patchPrototypeRowKeys(row.children, currentPath)
+    }
+
+    return nextRow
+  })
+)
+
+const collectRowKeys = (rows: TablePrototypeRow[]): Key[] => (
+  rows.flatMap((row) => {
+    const currentKey = row.key !== undefined ? [row.key] : []
+    const childKeys = row.children ? collectRowKeys(row.children) : []
+    return [...currentKey, ...childKeys]
+  })
+)
+
+const createPrototypeSorter = (column: NormalizedColumn) => (
+  (rowA: TableRecord, rowB: TableRecord, isAsc: boolean): number => {
+    const valueA = resolveComparableValue(rowA[column.field], column.cellType)
+    const valueB = resolveComparableValue(rowB[column.field], column.cellType)
+
+    if (valueA === valueB) {
+      return 0
+    }
+
+    if ((valueA > valueB && isAsc) || (valueA < valueB && !isAsc)) {
+      return 1
+    }
+
+    return -1
+  }
+)
+
+const createPrototypeFilters = (
+  rows: TablePrototypeRow[],
+  columns: NormalizedColumn[]
+): Record<string, NonNullable<TableColumn['filters']>> => (
+  columns.reduce<Record<string, NonNullable<TableColumn['filters']>>>((acc, column) => {
+    if (!column.filterable) {
+      return acc
+    }
+
+    const values = Array.from(
+      new Set(
+        flattenPrototypeRows(rows)
+          .map((row) => resolveFilterLabel(row[column.field], column.cellType))
+          .filter((value): value is string => Boolean(value))
+      )
+    ).slice(0, 8)
+
+    acc[column.field] = values.map((value) => ({
+      name: value,
+      filter: (row: TablePrototypeRow) => resolveFilterLabel(row[column.field], column.cellType) === value
+    }))
+
+    return acc
+  }, {})
+)
+
+const flattenPrototypeRows = (rows: TablePrototypeRow[]): TablePrototypeRow[] => (
+  rows.flatMap((row) => [
+    row,
+    ...(row.children ? flattenPrototypeRows(row.children) : [])
+  ])
+)
+
+const resolveComparableValue = (
+  value: unknown,
+  cellType: TablePrototypeCellType
+): string | number => {
+  switch (cellType) {
     case 'checkbox':
     case 'radio':
     case 'toggle':
+      return resolveCheckedValue(value) ? 1 : 0
+    case 'status':
+      return extractStatusValue(value).label.toUpperCase()
+    case 'tag-group':
+      return extractTagGroupItems(value).map((item) => item.label).join(' | ').toUpperCase()
+    case 'input-select':
+    case 'input-multiselect':
+      return extractSelectValue(value).value.join(' | ').toUpperCase()
     case 'actions':
-      return text
+      return ''
+    case 'link':
+    case 'treeLink':
+      return extractLinkValue(value).text.toUpperCase()
+    case 'tree':
+    case 'text':
+    case 'input-text':
     default:
-      return `${text} ${rowIndex + 1}`
+      return extractTextContent(value, '').toUpperCase()
   }
+}
+
+const resolveFilterLabel = (
+  value: unknown,
+  cellType: TablePrototypeCellType
+): string => {
+  switch (cellType) {
+    case 'status':
+      return extractStatusValue(value).label
+    case 'tag-group':
+      return extractTagGroupItems(value).map((item) => item.label).join(', ')
+    case 'link':
+    case 'treeLink':
+      return extractLinkValue(value).text
+    case 'input-select':
+    case 'input-multiselect':
+      return extractSelectValue(value).value.join(', ')
+    case 'checkbox':
+    case 'radio':
+    case 'toggle':
+      return resolveCheckedValue(value) ? 'Enabled' : 'Disabled'
+    case 'actions':
+      return ''
+    case 'tree':
+    case 'text':
+    case 'input-text':
+    default:
+      return extractTextContent(value, '')
+  }
+}
+
+const TablePrototypeCell = ({
+  column,
+  value,
+  rowIndex
+}: {
+  column: NormalizedColumn,
+  value: unknown,
+  rowIndex: number
+}): JSX.Element => {
+  const [checkedValue, setCheckedValue] = useState(resolveCheckedValue(value))
+
+  useEffect(() => {
+    setCheckedValue(resolveCheckedValue(value))
+  }, [value])
+
+  switch (column.cellType) {
+    case 'checkbox':
+      return (
+        <ChoiceCell>
+          <Checkbox
+            checked={checkedValue}
+            onChange={(event) => setCheckedValue(Boolean(event.target.checked))}
+          />
+        </ChoiceCell>
+      )
+    case 'radio':
+      return (
+        <ChoiceCell>
+          <Radio
+            options={[{ label: <span />, value: 'selected' }]}
+            value={checkedValue ? 'selected' : undefined}
+            onChange={() => setCheckedValue(true)}
+          />
+        </ChoiceCell>
+      )
+    case 'icon':
+      return <StaticCell>{extractIconValue(value) ?? resolveSlotContent(true, column.elementBeforeSlot)}</StaticCell>
+    case 'status': {
+      const status = extractStatusValue(value)
+      return (
+        <StaticCell>
+          <Status mode={status.mode} label={status.label} />
+        </StaticCell>
+      )
+    }
+    case 'link':
+    case 'treeLink': {
+      const link = extractLinkValue(value)
+      return (
+        <TextCell>
+          {link.before && <span className="slot">{link.before}</span>}
+          <Link href={link.href} text={link.text} />
+          {link.after && <span className="slot">{link.after}</span>}
+        </TextCell>
+      )
+    }
+    case 'tag-group':
+      return (
+        <StaticCell>
+          <TagReductionGroup items={extractTagGroupItems(value)} />
+        </StaticCell>
+      )
+    case 'toggle': {
+      const toggle = extractToggleValue(value)
+      return (
+        <StaticCell>
+          <Toggle checked={toggle.checked} text={toggle.text} />
+        </StaticCell>
+      )
+    }
+    case 'actions':
+      return (
+        <ActionsCell>
+          <ActionButton mode="ghost" icon={<Search />} onClick={noop} />
+          <ActionButton mode="ghost" icon={<SettingsGear />} onClick={noop} />
+          <ActionButton mode="ghost" icon={<Placeholder />} onClick={noop} />
+        </ActionsCell>
+      )
+    case 'input-text':
+      return (
+        <StaticCell>
+          <Textbox value={extractTextContent(value, `Value ${rowIndex + 1}`)} onChange={noop} />
+        </StaticCell>
+      )
+    case 'input-select': {
+      const select = extractSelectValue(value)
+      return (
+        <StaticCell>
+          <Select
+            defaultValue={select.value[0]}
+            options={select.options}
+            style={{ width: '100%' }}
+          />
+        </StaticCell>
+      )
+    }
+    case 'input-multiselect': {
+      const select = extractSelectValue(value)
+      return (
+        <StaticCell>
+          <Select
+            defaultValue={select.value}
+            mode="multiple"
+            options={select.options}
+            style={{ width: '100%' }}
+          />
+        </StaticCell>
+      )
+    }
+    case 'tree':
+    case 'text':
+    default: {
+      const textValue = extractTextValue(value, column)
+      return (
+        <TextCell>
+          {textValue.before && <span className="slot">{textValue.before}</span>}
+          <span className="text">{textValue.text}</span>
+          {textValue.after && <span className="slot">{textValue.after}</span>}
+        </TextCell>
+      )
+    }
+  }
+}
+
+const resolveCheckedValue = (value: unknown): boolean => {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  if (value && typeof value === 'object' && 'checked' in value) {
+    return Boolean((value as TablePrototypeChoiceValue).checked)
+  }
+
+  return false
+}
+
+const extractIconValue = (value: unknown): ReactNode | null => {
+  if (value && typeof value === 'object' && 'icon' in value) {
+    return (value as TablePrototypeIconValue).icon ?? null
+  }
+
+  return React.isValidElement(value) ? value : null
+}
+
+const extractStatusValue = (value: unknown): Required<TablePrototypeStatusValue> => {
+  if (value && typeof value === 'object' && ('label' in value || 'mode' in value)) {
+    return {
+      label: String((value as TablePrototypeStatusValue).label ?? 'Protected'),
+      mode: (value as TablePrototypeStatusValue).mode ?? 'positive'
+    }
+  }
+
+  return {
+    label: extractTextContent(value, 'Protected'),
+    mode: 'positive'
+  }
+}
+
+const extractLinkValue = (value: unknown): ResolvedLinkValue => {
+  if (value && typeof value === 'object' && ('text' in value || 'href' in value)) {
+    return {
+      text: extractTextContent((value as TablePrototypeLinkValue).text, 'Open details'),
+      href: (value as TablePrototypeLinkValue).href ?? '#',
+      before: (value as TablePrototypeLinkValue).before,
+      after: (value as TablePrototypeLinkValue).after
+    }
+  }
+
+  return {
+    text: extractTextContent(value, 'Open details'),
+    href: '#',
+    before: undefined,
+    after: undefined
+  }
+}
+
+const extractTextValue = (
+  value: unknown,
+  column: Pick<NormalizedColumn, 'elementAfter' | 'elementAfterSlot' | 'elementBefore' | 'elementBeforeSlot'>
+): ResolvedTextValue => {
+  if (value && typeof value === 'object' && ('text' in value || 'before' in value || 'after' in value)) {
+    return {
+      text: extractTextContent((value as TablePrototypeTextValue).text, 'Value'),
+      before: (value as TablePrototypeTextValue).before ?? (column.elementBefore ? resolveSlotContent(true, column.elementBeforeSlot) : undefined),
+      after: (value as TablePrototypeTextValue).after ?? (column.elementAfter ? resolveSlotContent(true, column.elementAfterSlot) : undefined)
+    }
+  }
+
+  return {
+    text: extractTextContent(value, 'Value'),
+    before: column.elementBefore ? resolveSlotContent(true, column.elementBeforeSlot) : undefined,
+    after: column.elementAfter ? resolveSlotContent(true, column.elementAfterSlot) : undefined
+  }
+}
+
+const extractToggleValue = (value: unknown): ResolvedToggleValue => {
+  if (value && typeof value === 'object' && ('checked' in value || 'text' in value)) {
+    return {
+      checked: Boolean((value as TablePrototypeToggleValue).checked),
+      text: extractTextContent((value as TablePrototypeToggleValue).text, Boolean((value as TablePrototypeToggleValue).checked) ? 'On' : 'Off')
+    }
+  }
+
+  const checked = resolveCheckedValue(value)
+  return {
+    checked,
+    text: checked ? 'On' : 'Off'
+  }
+}
+
+const extractTagGroupItems = (
+  value: unknown
+): Array<{ label: string }> => {
+  if (Array.isArray(value)) {
+    return value.map((item) => ({ label: extractTextContent(item, 'Item') }))
+  }
+
+  if (value && typeof value === 'object' && 'items' in value) {
+    const items = (value as TablePrototypeTagGroupValue).items ?? []
+    return items.map((item) => ({
+      label: typeof item === 'string' ? item : extractTextContent(item.label, 'Item')
+    }))
+  }
+
+  const baseText = extractTextContent(value, 'Tag')
+  return [
+    { label: baseText },
+    { label: `${baseText} B` },
+    { label: `${baseText} C` }
+  ]
+}
+
+const extractSelectValue = (value: unknown): ResolvedSelectValue => {
+  if (value && typeof value === 'object' && ('value' in value || 'options' in value)) {
+    const selectValue = (value as TablePrototypeSelectValue).value
+
+    return {
+      value: Array.isArray(selectValue) ? selectValue : [String(selectValue ?? SELECT_OPTIONS[0].value)],
+      options: (value as TablePrototypeSelectValue).options?.length
+        ? (value as TablePrototypeSelectValue).options as TablePrototypeOption[]
+        : SELECT_OPTIONS
+    }
+  }
+
+  return {
+    value: [SELECT_OPTIONS[0].value],
+    options: SELECT_OPTIONS
+  }
+}
+
+const extractTextContent = (value: unknown, fallback: string): string => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value)
+  }
+
+  if (value && typeof value === 'object') {
+    if ('text' in value && (typeof (value as TablePrototypeTextValue).text === 'string' || typeof (value as TablePrototypeTextValue).text === 'number')) {
+      return String((value as TablePrototypeTextValue).text)
+    }
+
+    if ('label' in value && typeof (value as TablePrototypeStatusValue).label === 'string') {
+      return String((value as TablePrototypeStatusValue).label)
+    }
+  }
+
+  return fallback
 }
 
 const resolveSlotContent = (
@@ -275,229 +1351,282 @@ const resolveSlotContent = (
   return slot ?? <Placeholder />
 }
 
-const resolveSortIcon = (sort: TablePrototypeSortState): ReactNode => {
-  switch (sort) {
-    case 'ascending':
-      return <ArrowUp1 />
-    case 'descending':
-      return <ArrowDown1 />
-    default:
-      return <ArrowUpAndDown />
-  }
-}
-
-const resolveFilterIcon = (filter: TablePrototypeFilterState): ReactNode => (
-  filter === 'applied' ? <FilterActive /> : <Filter />
+const PrototypeHeaderTitle = ({
+  title,
+  infoButton = false,
+  infoText = 'Column info',
+  size
+}: {
+  title: string,
+  infoButton?: boolean,
+  infoText?: string,
+  size: TablePrototypeSize
+}): JSX.Element => (
+  <HeaderTitle $compact={size === 'compact'}>
+    <span className="text">{title}</span>
+    {infoButton && (
+      <Tooltip text={infoText}>
+        <HeaderInfoButton>
+          <StatusInfoOutline />
+        </HeaderInfoButton>
+      </Tooltip>
+    )}
+  </HeaderTitle>
 )
 
-const TablePrototypeHeader = ({
-  column
+const PrototypeSelectionHeader = ({
+  checked,
+  indeterminate,
+  onChange
 }: {
-  column: NormalizedColumn
-}): JSX.Element => {
-  if (column.headerVariant === 'empty') {
-    return <HeaderContainer $state={column.headerState} />
-  }
+  checked: boolean,
+  indeterminate: boolean,
+  onChange: (checked: boolean) => void
+}): JSX.Element => (
+  <ChoiceCell>
+    <Checkbox
+      checked={checked}
+      indeterminate={indeterminate}
+      onChange={(event) => onChange(Boolean(event.target.checked))}
+    />
+  </ChoiceCell>
+)
 
-  if (column.headerVariant === 'checkbox') {
-    return (
-      <HeaderContainer $state={column.headerState}>
-        <Checkbox checked={column.headerState === 'active'} disabled={column.headerState === 'disabled'} />
-      </HeaderContainer>
-    )
-  }
-
-  return (
-    <HeaderContainer $state={column.headerState}>
-      <span className="header-text">{column.headerText}</span>
-      {column.headerVariant === 'text+filters+sort' && (
-        <span className="header-icons">
-          {resolveSortIcon(column.sort)}
-          {resolveFilterIcon(column.filter)}
-        </span>
-      )}
-      {column.buttonInfo && (
-        <span className="header-icons">
-          <Help />
-        </span>
-      )}
-    </HeaderContainer>
-  )
-}
-
-const TablePrototypeCell = ({
-  column,
-  rowIndex
+const PrototypeSelectionCell = ({
+  selectionMode,
+  checked,
+  onChange
 }: {
-  column: NormalizedColumn,
-  rowIndex: number
-}): JSX.Element => {
-  const text = resolveRowText(column.text, rowIndex, column.cellVariant)
-  const elementBefore = resolveSlotContent(column.elementBefore, column.elementBeforeSlot)
-  const elementAfter = resolveSlotContent(column.elementAfter, column.elementAfterSlot)
-  const checkboxChecked = rowIndex % 2 === 0
-  const radioChecked = rowIndex === 0
-  const toggleChecked = rowIndex % 2 === 0
-  const treeDepth = rowIndex % 3
-
-  switch (column.cellVariant) {
-    case 'checkbox':
-      return <StaticCell><Checkbox checked={checkboxChecked} /></StaticCell>
-    case 'radio':
-      return (
-        <StaticCell>
+  selectionMode: TablePrototypeSelectionMode,
+  checked: boolean,
+  onChange: (checked: boolean) => void
+}): JSX.Element => (
+  <ChoiceCell>
+    {selectionMode === 'checkbox'
+      ? (
+          <Checkbox
+            checked={checked}
+            onChange={(event) => onChange(Boolean(event.target.checked))}
+          />
+        )
+      : (
           <Radio
-            options={[{ label: '', value: 'selected' }]}
-            value={radioChecked ? 'selected' : undefined}
+            options={[{ label: <span />, value: 'selected' }]}
+            value={checked ? 'selected' : undefined}
+            onChange={() => onChange(true)}
           />
-        </StaticCell>
-      )
-    case 'icon':
-      return <StaticCell>{elementBefore ?? <Placeholder />}</StaticCell>
-    case 'status':
-      return (
-        <StaticCell>
-          <Status mode={rowIndex % 2 === 0 ? 'positive' : 'critical'} label={text} />
-        </StaticCell>
-      )
-    case 'link':
-      return (
-        <StaticCell>
-          <Link href="#" text={text} />
-        </StaticCell>
-      )
-    case 'tag-group':
-      return (
-        <StaticCell>
-          <TagReductionGroup
-            items={[
-              { label: text },
-              { label: `${text} B` },
-              { label: `${text} C` }
-            ]}
-          />
-        </StaticCell>
-      )
-    case 'toggle':
-      return (
-        <StaticCell>
-          <Toggle checked={toggleChecked} text={toggleChecked ? 'On' : 'Off'} />
-        </StaticCell>
-      )
-    case 'actions':
-      return (
-        <ActionsCell>
-          <ActionButton mode="ghost" icon={<Search />} onClick={noop} />
-          <ActionButton mode="ghost" icon={<SettingsGear />} onClick={noop} />
-          <ActionButton mode="ghost" icon={<Placeholder />} onClick={noop} />
-        </ActionsCell>
-      )
-    case 'tree':
-      return (
-        <TreeCell $depth={treeDepth}>
-          <ArrowRightMini />
-          <span>{text}</span>
-        </TreeCell>
-      )
-    case 'treeLink':
-      return (
-        <TreeCell $depth={treeDepth}>
-          <ArrowRightMini />
-          <Link href="#" text={text} />
-        </TreeCell>
-      )
-    case 'input-text':
-      return (
-        <StaticCell>
-          <Textbox value={text} onChange={noop} />
-        </StaticCell>
-      )
-    case 'input-select':
-      return (
-        <StaticCell>
-          <Select
-            defaultValue={SELECT_OPTIONS[0].value}
-            options={SELECT_OPTIONS}
-            style={{ width: '100%' }}
-          />
-        </StaticCell>
-      )
-    case 'input-multiselect':
-      return (
-        <StaticCell>
-          <Select
-            defaultValue={[SELECT_OPTIONS[0].value, SELECT_OPTIONS[1].value]}
-            mode="multiple"
-            options={SELECT_OPTIONS}
-            style={{ width: '100%' }}
-          />
-        </StaticCell>
-      )
-    case 'text':
-    default:
-      return (
-        <TextCell>
-          {elementBefore && <span className="slot">{elementBefore}</span>}
-          <span className="text">{text}</span>
-          {elementAfter && <span className="slot">{elementAfter}</span>}
-        </TextCell>
-      )
-  }
-}
+        )}
+  </ChoiceCell>
+)
 
 const PreviewRoot = styled.div`
   width: 100%;
   min-width: 0;
 
-  .table-horizontal-scrollbar {
-    display: none;
+  && {
+    .ant-table-thead > tr > th.table-prototype-column,
+    .ant-table-tbody > tr > td.table-prototype-column {
+      min-width: 0 !important;
+      max-width: none !important;
+    }
+
+    col.ant-table-selection-col,
+    .ant-table-selection-column,
+    .ant-table-selection-column.ant-table-cell,
+    .ant-table-thead > tr > th.ant-table-selection-column,
+    .ant-table-tbody > tr > td.ant-table-selection-column {
+      width: 22px !important;
+      min-width: 22px !important;
+      max-width: 22px !important;
+    }
+
+    .ant-table-selection-column {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    .ant-table-selection-column .kl6-checkbox-wrapper,
+    .ant-table-selection-column .ant-checkbox-wrapper,
+    .ant-table-selection-column .ant-radio-wrapper,
+    .ant-table-selection-column .ant-checkbox,
+    .ant-table-selection-column .ant-radio,
+    .ant-table-tbody > tr > td.table-prototype-column--checkbox .kl6-checkbox-wrapper,
+    .ant-table-tbody > tr > td.table-prototype-column--checkbox .ant-checkbox-wrapper,
+    .ant-table-tbody > tr > td.table-prototype-column--checkbox .ant-checkbox,
+    .ant-table-tbody > tr > td.table-prototype-column--radio .ant-radio-group,
+    .ant-table-tbody > tr > td.table-prototype-column--radio .ant-radio-wrapper,
+    .ant-table-tbody > tr > td.table-prototype-column--radio .ant-radio {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      min-width: 14px;
+      max-width: 14px;
+      margin: 0 auto;
+      flex: 0 0 14px;
+    }
+
+    .ant-table-thead > tr > th.table-prototype-column--checkbox,
+    .ant-table-thead > tr > th.table-prototype-column--radio,
+    .ant-table-thead > tr > th.table-prototype-column--selection,
+    .ant-table-tbody > tr > td.table-prototype-column--checkbox,
+    .ant-table-tbody > tr > td.table-prototype-column--radio,
+    .ant-table-tbody > tr > td.table-prototype-column--selection {
+      width: 22px !important;
+      min-width: 22px !important;
+      max-width: 22px !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    .ant-table-thead > tr > th.table-prototype-column--selection:first-child,
+    .ant-table-tbody > tr > td.table-prototype-column--selection:first-child,
+    .ant-table-tbody > tr > td.table-prototype-column--checkbox:first-child,
+    .ant-table-tbody > tr > td.table-prototype-column--radio:first-child {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    .table-prototype-column--selection .kl6-checkbox-wrapper,
+    .table-prototype-column--selection .ant-checkbox-wrapper,
+    .table-prototype-column--selection .ant-radio-wrapper,
+    .table-prototype-column--checkbox .kl6-checkbox-wrapper,
+    .table-prototype-column--checkbox .ant-checkbox-wrapper,
+    .table-prototype-column--radio .ant-radio-wrapper {
+      overflow: visible;
+    }
+
+    .table-prototype-column--selection .ant-checkbox-wrapper,
+    .table-prototype-column--checkbox .ant-checkbox-wrapper,
+    .table-prototype-column--selection .ant-radio-wrapper,
+    .table-prototype-column--radio .ant-radio-wrapper {
+      gap: 0 !important;
+    }
+
+    .table-prototype-column--selection .ant-checkbox-wrapper > span:not(.ant-checkbox):empty,
+    .table-prototype-column--checkbox .ant-checkbox-wrapper > span:not(.ant-checkbox):empty,
+    .table-prototype-column--selection .ant-radio-wrapper > span + span:empty,
+    .table-prototype-column--radio .ant-radio-wrapper > span + span:empty {
+      display: none !important;
+      padding: 0 !important;
+    }
   }
 `
 
-const HeaderContainer = styled.div<{ $state: TablePrototypeHeaderState }>`
-  display: flex;
+const HeaderTitle = styled.span.withConfig<{ $compact: boolean }>({
+  shouldForwardProp: prop => prop !== '$compact'
+})`
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 20px;
-  color: inherit;
-  opacity: ${({ $state }) => ($state === 'disabled' ? 0.48 : 1)};
+  gap: 6px;
+  min-width: 0;
+  padding: ${({ $compact }) => $compact ? '4px 0' : '10px 0'};
 
-  ${({ $state }) => $state === 'hover' && `
-    background: rgba(0, 0, 0, 0.04);
-    border-radius: 6px;
-  `}
-
-  ${({ $state }) => $state === 'active' && `
-    background: rgba(0, 0, 0, 0.08);
-    border-radius: 6px;
-  `}
-
-  .header-text {
-    flex: 1;
+  .text {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+`
 
-  .header-icons {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
+const HeaderInfoButton = styled.span`
+  display: inline-flex;
+  align-items: center;
+  color: #7e8797;
+  flex: 0 0 auto;
+`
+
+const ManualDataError = styled.span`
+  color: #d4380d;
+`
+
+const ManualDataHintRoot = styled.div`
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  color: #5f6673;
+
+  .title {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .code {
+    margin: 0;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border: 1px solid #e6ebf2;
+    border-radius: 8px;
+    color: #1f1f1f;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 `
+
+const ManualDataHint = ({
+  example
+}: {
+  example: string
+}): JSX.Element => (
+  <ManualDataHintRoot>
+    <span className="title">
+      Manual mode expects a JSON array of rows in <code>dataSourceJson</code>. Use row <code>key</code> as a unique row id, and use the column <code>field</code> values as property names inside each row object.
+    </span>
+    <pre className="code">{example}</pre>
+  </ManualDataHintRoot>
+)
 
 const StaticCell = styled.div`
   display: flex;
   align-items: center;
   width: 100%;
+  min-width: 0 !important;
   min-height: 20px;
+  overflow: hidden;
 
   .ant-select,
   .hexa-ui-toggle {
     width: 100%;
+  }
+`
+
+const ChoiceCell = styled(StaticCell)`
+  justify-content: center;
+  width: 14px;
+  min-width: 14px !important;
+  max-width: 14px !important;
+  margin: 0 auto;
+
+  .kl6-checkbox-wrapper,
+  .ant-radio-group {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    min-width: 14px !important;
+    max-width: 14px !important;
+    margin: 0 auto;
+    flex: 0 0 14px;
+  }
+
+  .ant-radio-group > div {
+    display: inline-flex;
+  }
+
+  .kl6-checkbox-wrapper,
+  .ant-checkbox-wrapper,
+  .ant-radio-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    width: 14px;
+    min-width: 14px !important;
+    max-width: 14px !important;
   }
 `
 
@@ -518,16 +1647,14 @@ const TextCell = styled(StaticCell)`
   }
 `
 
-const ActionsCell = styled(StaticCell)`
-  justify-content: flex-end;
+const ActionsCell = styled.div`
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
-`
+  width: 100%;
+  min-width: 0 !important;
 
-const TreeCell = styled(StaticCell)<{ $depth: number }>`
-  gap: 8px;
-  padding-left: ${({ $depth }) => $depth * 16}px;
-
-  > svg {
+  .hexa-ui-button {
     flex-shrink: 0;
   }
 `

@@ -1,0 +1,71 @@
+import type { TablePrototypeRow } from './TablePrototype'
+
+export const tablePrototypeRichManualData: TablePrototypeRow[] = [
+  {
+    key: 'row-1',
+    enabled: { checked: true },
+    asset: { text: 'Endpoint Alpha', href: '#/assets/alpha' },
+    owner: { text: 'Operator A' },
+    status: { label: 'Protected', mode: 'positive' },
+    tags: { items: ['Region', 'HQ', 'Critical'] },
+    actions: 'Actions',
+    children: [
+      {
+        key: 'row-1-1',
+        enabled: { checked: false },
+        asset: { text: 'Endpoint Alpha / Child', href: '#/assets/alpha/child' },
+        owner: { text: 'Operator A2' },
+        status: { label: 'Review required', mode: 'critical' },
+        tags: { items: ['Branch', 'Secondary'] },
+        actions: 'Actions'
+      }
+    ]
+  },
+  {
+    key: 'row-2',
+    enabled: { checked: false },
+    asset: { text: 'Endpoint Beta', href: '#/assets/beta' },
+    owner: { text: 'Operator B' },
+    status: { label: 'In progress', mode: 'inProgress' },
+    tags: { items: ['Remote', 'Audit'] },
+    actions: 'Actions'
+  },
+  {
+    key: 'row-3',
+    enabled: { checked: true },
+    asset: { text: 'Endpoint Gamma', href: '#/assets/gamma' },
+    owner: { text: 'Operator C' },
+    status: { label: 'Resolved', mode: 'resolved' },
+    tags: { items: ['HQ', 'Stable'] },
+    actions: 'Actions'
+  },
+  {
+    key: 'row-4',
+    enabled: { checked: true },
+    asset: { text: 'Endpoint Delta', href: '#/assets/delta' },
+    owner: { text: 'Operator D' },
+    status: { label: 'Critical', mode: 'critical' },
+    tags: { items: ['Branch', 'Priority'] },
+    actions: 'Actions'
+  },
+  {
+    key: 'row-5',
+    enabled: { checked: false },
+    asset: { text: 'Endpoint Epsilon', href: '#/assets/epsilon' },
+    owner: { text: 'Operator E' },
+    status: { label: 'Protected', mode: 'positive' },
+    tags: { items: ['Archive'] },
+    actions: 'Actions'
+  },
+  {
+    key: 'row-6',
+    enabled: { checked: true },
+    asset: { text: 'Endpoint Zeta', href: '#/assets/zeta' },
+    owner: { text: 'Operator F' },
+    status: { label: 'Info', mode: 'info' },
+    tags: { items: ['HQ', 'Operations', 'Pinned'] },
+    actions: 'Actions'
+  }
+]
+
+export const tablePrototypeRichManualDataJson = JSON.stringify(tablePrototypeRichManualData, null, 2)

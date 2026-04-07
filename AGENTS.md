@@ -82,6 +82,9 @@ This repository is a Lerna/Yarn monorepo for UIF. Treat it as a package-oriented
 - Do not update `package-lock.json` unless the task explicitly requires npm lockfiles. The repo is primarily Yarn-based.
 - Dirty worktrees are normal here. Never revert unrelated user changes.
 - Prefer targeted package checks first; run cross-repo checks only when the change genuinely spans multiple areas.
+- For Hexa UI component setup, Storybook controls, UXPin prototyping, and design-to-code alignment, consult `packages/kaspersky-hexa-ui/helpers/propsDictionary.ts` as the normalized concept dictionary.
+- Treat `packages/kaspersky-hexa-ui/helpers/propsDictionary.ts` as a secondary mapping/glossary layer, not as a source of truth over public TypeScript props.
+- When sources disagree, prefer this order: public component TS API, then Storybook/meta/runtime behavior, then `propsDictionary.ts`.
 
 ## Fast Intake
 

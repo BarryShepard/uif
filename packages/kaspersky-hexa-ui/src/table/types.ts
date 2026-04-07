@@ -228,6 +228,11 @@ export type TableColumn = Omit<
    * but this option overrides default behaivour 
   */
   showFilterIcon?: boolean,
+  /**
+   * Hides the fallback dropdown chevron when there are no active sort/filter icons.
+   * Useful for prototype scenarios where the header should stay visually closer to design mocks.
+   */
+  hideDefaultMenuIcon?: boolean,
   width?: number | string,
   isUserDefinedWidth?: boolean,
   renderGroupTitle?: (data: string) => ReactNode,

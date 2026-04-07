@@ -54,6 +54,7 @@ const PaginationView: FC<PaginationViewProps> = ({
   totalRoot,
   selected = 0,
   showSelected = true,
+  showTotalSummary = true,
   onChange,
   onShowSizeChange: customOnShowSizeChange,
   showSizeChanger = false,
@@ -67,11 +68,6 @@ const PaginationView: FC<PaginationViewProps> = ({
   ...props
 }: PaginationViewProps) => {
   const _totalRoot = totalRoot || total
-
-  if (hideOnSinglePage && _totalRoot <= pageSize) {
-    return null
-  }
-
   const { t } = useTranslation()
 
   useEffect(() => {
@@ -82,6 +78,10 @@ const PaginationView: FC<PaginationViewProps> = ({
   const parsedPageSizeOptions = useMemo(() => (
     getPageSizeOptions(t, pageSizeOptions)
   ), [t, pageSizeOptions])
+
+  if (hideOnSinglePage && _totalRoot <= pageSize) {
+    return null
+  }
 
   const itemRender: PaginationAntdProps['itemRender'] = (pageNumber, type, originalElement) => {
     const shouldEnableCursor = (
@@ -116,7 +116,9 @@ const PaginationView: FC<PaginationViewProps> = ({
       aria-disabled={disabled}
       {...testAttributes}
     >
-      {!simple && <TotalSummary total={total} showSelected={showSelected} selected={selected} testId="total" klId="total" />}
+      {showTotalSummary && !simple && (
+        <TotalSummary total={total} showSelected={showSelected} selected={selected} testId="total" klId="total" />
+      )}
       <div className="kl6-pagination-right">
         {!(hideOnSinglePage && total <= pageSize) && (
           <StyledPagination

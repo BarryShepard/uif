@@ -333,7 +333,8 @@ export const ResizableColumns: TableModule = Component => function ResizableColu
 
         return {
           ...column,
-          width: prevColumnState.width
+          width: prevColumnState.isUserDefinedWidth ? prevColumnState.width : column.width,
+          isUserDefinedWidth: prevColumnState.isUserDefinedWidth ?? column.isUserDefinedWidth
         }
       })
 

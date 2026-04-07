@@ -53,6 +53,8 @@ export type PaginationProps = {
   selected?: number,
   /** Show number of selected data items */
   showSelected?: boolean,
+  /** Show total summary block near pagination controls */
+  showTotalSummary?: boolean,
   /** Called when the page number or pageSize is changed, and it takes the resulting page number and pageSize as its arguments */
   onChange?: (page: number, pageSize: number) => void,
   /** Called when pageSize is changed */

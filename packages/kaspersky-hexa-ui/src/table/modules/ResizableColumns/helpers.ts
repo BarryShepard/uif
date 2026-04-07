@@ -92,7 +92,7 @@ export function applyResizingMode (
 ): TableColumn[] {
   const applyDefaultWidth = (columns: any[]) => {
     return columns.map((column) => {
-      return isColumnReadonly(column) ? column : { ...column, width: column.width ? column.width : defaultWidth }
+      return isColumnReadonly(column) ? column : { ...column, width: column.width ?? defaultWidth }
     })
   }
 
