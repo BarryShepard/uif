@@ -1,9 +1,7 @@
 import { ActionButton } from '@src/action-button'
-import { Checkbox } from '@src/checkbox'
 import { Textbox } from '@src/input'
 import { Link } from '@src/link'
 import { Tooltip } from '@src/tooltip'
-import { Radio } from '@src/radio'
 import { Select } from '@src/select'
 import { Status } from '@src/status'
 import type { StatusMode } from '@src/status'
@@ -278,10 +276,9 @@ export const TablePrototype = ({
 }: TablePrototypeProps): JSX.Element => {
   const rootRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+  const hasExplicitFrameHeight = style?.height !== undefined || style?.minHeight !== undefined || style?.maxHeight !== undefined
   const resolvedRowsCount = normalizePositiveInteger(rowsCount ?? rows, rows)
   const resolvedRowsPerPage = normalizePositiveInteger(rowsPerPage ?? pageSize, DEFAULT_PAGE_SIZE)
-  const [activeRowsPerPage, setActiveRowsPerPage] = useState(resolvedRowsPerPage)
-  const [currentPage, setCurrentPage] = useState(1)
   const normalizedColumns = useMemo(
     () => {
       const sourceColumns = columns.length ? columns : defaultTablePrototypeColumns
@@ -306,19 +303,6 @@ export const TablePrototype = ({
   useEffect(() => {
     setSelectedRowKeys((prevKeys) => prevKeys.filter((key) => rowKeys.includes(key)))
   }, [rowKeys])
-
-  useEffect(() => {
-    setActiveRowsPerPage(resolvedRowsPerPage)
-    setCurrentPage(1)
-  }, [resolvedRowsPerPage])
-
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(resolvedDataSource.length / activeRowsPerPage))
-
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages)
-    }
-  }, [activeRowsPerPage, currentPage, resolvedDataSource.length])
 
   useEffect(() => {
     if (!rootRef.current) {
@@ -475,26 +459,19 @@ export const TablePrototype = ({
   ))
   const minWidth = layoutColumns.reduce((sum, column) => sum + column.width, selectionColumnWidth)
   const horizontalScrollX = containerWidth > 0 && minWidth > containerWidth + 1 ? minWidth : undefined
+  const scroll = hasExplicitFrameHeight || horizontalScrollX
+    ? {
+        ...(horizontalScrollX ? { x: horizontalScrollX } : {}),
+        ...(hasExplicitFrameHeight ? { y: '100%' } : {})
+      }
+    : undefined
   const pagination = showPagination
     ? {
-        current: currentPage,
-        pageSize: activeRowsPerPage,
+        pageSize: resolvedRowsPerPage,
         pageSizeOptions: PROTOTYPE_PAGE_SIZE_OPTIONS,
         showSizeChanger: showRowsPerPageSelector,
         showTotalSummary: showPaginationSummary,
-        restoreCurrentWhenDataChange: true,
-        total: resolvedDataSource.length,
-        onChange: (page: number, pageSizeValue: number) => {
-          setCurrentPage(page)
-
-          if (pageSizeValue !== activeRowsPerPage) {
-            setActiveRowsPerPage(pageSizeValue)
-          }
-        },
-        onShowSizeChange: (page: number, pageSizeValue: number) => {
-          setCurrentPage(page)
-          setActiveRowsPerPage(pageSizeValue)
-        }
+        restoreCurrentWhenDataChange: true
       }
     : false
   const tableInstanceKey = useMemo(() => JSON.stringify({
@@ -506,13 +483,13 @@ export const TablePrototype = ({
       sortable: column.sortable,
       filterable: column.filterable
     })),
-    activeRowsPerPage,
+    resolvedRowsPerPage,
     selectionMode,
     showPagination,
     showPaginationSummary,
     showRowsPerPageSelector,
     size
-  }), [activeRowsPerPage, layoutColumns, selectionMode, showPagination, showPaginationSummary, showRowsPerPageSelector, size])
+  }), [layoutColumns, resolvedRowsPerPage, selectionMode, showPagination, showPaginationSummary, showRowsPerPageSelector, size])
   const emptyText = resolvedManualData.error
     ? <ManualDataError>{resolvedManualData.error}</ManualDataError>
     : resolvedDataMode === 'manual' && resolvedDataSource.length === 0
@@ -527,12 +504,14 @@ export const TablePrototype = ({
         dataSource={resolvedDataSource}
         expandable={treeColumn ? { expandColumnName: treeColumn.field } : undefined}
         emptyText={emptyText}
+        fullHeight={hasExplicitFrameHeight}
         initialFilters={initialFilters}
         initialSorting={initialSorting}
         pagination={pagination}
         resizingMode="manual"
         rowMode={size}
-        scroll={horizontalScrollX ? { x: horizontalScrollX } : undefined}
+        scroll={scroll}
+        stickyFooter={hasExplicitFrameHeight && showPagination}
       />
     </PreviewRoot>
   )
@@ -802,7 +781,7 @@ const buildGeneratedRows = (
   columns: NormalizedColumn[],
   rows: number
 ): TablePrototypeRow[] => {
-  const safeRows = Math.max(1, Math.min(rows, 50))
+  const safeRows = Math.max(1, rows)
   const hasTreeColumn = columns.some((column) => (
     column.cellType === 'tree' || column.cellType === 'treeLink'
   ))
@@ -1091,19 +1070,18 @@ const TablePrototypeCell = ({
     case 'checkbox':
       return (
         <ChoiceCell>
-          <Checkbox
+          <PrototypeCheckbox
             checked={checkedValue}
-            onChange={(event) => setCheckedValue(Boolean(event.target.checked))}
+            onChange={setCheckedValue}
           />
         </ChoiceCell>
       )
     case 'radio':
       return (
         <ChoiceCell>
-          <Radio
-            options={[{ label: <span />, value: 'selected' }]}
-            value={checkedValue ? 'selected' : undefined}
-            onChange={() => setCheckedValue(true)}
+          <PrototypeRadio
+            checked={checkedValue}
+            onClick={() => setCheckedValue(true)}
           />
         </ChoiceCell>
       )
@@ -1383,13 +1361,13 @@ const PrototypeSelectionHeader = ({
   indeterminate: boolean,
   onChange: (checked: boolean) => void
 }): JSX.Element => (
-  <ChoiceCell>
-    <Checkbox
+  <HeaderChoiceCell>
+    <PrototypeCheckbox
       checked={checked}
       indeterminate={indeterminate}
-      onChange={(event) => onChange(Boolean(event.target.checked))}
+      onChange={onChange}
     />
-  </ChoiceCell>
+  </HeaderChoiceCell>
 )
 
 const PrototypeSelectionCell = ({
@@ -1404,16 +1382,15 @@ const PrototypeSelectionCell = ({
   <ChoiceCell>
     {selectionMode === 'checkbox'
       ? (
-          <Checkbox
+          <PrototypeCheckbox
             checked={checked}
-            onChange={(event) => onChange(Boolean(event.target.checked))}
+            onChange={onChange}
           />
         )
       : (
-          <Radio
-            options={[{ label: <span />, value: 'selected' }]}
-            value={checked ? 'selected' : undefined}
-            onChange={() => onChange(true)}
+          <PrototypeRadio
+            checked={checked}
+            onClick={() => onChange(true)}
           />
         )}
   </ChoiceCell>
@@ -1421,9 +1398,46 @@ const PrototypeSelectionCell = ({
 
 const PreviewRoot = styled.div`
   width: 100%;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  > .table-scrolling-wrapper.table-height-full {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  > .table-horizontal-scrollbar {
+    flex: 0 0 auto;
+  }
+
+  > .ant-pagination-container {
+    flex: 0 0 auto;
+    margin-top: auto;
+  }
 
   && {
+    .table-height-full .ant-table table {
+      height: auto;
+    }
+
+    .table-height-full .ant-table-wrapper,
+    .table-height-full .ant-spin-nested-loading,
+    .table-height-full .ant-spin-container,
+    .table-height-full .ant-table,
+    .table-height-full .ant-table-container,
+    .table-height-full .ant-table-content,
+    .table-height-full .ant-table-body {
+      min-height: 0;
+    }
+
+    .table-height-full .ant-table-body {
+      flex: 1 1 auto;
+      overflow-y: auto !important;
+    }
+
     .ant-table-thead > tr > th.table-prototype-column,
     .ant-table-tbody > tr > td.table-prototype-column {
       min-width: 0 !important;
@@ -1443,6 +1457,13 @@ const PreviewRoot = styled.div`
     .ant-table-selection-column {
       padding-left: 0 !important;
       padding-right: 0 !important;
+    }
+
+    .ant-table-thead > tr > th.table-prototype-column--selection::after,
+    .ant-table-thead > tr > th.table-prototype-column--checkbox::after,
+    .ant-table-thead > tr > th.table-prototype-column--radio::after {
+      left: 4px !important;
+      right: 4px !important;
     }
 
     .ant-table-selection-column .kl6-checkbox-wrapper,
@@ -1490,9 +1511,12 @@ const PreviewRoot = styled.div`
     .table-prototype-column--selection .kl6-checkbox-wrapper,
     .table-prototype-column--selection .ant-checkbox-wrapper,
     .table-prototype-column--selection .ant-radio-wrapper,
+    .table-prototype-column--selection .table-prototype-radio,
     .table-prototype-column--checkbox .kl6-checkbox-wrapper,
     .table-prototype-column--checkbox .ant-checkbox-wrapper,
-    .table-prototype-column--radio .ant-radio-wrapper {
+    .table-prototype-column--checkbox .table-prototype-radio,
+    .table-prototype-column--radio .ant-radio-wrapper,
+    .table-prototype-column--radio .table-prototype-radio {
       overflow: visible;
     }
 
@@ -1629,6 +1653,135 @@ const ChoiceCell = styled(StaticCell)`
     max-width: 14px !important;
   }
 `
+
+const HeaderChoiceCell = styled(ChoiceCell)``
+
+const PrototypeCheckboxButton = styled.span.withConfig({
+  shouldForwardProp: prop => !['$checked', '$indeterminate'].includes(String(prop))
+})<{ $checked: boolean, $indeterminate: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  max-width: 14px;
+  padding: 0;
+  margin: -1px 0 0;
+  border-radius: 4px;
+  border: 1px solid ${({ $checked, $indeterminate }) => ($checked || $indeterminate) ? '#3367F6' : '#7E8797'};
+  background: ${({ $checked, $indeterminate }) => ($checked || $indeterminate) ? '#3367F6' : '#FFFFFF'};
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  flex: 0 0 14px;
+
+  &::after {
+    content: '';
+    display: block;
+    ${({ $checked, $indeterminate }) => {
+      if ($indeterminate) {
+        return `
+          width: 6px;
+          height: 2px;
+          border-radius: 2px;
+          background: #FFFFFF;
+        `
+      }
+
+      if ($checked) {
+        return `
+          width: 4px;
+          height: 7px;
+          margin-top: -1px;
+          border-right: 2px solid #FFFFFF;
+          border-bottom: 2px solid #FFFFFF;
+          transform: rotate(45deg);
+        `
+      }
+
+      return `
+        width: 0;
+        height: 0;
+      `
+    }}
+  }
+`
+
+const PrototypeCheckbox = ({
+  checked,
+  indeterminate = false,
+  onChange
+}: {
+  checked: boolean,
+  indeterminate?: boolean,
+  onChange: (checked: boolean) => void
+}): JSX.Element => {
+  const nextChecked = indeterminate ? true : !checked
+  const handleActivate = () => onChange(nextChecked)
+
+  return (
+    <PrototypeCheckboxButton
+      className="table-prototype-checkbox"
+      $checked={checked}
+      $indeterminate={indeterminate}
+      role="checkbox"
+      aria-checked={indeterminate ? 'mixed' : checked}
+      tabIndex={0}
+      onClick={handleActivate}
+      onKeyDown={(event) => {
+        if (event.key === ' ' || event.key === 'Enter') {
+          event.preventDefault()
+          handleActivate()
+        }
+      }}
+    />
+  )
+}
+
+const PrototypeRadioButton = styled.span.withConfig({
+  shouldForwardProp: prop => String(prop) !== '$checked'
+})<{ $checked: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  max-width: 14px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid ${({ $checked }) => $checked ? '#3367F6' : '#7E8797'};
+  background: #FFFFFF;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${({ $checked }) => $checked ? '#3367F6' : 'transparent'};
+  }
+`
+
+const PrototypeRadio = ({
+  checked,
+  onClick
+}: {
+  checked: boolean,
+  onClick: () => void
+}): JSX.Element => (
+  <PrototypeRadioButton
+    className="table-prototype-radio"
+    $checked={checked}
+    role="radio"
+    aria-checked={checked}
+    onClick={onClick}
+  />
+)
 
 const TextCell = styled(StaticCell)`
   gap: 8px;

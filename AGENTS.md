@@ -5,6 +5,7 @@ This repository is a Lerna/Yarn monorepo for UIF. Treat it as a package-oriented
 ## Default Working Mode
 
 - Work as a lightweight orchestrator even for small tasks: restate the goal, identify the owner package, and keep scope tight.
+- For every user request, think carefully, analyze possible problems and root causes deeply, and only then implement the fix. Prefer deep fixes over surface patches.
 - If the user explicitly asks for delegation, subagents, or parallel work, split work by package or concern and use the role cards in `.agents/roles/`.
 - If the user does not explicitly ask for subagents, keep the work local, but still reason with the same package ownership model.
 - Prefer minimal, task-specific verification over monorepo-wide checks unless the task is cross-cutting.

@@ -145,12 +145,13 @@ export const containerCss = css`
   display: flex;
   align-items: center;
   height: 32px;
-  justify-content: space-between;
+  justify-content: flex-start;
 
   .kl6-pagination-right {
     display: flex;
     align-items: center;
     gap: 16px;
+    margin-left: auto;
   }
 
   & a {

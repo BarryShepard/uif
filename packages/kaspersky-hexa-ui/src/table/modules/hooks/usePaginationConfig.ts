@@ -132,20 +132,26 @@ const useExistingPagination: UseExistingPagination = ({
     }
   }, [isCurrentPageOutOfRage, restoreCurrentWhenDataChange])
 
-  const onCurrentPageChange: NonNullable<PaginationProps['onChange']> = (current) => {
+  const onCurrentPageChange: NonNullable<PaginationProps['onChange']> = (nextCurrent, nextPageSize = pageSize) => {
+    setCurrent(nextCurrent)
+
+    if (nextPageSize !== pageSize) {
+      setPageSize(nextPageSize)
+    }
+
     if (propsOnChange) {
-      propsOnChange(current, pageSize)
-    } else {
-      setCurrent(current)
+      propsOnChange(nextCurrent, nextPageSize)
     }
   }
   
-  const onPageSizeChange: NonNullable<PaginationProps['onShowSizeChange']> = (_, size) => {
+  const onPageSizeChange: NonNullable<PaginationProps['onShowSizeChange']> = (nextCurrent, size) => {
+    setCurrent(nextCurrent)
+    setPageSize(size)
+
     if (propsOnShowSizeChange) {
-      propsOnShowSizeChange(current, size)
-    } else {
-      setPageSize(size)
+      propsOnShowSizeChange(nextCurrent, size)
     }
+
     if (storageKey) {
       updatePersistentStorage({
         storageKey,
