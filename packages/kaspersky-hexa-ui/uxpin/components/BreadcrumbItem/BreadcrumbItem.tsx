@@ -63,15 +63,6 @@ export const resolveBreadcrumbItemChildren = (
   return items
 }
 
-const hasOnlyDefaultBreadcrumbItem = (
-  items: Array<React.ReactElement<UXPinBreadcrumbItemProps>>
-): boolean => (
-  items.length === 1 &&
-  (items[0].props.text ?? DEFAULT_BREADCRUMB_ITEM_TEXT) === DEFAULT_BREADCRUMB_ITEM_TEXT &&
-  items[0].props.current !== false &&
-  items[0].props.disabled !== true
-)
-
 export const breadcrumbItemElementsToRoutes = (
   children: React.ReactNode
 ): Route[] => {
@@ -95,16 +86,8 @@ export const breadcrumbItemElementsToRoutes = (
   })
 }
 
-export const hasManualBreadcrumbItems = (
-  children: React.ReactNode
-): boolean => {
-  const items = resolveBreadcrumbItemChildren(children)
-
-  return items.length > 0 && !hasOnlyDefaultBreadcrumbItem(items)
-}
-
 const BreadcrumbItem: BreadcrumbItemComponent = ({
-  current = true,
+  current = false,
   disabled = false,
   text = DEFAULT_BREADCRUMB_ITEM_TEXT
 }: UXPinBreadcrumbItemProps): JSX.Element => (
@@ -119,7 +102,7 @@ BreadcrumbItem.uxpinRole = BREADCRUMB_ITEM_ROLE
 BreadcrumbItem.displayName = 'BreadcrumbItem'
 BreadcrumbItem.defaultProps = {
   text: DEFAULT_BREADCRUMB_ITEM_TEXT,
-  current: true,
+  current: false,
   disabled: false
 }
 

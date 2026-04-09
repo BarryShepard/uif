@@ -9,7 +9,9 @@ import { Placeholder } from '@kaspersky/hexa-ui-icons/24'
 
 import { FrameFill, previewPageHeaderTags } from '../../preview'
 
-import { resolveBreadcrumbsChildProps, resolveUXPinBreadcrumbsProps } from '../Breadcrumbs/Breadcrumbs'
+import BreadcrumbItem from '../BreadcrumbItem/BreadcrumbItem'
+import Breadcrumbs from '../Breadcrumbs/Breadcrumbs'
+import { resolveBreadcrumbsChildProps } from '../Breadcrumbs/Breadcrumbs'
 
 export type UXPinPageHeaderProps = {
   /** Main page title. */
@@ -62,11 +64,18 @@ const resolveBreadcrumbs = (
     return undefined
   }
 
-  return (
-    resolveBreadcrumbsChildProps(children, { size: 'small', stepCount: 3 }) ??
-    resolveUXPinBreadcrumbsProps({ size: 'small', stepCount: 3 })
-  )
+  return resolveBreadcrumbsChildProps(children, { size: 'small' })
 }
+
+const DEFAULT_PAGE_HEADER_CHILDREN = (
+  <Breadcrumbs size="small">
+    <BreadcrumbItem
+      text="Current page"
+      current={false}
+      disabled={false}
+    />
+  </Breadcrumbs>
+)
 
 const useAutoHeightMergeFrame = (): React.RefObject<HTMLDivElement> => {
   const rootRef = React.useRef<HTMLDivElement>(null)
@@ -95,7 +104,7 @@ const useAutoHeightMergeFrame = (): React.RefObject<HTMLDivElement> => {
 
 const PageHeader = ({
   breadcrumbs = true,
-  children,
+  children = DEFAULT_PAGE_HEADER_CHILDREN,
   description = true,
   descriptionText = 'Page description',
   elementAfter = true,
@@ -129,6 +138,10 @@ const PageHeader = ({
       </FrameFill>
     </div>
   )
+}
+
+PageHeader.defaultProps = {
+  children: DEFAULT_PAGE_HEADER_CHILDREN
 }
 
 export default PageHeader

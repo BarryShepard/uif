@@ -3,75 +3,58 @@ import { BreadcrumbsProps, BreadcrumbsSize, Route } from '@src/breadcrumbs/types
 import React from 'react'
 
 import BreadcrumbItem, {
-  breadcrumbItemElementsToRoutes,
-  hasManualBreadcrumbItems
+  breadcrumbItemElementsToRoutes
 } from '../BreadcrumbItem/BreadcrumbItem'
 
-export type BreadcrumbsStepCount = 1 | 2 | 3 | 4
-
 export type UXPinBreadcrumbsProps = {
-  /** Forces the collapsed breadcrumbs state with the menu icon as the second item. */
-  more?: boolean,
-  /** Number of preview steps in the simple state. */
-  stepCount?: BreadcrumbsStepCount,
   /** Visual size of the breadcrumbs. */
   size?: BreadcrumbsSize,
-  /** Optional explicit routes for advanced cases. */
-  routes?: BreadcrumbsProps['routes'],
   children?: React.ReactNode
 }
 
-type BreadcrumbsRuntimeProps = BreadcrumbsProps & UXPinBreadcrumbsProps
+type LegacyUXPinBreadcrumbsProps = {
+  routes?: BreadcrumbsProps['routes'],
+  stepCount?: 1 | 2 | 3 | 4,
+  more?: boolean
+}
+
+type BreadcrumbsRuntimeProps = Omit<BreadcrumbsProps, 'routes'> & UXPinBreadcrumbsProps & LegacyUXPinBreadcrumbsProps
 
 type BreadcrumbsComponent = React.FC<UXPinBreadcrumbsProps> & {
   uxpinRole?: string,
   defaultProps?: Partial<UXPinBreadcrumbsProps>
 }
 
-type BreadcrumbsPreviewDefaults = Partial<Pick<UXPinBreadcrumbsProps, 'more' | 'size' | 'stepCount'>>
+type BreadcrumbsPreviewDefaults = Partial<Pick<UXPinBreadcrumbsProps, 'size'>>
 
 const BREADCRUMBS_ROLE = 'hexa-uxpin-breadcrumbs'
-const DEFAULT_STEP_COUNT: BreadcrumbsStepCount = 3
-const COLLAPSED_PREVIEW_ROUTE_COUNT = 6
-
-const clampStepCount = (value?: number): BreadcrumbsStepCount => {
-  switch (value) {
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-      return value
-    default:
-      return DEFAULT_STEP_COUNT
-  }
-}
-
-const buildPreviewRoutes = (count: number): Route[] => (
-  Array.from({ length: count }, (_, index) => ({
-    name:
-      index === 0
-        ? 'Home'
-        : index === count - 1
-          ? 'Current page'
-          : `Step ${index}`,
-    url: index === count - 1 ? undefined : `#/breadcrumb-step-${index + 1}`
-  }))
-)
-
-const resolvePreviewRoutes = (
-  more: boolean,
-  stepCount: BreadcrumbsStepCount
-): Route[] => (
-  more
-    ? buildPreviewRoutes(Math.max(COLLAPSED_PREVIEW_ROUTE_COUNT, stepCount + 3))
-    : buildPreviewRoutes(stepCount)
+const DEFAULT_BREADCRUMB_CHILD = (
+  <BreadcrumbItem
+    text="Current page"
+    current={false}
+    disabled={false}
+  />
 )
 
 const hasBreadcrumbsShape = (props: Record<string, unknown> = {}): boolean => (
-  'more' in props ||
-  'stepCount' in props ||
   'routes' in props ||
   'size' in props
+)
+
+const normalizeRoutes = (routes: Route[]): Route[] => (
+  routes.map((route, index, list) => ({
+    ...route,
+    url: index === list.length - 1 ? undefined : route.url ?? `#/breadcrumb-step-${index + 1}`
+  }))
+)
+
+const resolveElementChildren = (
+  element: React.ReactElement<BreadcrumbsRuntimeProps>
+): React.ReactNode => (
+  element.props.children ??
+  (typeof element.type === 'function'
+    ? (element.type as BreadcrumbsComponent).defaultProps?.children
+    : undefined)
 )
 
 export const resolveUXPinBreadcrumbsProps = (
@@ -80,31 +63,22 @@ export const resolveUXPinBreadcrumbsProps = (
 ): BreadcrumbsProps => {
   const {
     children,
-    more: rawMore,
     routes,
     size: rawSize,
-    stepCount: rawStepCount,
     ...rest
   } = rawProps
 
-  const more = rawMore ?? defaults.more ?? false
   const size = rawSize ?? defaults.size ?? 'medium'
-  const stepCount = rawStepCount ?? defaults.stepCount ?? DEFAULT_STEP_COUNT
-  const resolvedStepCount = clampStepCount(stepCount)
-  const childRoutes = breadcrumbItemElementsToRoutes(children)
-  const shouldUseManualItems = hasManualBreadcrumbItems(children)
-  const resolvedRoutes = routes?.length
+  const resolvedChildren = children ?? DEFAULT_BREADCRUMB_CHILD
+  const childRoutes = breadcrumbItemElementsToRoutes(resolvedChildren)
+  const baseRoutes = routes?.length
     ? routes
-    : shouldUseManualItems
-      ? childRoutes
-      : childRoutes.length && rawStepCount === undefined && rawMore === undefined
-        ? childRoutes
-        : resolvePreviewRoutes(more, resolvedStepCount)
+    : childRoutes
 
   return {
     ...rest,
     size,
-    routes: resolvedRoutes
+    routes: normalizeRoutes(baseRoutes)
   }
 }
 
@@ -157,27 +131,24 @@ export const resolveBreadcrumbsChildProps = (
   }
 
   return resolveUXPinBreadcrumbsProps(
-    (element.props || {}) as BreadcrumbsRuntimeProps,
+    {
+      ...(element.props || {}) as BreadcrumbsRuntimeProps,
+      children: resolveElementChildren(element)
+    },
     defaults
   )
 }
 
 const Breadcrumbs: BreadcrumbsComponent = ({
-  children,
-  more,
-  routes,
+  children = DEFAULT_BREADCRUMB_CHILD,
   size,
-  stepCount,
   ...props
 }: UXPinBreadcrumbsProps): JSX.Element => (
   <HexaBreadcrumbs
     {...resolveUXPinBreadcrumbsProps({
       children,
       ...props,
-      more,
-      routes,
-      size,
-      stepCount
+      size
     })}
   />
 )
@@ -185,7 +156,7 @@ const Breadcrumbs: BreadcrumbsComponent = ({
 Breadcrumbs.uxpinRole = BREADCRUMBS_ROLE
 Breadcrumbs.displayName = 'Breadcrumbs'
 Breadcrumbs.defaultProps = {
-  children: <BreadcrumbItem />
+  children: DEFAULT_BREADCRUMB_CHILD
 }
 
 export default Breadcrumbs

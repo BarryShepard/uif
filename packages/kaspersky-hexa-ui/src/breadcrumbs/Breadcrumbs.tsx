@@ -29,7 +29,7 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = (rawProps: BreadcrumbsProps) =>
 
 const BreadcrumbsItem = ({ route, isLastItem, size, cssConfig }: BreadcrumbsItemProps) => (
   <>
-    {size === 'medium' && isLastItem
+    {isLastItem
       ? <Text type={size === 'medium' ? 'BTM3' : 'BTM4' }>{route.name}</Text>
       : <BreadcrumbsItemLink route={route} />
     }
