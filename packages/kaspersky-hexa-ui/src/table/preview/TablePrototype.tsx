@@ -162,6 +162,8 @@ export type TablePrototypeProps = {
   /** Whether to show the rows-per-page selector near pagination controls. */
   showRowsPerPageSelector?: boolean,
   selectionMode?: TablePrototypeSelectionMode,
+  /** Internal UXPin mode: fill the available frame height and keep pagination docked at the bottom. */
+  fillFrameHeight?: boolean,
   style?: CSSProperties
 }
 
@@ -272,11 +274,13 @@ export const TablePrototype = ({
   showPaginationSummary = true,
   showRowsPerPageSelector = true,
   selectionMode = 'none',
+  fillFrameHeight = false,
   style
 }: TablePrototypeProps): JSX.Element => {
   const rootRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
-  const hasExplicitFrameHeight = style?.height !== undefined || style?.minHeight !== undefined || style?.maxHeight !== undefined
+  const [scrollViewportHeight, setScrollViewportHeight] = useState<number | undefined>(undefined)
+  const hasExplicitFrameHeight = fillFrameHeight || hasConcreteFrameHeightStyle(style)
   const resolvedRowsCount = normalizePositiveInteger(rowsCount ?? rows, rows)
   const resolvedRowsPerPage = normalizePositiveInteger(rowsPerPage ?? pageSize, DEFAULT_PAGE_SIZE)
   const normalizedColumns = useMemo(
@@ -299,10 +303,40 @@ export const TablePrototype = ({
   )
   const rowKeys = useMemo(() => collectRowKeys(resolvedDataSource), [resolvedDataSource])
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [activeRowsPerPage, setActiveRowsPerPage] = useState(resolvedRowsPerPage)
 
   useEffect(() => {
     setSelectedRowKeys((prevKeys) => prevKeys.filter((key) => rowKeys.includes(key)))
   }, [rowKeys])
+
+  useEffect(() => {
+    setActiveRowsPerPage(resolvedRowsPerPage)
+    setCurrentPage(1)
+  }, [resolvedRowsPerPage])
+
+  useEffect(() => {
+    if (!showPagination) {
+      if (currentPage !== 1) {
+        setCurrentPage(1)
+      }
+
+      return
+    }
+
+    const maxPage = Math.max(1, Math.ceil(resolvedDataSource.length / activeRowsPerPage))
+
+    setCurrentPage((prevPage) => (
+      prevPage > maxPage ? maxPage : prevPage
+    ))
+  }, [activeRowsPerPage, currentPage, resolvedDataSource.length, showPagination])
+
+  useEffect(() => {
+    const tableBody = rootRef.current?.querySelector('.ant-table-body') as HTMLElement | null
+    if (tableBody) {
+      tableBody.scrollTop = 0
+    }
+  }, [activeRowsPerPage, currentPage])
 
   useEffect(() => {
     if (!rootRef.current) {
@@ -310,17 +344,66 @@ export const TablePrototype = ({
     }
 
     const element = rootRef.current
-    const updateWidth = () => {
+    let frameId = 0
+
+    const updateMetrics = () => {
+      frameId = 0
       setContainerWidth(element.getBoundingClientRect().width)
+
+      if (!hasExplicitFrameHeight) {
+        setScrollViewportHeight(undefined)
+        return
+      }
+
+      const scrollingWrapper = element.querySelector('.table-scrolling-wrapper') as HTMLElement | null
+
+      if (!scrollingWrapper) {
+        return
+      }
+
+      const headerElement = (
+        scrollingWrapper.querySelector('.ant-table-header') ||
+        scrollingWrapper.querySelector('.ant-table-thead')
+      ) as HTMLElement | null
+      const headerHeight = headerElement?.getBoundingClientRect().height ?? (size === 'compact' ? 29 : 41)
+      const wrapperHeight = scrollingWrapper.getBoundingClientRect().height
+      const nextViewportHeight = Math.max(Math.floor(wrapperHeight - headerHeight), 80)
+
+      setScrollViewportHeight((currentHeight) => (
+        currentHeight === nextViewportHeight ? currentHeight : nextViewportHeight
+      ))
     }
 
-    updateWidth()
+    const scheduleMetricsUpdate = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+      }
 
-    const resizeObserver = new ResizeObserver(() => updateWidth())
+      frameId = requestAnimationFrame(updateMetrics)
+    }
+
+    scheduleMetricsUpdate()
+
+    const resizeObserver = new ResizeObserver(() => scheduleMetricsUpdate())
     resizeObserver.observe(element)
+    ;[
+      element.querySelector('.table-scrolling-wrapper'),
+      element.querySelector('.table-horizontal-scrollbar'),
+      element.querySelector('.ant-pagination-container'),
+      element.querySelector('.ant-table-header'),
+      element.querySelector('.ant-table-thead')
+    ]
+      .filter((node): node is Element => Boolean(node))
+      .forEach((node) => resizeObserver.observe(node))
 
-    return () => resizeObserver.disconnect()
-  }, [])
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+      }
+
+      resizeObserver.disconnect()
+    }
+  }, [hasExplicitFrameHeight, showPagination, size])
 
   const prototypeFilters = useMemo(
     () => createPrototypeFilters(resolvedDataSource, normalizedColumns),
@@ -459,19 +542,31 @@ export const TablePrototype = ({
   ))
   const minWidth = layoutColumns.reduce((sum, column) => sum + column.width, selectionColumnWidth)
   const horizontalScrollX = containerWidth > 0 && minWidth > containerWidth + 1 ? minWidth : undefined
-  const scroll = hasExplicitFrameHeight || horizontalScrollX
+  const scroll = scrollViewportHeight || horizontalScrollX
     ? {
         ...(horizontalScrollX ? { x: horizontalScrollX } : {}),
-        ...(hasExplicitFrameHeight ? { y: '100%' } : {})
+        ...(scrollViewportHeight ? { y: scrollViewportHeight } : {})
       }
     : undefined
   const pagination = showPagination
     ? {
-        pageSize: resolvedRowsPerPage,
+        current: currentPage,
+        pageSize: activeRowsPerPage,
         pageSizeOptions: PROTOTYPE_PAGE_SIZE_OPTIONS,
         showSizeChanger: showRowsPerPageSelector,
         showTotalSummary: showPaginationSummary,
-        restoreCurrentWhenDataChange: true
+        restoreCurrentWhenDataChange: true,
+        onChange: (nextCurrent: number, nextPageSize: number) => {
+          setCurrentPage(nextCurrent)
+
+          if (nextPageSize !== activeRowsPerPage) {
+            setActiveRowsPerPage(nextPageSize)
+          }
+        },
+        onShowSizeChange: (nextCurrent: number, nextPageSize: number) => {
+          setCurrentPage(nextCurrent)
+          setActiveRowsPerPage(nextPageSize)
+        }
       }
     : false
   const tableInstanceKey = useMemo(() => JSON.stringify({
@@ -483,13 +578,12 @@ export const TablePrototype = ({
       sortable: column.sortable,
       filterable: column.filterable
     })),
-    resolvedRowsPerPage,
     selectionMode,
     showPagination,
     showPaginationSummary,
     showRowsPerPageSelector,
     size
-  }), [layoutColumns, resolvedRowsPerPage, selectionMode, showPagination, showPaginationSummary, showRowsPerPageSelector, size])
+  }), [layoutColumns, selectionMode, showPagination, showPaginationSummary, showRowsPerPageSelector, size])
   const emptyText = resolvedManualData.error
     ? <ManualDataError>{resolvedManualData.error}</ManualDataError>
     : resolvedDataMode === 'manual' && resolvedDataSource.length === 0
@@ -627,6 +721,35 @@ const normalizePositiveInteger = (
 
   return Math.round(parsedValue)
 }
+
+const hasConcreteFrameDimension = (
+  value: CSSProperties['height'] | CSSProperties['minHeight'] | CSSProperties['maxHeight']
+): boolean => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0
+  }
+
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  const normalizedValue = value.trim().toLowerCase()
+
+  if (!normalizedValue || normalizedValue === 'auto' || normalizedValue.endsWith('%')) {
+    return false
+  }
+
+  return (
+    normalizedValue.startsWith('calc(') ||
+    /^-?\d+(\.\d+)?([a-z]+)?$/.test(normalizedValue)
+  )
+}
+
+const hasConcreteFrameHeightStyle = (style?: CSSProperties): boolean => (
+  hasConcreteFrameDimension(style?.height) ||
+  hasConcreteFrameDimension(style?.minHeight) ||
+  hasConcreteFrameDimension(style?.maxHeight)
+)
 
 const resolveDefaultSampleValue = (cellType: TablePrototypeCellType): TablePrototypeCellValue => {
   switch (cellType) {
@@ -1399,6 +1522,8 @@ const PrototypeSelectionCell = ({
 const PreviewRoot = styled.div`
   width: 100%;
   height: 100%;
+  flex: 1 1 auto;
+  align-self: stretch;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -1435,7 +1560,8 @@ const PreviewRoot = styled.div`
 
     .table-height-full .ant-table-body {
       flex: 1 1 auto;
-      overflow-y: auto !important;
+      display: block;
+      min-height: 0;
     }
 
     .ant-table-thead > tr > th.table-prototype-column,
@@ -1659,9 +1785,8 @@ const HeaderChoiceCell = styled(ChoiceCell)``
 const PrototypeCheckboxButton = styled.span.withConfig({
   shouldForwardProp: prop => !['$checked', '$indeterminate'].includes(String(prop))
 })<{ $checked: boolean, $indeterminate: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  position: relative;
   width: 14px;
   height: 14px;
   min-width: 14px;
@@ -1675,10 +1800,14 @@ const PrototypeCheckboxButton = styled.span.withConfig({
   cursor: pointer;
   user-select: none;
   flex: 0 0 14px;
+  line-height: 0;
+  vertical-align: top;
 
   &::after {
     content: '';
-    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
     ${({ $checked, $indeterminate }) => {
       if ($indeterminate) {
         return `
@@ -1686,6 +1815,7 @@ const PrototypeCheckboxButton = styled.span.withConfig({
           height: 2px;
           border-radius: 2px;
           background: #FFFFFF;
+          transform: translate(-50%, -50%);
         `
       }
 
@@ -1693,16 +1823,16 @@ const PrototypeCheckboxButton = styled.span.withConfig({
         return `
           width: 4px;
           height: 7px;
-          margin-top: -1px;
           border-right: 2px solid #FFFFFF;
           border-bottom: 2px solid #FFFFFF;
-          transform: rotate(45deg);
+          transform: translate(-50%, -58%) rotate(45deg);
         `
       }
 
       return `
         width: 0;
         height: 0;
+        transform: translate(-50%, -50%);
       `
     }}
   }

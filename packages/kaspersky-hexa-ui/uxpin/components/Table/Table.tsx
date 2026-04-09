@@ -7,6 +7,7 @@ import {
   defaultTablePrototypeColumns
 } from '@src/table/preview/TablePrototype'
 import React, { CSSProperties, useMemo } from 'react'
+import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
 
@@ -29,10 +30,42 @@ type UXPinTableProps = {
   showRowsPerPageSelector?: boolean,
   /** Adds the built-in selection column. Its width is fixed by the table. */
   selectionMode?: TablePrototypeSelectionMode,
+  /** Preferred UXPin frame height in px. Used when the editor does not provide a stable resize height. */
+  frameHeight?: number,
   showPagination?: boolean,
   size?: TablePrototypeSize,
   children?: React.ReactNode,
   style?: CSSProperties
+}
+
+const PreviewRoot = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+  background: transparent;
+  box-sizing: border-box;
+`
+
+const resolveFrameHeightStyle = (
+  style: CSSProperties | undefined,
+  frameHeight: number | undefined
+): Pick<CSSProperties, 'height' | 'maxHeight' | 'minHeight'> => {
+  const fallbackHeight = frameHeight !== undefined ? frameHeight : undefined
+
+  return {
+    ...(style?.height !== undefined || fallbackHeight !== undefined
+      ? { height: style?.height ?? fallbackHeight }
+      : {}),
+    ...(style?.minHeight !== undefined || fallbackHeight !== undefined
+      ? { minHeight: style?.minHeight ?? fallbackHeight }
+      : {}),
+    ...(style?.maxHeight !== undefined ? { maxHeight: style.maxHeight } : {})
+  }
 }
 
 const Table = ({
@@ -45,6 +78,7 @@ const Table = ({
   showPaginationSummary = true,
   showRowsPerPageSelector = true,
   selectionMode = 'none',
+  frameHeight = 360,
   showPagination = false,
   size = 'standard',
   style
@@ -53,22 +87,39 @@ const Table = ({
     const resolvedColumns = tableColumnElementsToConfigs(children)
     return resolvedColumns.length ? resolvedColumns : defaultTablePrototypeColumns
   }, [children])
+  const frameHeightStyle = useMemo(
+    () => resolveFrameHeightStyle(style, frameHeight),
+    [frameHeight, style]
+  )
 
   return (
-    <TablePrototype
-      columns={columns}
-      dataMode={dataMode}
-      dataSource={dataSource}
-      dataSourceJson={dataSourceJson}
-      rowsCount={rowsCount}
-      rowsPerPage={rowsPerPage}
-      showPaginationSummary={showPaginationSummary}
-      showRowsPerPageSelector={showRowsPerPageSelector}
-      selectionMode={selectionMode}
-      showPagination={showPagination}
-      size={size}
-      style={mergeFrameStyle(style)}
-    />
+    <PreviewRoot style={mergeFrameStyle({
+      width: '100%',
+      minHeight: 0,
+      ...style,
+      ...frameHeightStyle
+    })}>
+      <TablePrototype
+        columns={columns}
+        dataMode={dataMode}
+        dataSource={dataSource}
+        dataSourceJson={dataSourceJson}
+        rowsCount={rowsCount}
+        rowsPerPage={rowsPerPage}
+        showPaginationSummary={showPaginationSummary}
+        showRowsPerPageSelector={showRowsPerPageSelector}
+        selectionMode={selectionMode}
+        fillFrameHeight={true}
+        showPagination={showPagination}
+        size={size}
+        style={mergeFrameStyle({
+          width: '100%',
+          height: '100%',
+          flex: 1,
+          minHeight: 0
+        })}
+      />
+    </PreviewRoot>
   )
 }
 
@@ -78,6 +129,7 @@ Table.defaultProps = {
   showPaginationSummary: true,
   showRowsPerPageSelector: true,
   selectionMode: 'none',
+  frameHeight: 360,
   showPagination: false,
   size: 'standard'
 }
