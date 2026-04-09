@@ -22,10 +22,11 @@ export const PageHeader = (props: PageHeaderProps): JSX.Element => {
     title,
     testAttributes
   } = useTestAttribute(props)
+  const breadcrumbsSize = breadcrumbs?.size ?? 'small'
 
   return (
     <StyledPageHeader className={prefixClass} {...testAttributes}>
-      {breadcrumbs && <Breadcrumbs {...breadcrumbs} size="small" />}
+      {breadcrumbs && <Breadcrumbs {...breadcrumbs} size={breadcrumbsSize} />}
       <div className={`${prefixClass}-content`}>
         <div className={`${prefixClass}-content-left`}>
           {iconBefore && <div className={`${prefixClass}-content-left-before`}>{iconBefore}</div>}
@@ -38,7 +39,7 @@ export const PageHeader = (props: PageHeaderProps): JSX.Element => {
                 </div>
               )}
             </div>
-            <Text type="BTR2">{description}</Text>
+            {description && <Text type="BTR2">{description}</Text>}
           </div>
         </div>
         {elementAfter && <div className={`${prefixClass}-content-right`}>{elementAfter}</div>}

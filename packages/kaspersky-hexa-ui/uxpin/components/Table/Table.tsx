@@ -30,7 +30,7 @@ type UXPinTableProps = {
   showRowsPerPageSelector?: boolean,
   /** Adds the built-in selection column. Its width is fixed by the table. */
   selectionMode?: TablePrototypeSelectionMode,
-  /** Preferred UXPin frame height in px. Used when the editor does not provide a stable resize height. */
+  /** Optional fixed UXPin frame height in px. Leave empty to resize directly via the frame. */
   frameHeight?: number,
   showPagination?: boolean,
   size?: TablePrototypeSize,
@@ -61,8 +61,8 @@ const resolveFrameHeightStyle = (
     ...(style?.height !== undefined || fallbackHeight !== undefined
       ? { height: style?.height ?? fallbackHeight }
       : {}),
-    ...(style?.minHeight !== undefined || fallbackHeight !== undefined
-      ? { minHeight: style?.minHeight ?? fallbackHeight }
+    ...(style?.minHeight !== undefined
+      ? { minHeight: style.minHeight }
       : {}),
     ...(style?.maxHeight !== undefined ? { maxHeight: style.maxHeight } : {})
   }
@@ -77,9 +77,9 @@ const Table = ({
   rowsPerPage = 5,
   showPaginationSummary = true,
   showRowsPerPageSelector = true,
-  selectionMode = 'none',
-  frameHeight = 360,
-  showPagination = false,
+  selectionMode = 'checkbox',
+  frameHeight,
+  showPagination = true,
   size = 'standard',
   style
 }: UXPinTableProps): JSX.Element => {
@@ -128,9 +128,8 @@ Table.defaultProps = {
   rowsPerPage: 5,
   showPaginationSummary: true,
   showRowsPerPageSelector: true,
-  selectionMode: 'none',
-  frameHeight: 360,
-  showPagination: false,
+  selectionMode: 'checkbox',
+  showPagination: true,
   size: 'standard'
 }
 

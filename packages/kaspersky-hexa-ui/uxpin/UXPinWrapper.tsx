@@ -15,9 +15,12 @@ interface UXPinWrapperProps {
 
 const mergeComponentStyle: React.CSSProperties = {
   width: '100%',
+  height: '100%',
   minWidth: 0,
+  minHeight: 0,
   boxSizing: 'border-box',
-  display: 'block'
+  display: 'flex',
+  flexDirection: 'column'
 }
 
 const UXPinWrapper = ({ children }: UXPinWrapperProps): JSX.Element => (
