@@ -62,6 +62,7 @@ export const ToolbarSearch: FC<SearchProps> = (props: SearchProps) => {
         }}
         onPressEnter={(event) => {
           setChangedQuery(false)
+          setVisible(false)
           onPressEnter?.(event)
         }}
         autoFocus={visible}

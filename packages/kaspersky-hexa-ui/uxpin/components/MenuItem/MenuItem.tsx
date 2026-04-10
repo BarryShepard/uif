@@ -4,27 +4,25 @@ import { NavItemData } from '@src/menu/types'
 import React from 'react'
 import styled from 'styled-components'
 
-import {
-  ArrowRightMini,
-  Browser,
-  Folder,
-  Placeholder,
-  SettingsGear,
-  Shield,
-  UserGroup
-} from '@kaspersky/hexa-ui-icons/16'
+import Icons16Pack, { ArrowRightMini, Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
-export type MenuItemState = 'enabled' | 'disabled' | 'active' | 'hover' | 'divider'
+export type MenuItemType = 'item' | 'header' | 'divider'
+
+export type MenuItemState = 'enabled' | 'disabled' | 'active' | 'hover'
+
+export type MenuItemIconName = Exclude<keyof typeof Icons16Pack, 'default'>
 
 export type UXPinMenuItemProps = {
   /** Allows showing expanded nested items in preview */
   collapsible?: boolean,
-  /** Renders item as a non-interactive section header */
-  header?: boolean,
+  /** Menu item visual type */
+  type?: MenuItemType,
   /** Preview state */
   state?: MenuItemState,
   /** Shows an icon before the label */
   elementBefore?: boolean,
+  /** Pick an icon for the leading slot */
+  elementBeforeIcon?: MenuItemIconName,
   /** Slot for the icon before the label */
   elementBeforeSlot?: React.ReactNode,
   /** Item label */
@@ -46,13 +44,20 @@ type MenuItemComponent = React.FC<UXPinMenuItemProps> & {
   uxpinRole?: string
 }
 
+type LegacyMenuItemRuntimeProps = Omit<UXPinMenuItemProps, 'state'> & {
+  header?: boolean,
+  state?: MenuItemState | 'divider'
+}
+
 const MENU_ITEM_ROLE = 'hexa-uxpin-menu-item'
 
 const hasMenuItemShape = (props: Record<string, unknown> = {}): boolean => (
   'label' in props ||
   'collapsible' in props ||
+  'type' in props ||
   'header' in props ||
   'elementBefore' in props ||
+  'elementBeforeIcon' in props ||
   'elementBeforeSlot' in props ||
   'description' in props ||
   'descriptionText' in props ||
@@ -70,6 +75,37 @@ const resolvePreviewStateClassName = (state: MenuItemState): string => {
       return 'disabled'
     case 'hover':
       return 'hover'
+    default:
+      return 'enabled'
+  }
+}
+
+const resolveMenuItemType = (
+  props: LegacyMenuItemRuntimeProps & Record<string, unknown>
+): MenuItemType => {
+  if (props.type === 'header' || props.type === 'divider' || props.type === 'item') {
+    return props.type
+  }
+
+  if (props.header === true) {
+    return 'header'
+  }
+
+  if (props.state === 'divider') {
+    return 'divider'
+  }
+
+  return 'item'
+}
+
+const resolveMenuItemState = (
+  props: LegacyMenuItemRuntimeProps & Record<string, unknown>
+): MenuItemState => {
+  switch (props.state) {
+    case 'active':
+    case 'disabled':
+    case 'hover':
+      return props.state
     default:
       return 'enabled'
   }
@@ -101,15 +137,26 @@ export const resolveMenuItemChildren = (
   return menuItems
 }
 
+const resolveNamedIcon = (iconName?: MenuItemIconName): React.ReactNode => {
+  if (!iconName) {
+    return null
+  }
+
+  const IconComponent = Icons16Pack[iconName]
+
+  return IconComponent ? <IconComponent /> : null
+}
+
 const resolveElementBefore = (
   elementBefore?: boolean,
+  elementBeforeIcon?: MenuItemIconName,
   elementBeforeSlot?: React.ReactNode
 ): React.ReactNode => {
   if (!elementBefore) {
     return null
   }
 
-  return elementBeforeSlot ?? <Placeholder />
+  return resolveNamedIcon(elementBeforeIcon) ?? elementBeforeSlot ?? <Placeholder />
 }
 
 const buildElementAfter = ({
@@ -166,22 +213,23 @@ export const menuItemElementsToNavItems = (
       elementAfter,
       elementAfterSlot,
       elementBefore,
+      elementBeforeIcon,
       elementBeforeSlot,
-      header = false,
       label = `Menu item ${index + 1}`,
-      notification,
-      state = 'enabled'
+      notification
     } = element.props
+    const itemType = resolveMenuItemType(element.props as UXPinMenuItemProps & Record<string, unknown>)
+    const itemState = resolveMenuItemState(element.props as UXPinMenuItemProps & Record<string, unknown>)
     const itemStateKey = buildStateKey(element, parentPath, index)
 
-    if (state === 'divider') {
+    if (itemType === 'divider') {
       return {
         key: itemStateKey,
         component: MenuDividerComponent
       }
     }
 
-    if (header) {
+    if (itemType === 'header') {
       return {
         key: label,
         state: itemStateKey,
@@ -195,12 +243,12 @@ export const menuItemElementsToNavItems = (
     return {
       key: label,
       state: itemStateKey,
-      icon: resolveElementBefore(elementBefore, elementBeforeSlot) || undefined,
+      icon: resolveElementBefore(elementBefore, elementBeforeIcon, elementBeforeSlot) || undefined,
       description: description ? descriptionText : undefined,
       elementAfter: buildElementAfter({ elementAfter, elementAfterSlot, notification }),
-      active: state === 'active',
-      disabled: state === 'disabled',
-      itemClass: state === 'hover' ? 'uxpin-menu-item-hover' : undefined,
+      active: itemState === 'active',
+      disabled: itemState === 'disabled',
+      itemClass: itemState === 'hover' ? 'uxpin-menu-item-hover' : undefined,
       isRoot: depth === 1,
       expanded: collapsible ?? Boolean(items.length),
       items: items.length ? items : undefined
@@ -228,21 +276,19 @@ export const isPlaceholderMenuItemElement = (
     description = false,
     elementAfter = false,
     elementBefore = false,
-    header = false,
     label = 'Menu item',
-    notification = false,
-    state = 'enabled'
+    notification = false
   } = node.props
+  const resolvedType = resolveMenuItemType(node.props as LegacyMenuItemRuntimeProps & Record<string, unknown>)
 
   return (
     React.Children.count(children) === 0 &&
     !description &&
     !elementAfter &&
     !elementBefore &&
-    !header &&
+    resolvedType === 'item' &&
     !notification &&
-    label === 'Menu item' &&
-    state === 'enabled'
+    label === 'Menu item'
   )
 }
 
@@ -337,25 +383,28 @@ const PreviewRoot = styled.div`
   }
 `
 
-const MenuItem: MenuItemComponent = ({
-  children,
-  collapsible,
-  description = false,
-  descriptionText = 'Description',
-  elementAfter = false,
-  elementAfterSlot,
-  elementBefore = false,
-  elementBeforeSlot,
-  header = false,
-  label = 'Menu item',
-  notification = false,
-  state = 'enabled'
-}: UXPinMenuItemProps): JSX.Element => {
+const MenuItem: MenuItemComponent = (rawProps: UXPinMenuItemProps): JSX.Element => {
+  const {
+    children,
+    collapsible,
+    description = false,
+    descriptionText = 'Description',
+    elementAfter = false,
+    elementAfterSlot,
+    elementBefore = false,
+    elementBeforeIcon,
+    elementBeforeSlot,
+    label = 'Menu item',
+    notification = false,
+    state = 'enabled'
+  } = rawProps
   const previewChildren = resolveMenuItemChildren(children)
   const hasNestedItems = previewChildren.length > 0
   const showExpandedChildren = collapsible ?? hasNestedItems
+  const resolvedType = resolveMenuItemType(rawProps as LegacyMenuItemRuntimeProps & Record<string, unknown>)
+  const resolvedState = resolveMenuItemState(rawProps as LegacyMenuItemRuntimeProps & Record<string, unknown>)
 
-  if (state === 'divider') {
+  if (resolvedType === 'divider') {
     return (
       <PreviewRoot>
         <div className="preview-divider" />
@@ -363,7 +412,7 @@ const MenuItem: MenuItemComponent = ({
     )
   }
 
-  if (header) {
+  if (resolvedType === 'header') {
     return (
       <PreviewRoot>
         <div className="preview-entry header">
@@ -377,10 +426,10 @@ const MenuItem: MenuItemComponent = ({
 
   return (
     <PreviewRoot>
-      <div className={`preview-entry ${resolvePreviewStateClassName(state)}`}>
+      <div className={`preview-entry ${resolvePreviewStateClassName(resolvedState)}`}>
         {elementBefore && (
           <div className="preview-icon">
-            {elementBeforeSlot ?? <Placeholder />}
+            {resolveNamedIcon(elementBeforeIcon) ?? elementBeforeSlot ?? <Placeholder />}
           </div>
         )}
         <div className="preview-labels">
@@ -407,9 +456,10 @@ MenuItem.displayName = 'MenuItem'
 
 MenuItem.defaultProps = {
   collapsible: false,
-  header: false,
+  type: 'item',
   state: 'enabled',
   elementBefore: false,
+  elementBeforeIcon: 'Placeholder',
   label: 'Menu item',
   description: false,
   descriptionText: 'Description',
@@ -422,13 +472,13 @@ export const defaultMenuItemChildren = (
     <MenuItem
       label="Overview"
       elementBefore
-      elementBeforeSlot={<Browser />}
+      elementBeforeIcon="Browser"
       state="active"
     />
     <MenuItem
       label="Monitoring & reporting"
       elementBefore
-      elementBeforeSlot={<Browser />}
+      elementBeforeIcon="Browser"
       notification
       collapsible
     >
@@ -439,7 +489,7 @@ export const defaultMenuItemChildren = (
     <MenuItem
       label="Assets (Devices)"
       elementBefore
-      elementBeforeSlot={<Shield />}
+      elementBeforeIcon="Shield"
       description
       descriptionText="Nested navigation"
       collapsible
@@ -451,17 +501,17 @@ export const defaultMenuItemChildren = (
     <MenuItem
       label="Users & roles"
       elementBefore
-      elementBeforeSlot={<UserGroup />}
+      elementBeforeIcon="UserGroup"
       collapsible
     >
       <MenuItem label="Users" />
       <MenuItem label="Roles" />
-      <MenuItem label="Groups" elementBefore elementBeforeSlot={<Folder />} />
+      <MenuItem label="Groups" elementBefore elementBeforeIcon="Folder" />
     </MenuItem>
     <MenuItem
       label="Settings"
       elementBefore
-      elementBeforeSlot={<SettingsGear />}
+      elementBeforeIcon="SettingsGear"
       elementAfter
       elementAfterSlot={<Placeholder />}
     />
@@ -473,7 +523,7 @@ export const defaultFooterMenuItemChildren = (
     <MenuItem
       label="Settings"
       elementBefore
-      elementBeforeSlot={<SettingsGear />}
+      elementBeforeIcon="SettingsGear"
     />
   </>
 )

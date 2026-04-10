@@ -11,7 +11,10 @@ import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
 
-import { tableColumnElementsToConfigs } from '../TableColumn/TableColumn'
+import TableColumn, {
+  resolveTableColumnChildren,
+  tableColumnElementsToConfigs
+} from '../TableColumn/TableColumn'
 
 type UXPinTableProps = {
   /** "generated" creates sample rows automatically, "manual" uses dataSourceJson/dataSource. */
@@ -51,6 +54,40 @@ const PreviewRoot = styled.div`
   box-sizing: border-box;
 `
 
+const DEFAULT_TABLE_CHILDREN = (
+  <>
+    <TableColumn
+      title="Asset"
+      field="asset"
+      width={240}
+      cellType="treeLink"
+      sortable={true}
+      filterable={true}
+    />
+    <TableColumn
+      title="Status"
+      field="status"
+      width={180}
+      cellType="status"
+    />
+    <TableColumn
+      title="Owner"
+      field="owner"
+      width={220}
+      cellType="text"
+      sortable={true}
+      filterable={true}
+      infoButton={true}
+    />
+    <TableColumn
+      title="Actions"
+      field="controls"
+      width={152}
+      cellType="actions"
+    />
+  </>
+)
+
 const resolveFrameHeightStyle = (
   style: CSSProperties | undefined,
   frameHeight: number | undefined
@@ -69,7 +106,7 @@ const resolveFrameHeightStyle = (
 }
 
 const Table = ({
-  children,
+  children = DEFAULT_TABLE_CHILDREN,
   dataMode,
   dataSource,
   dataSourceJson,
@@ -83,10 +120,14 @@ const Table = ({
   size = 'standard',
   style
 }: UXPinTableProps): JSX.Element => {
-  const columns = useMemo(() => {
-    const resolvedColumns = tableColumnElementsToConfigs(children)
-    return resolvedColumns.length ? resolvedColumns : defaultTablePrototypeColumns
+  const resolvedChildren = useMemo(() => {
+    const resolvedColumns = resolveTableColumnChildren(children)
+    return resolvedColumns.length ? resolvedColumns : DEFAULT_TABLE_CHILDREN
   }, [children])
+  const columns = useMemo(() => {
+    const resolvedColumns = tableColumnElementsToConfigs(resolvedChildren)
+    return resolvedColumns.length ? resolvedColumns : defaultTablePrototypeColumns
+  }, [resolvedChildren])
   const frameHeightStyle = useMemo(
     () => resolveFrameHeightStyle(style, frameHeight),
     [frameHeight, style]
@@ -124,6 +165,7 @@ const Table = ({
 }
 
 Table.defaultProps = {
+  children: DEFAULT_TABLE_CHILDREN,
   rowsCount: 5,
   rowsPerPage: 5,
   showPaginationSummary: true,

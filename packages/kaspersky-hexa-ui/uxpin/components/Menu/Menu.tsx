@@ -51,7 +51,7 @@ const resolveMenuChildren = (children?: React.ReactNode): React.ReactNode => {
 }
 
 const Menu = ({
-  children,
+  children = defaultMenuItemChildren,
   description = 'Kaspersky Next',
   footer = true,
   header = true,
@@ -108,7 +108,8 @@ Menu.defaultProps = {
   header: true,
   footer: true,
   title: 'Configuration Service',
-  description: 'Kaspersky Next'
+  description: 'Kaspersky Next',
+  children: defaultMenuItemChildren
 }
 
 Menu.displayName = 'Menu'

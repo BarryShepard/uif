@@ -200,6 +200,18 @@ const TableColumn: TableColumnComponent = ({
 
 TableColumn.uxpinRole = TABLE_COLUMN_ROLE
 TableColumn.displayName = 'TableColumn'
+TableColumn.defaultProps = {
+  title: 'Table Column',
+  field: 'field',
+  width: 200,
+  fill: false,
+  cellType: 'text',
+  sortable: false,
+  filterable: false,
+  infoButton: false,
+  elementBefore: false,
+  elementAfter: false
+}
 
 export default TableColumn
 

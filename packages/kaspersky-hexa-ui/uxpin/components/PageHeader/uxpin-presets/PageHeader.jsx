@@ -8,12 +8,12 @@ export default (
   <PageHeader
     uxpId="page-header-1"
     title="Page title"
-    description={true}
+    description={false}
     descriptionText="Page description"
-    iconBefore={true}
-    breadcrumbs={true}
-    tagsAfter={true}
-    elementAfter={true}
+    iconBefore={false}
+    breadcrumbs={false}
+    tagsAfter={false}
+    elementAfter={false}
   >
     <Breadcrumbs
       uxpId="breadcrumbs-1"

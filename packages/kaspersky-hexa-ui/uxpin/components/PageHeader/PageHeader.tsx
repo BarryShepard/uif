@@ -103,15 +103,15 @@ const useAutoHeightMergeFrame = (): React.RefObject<HTMLDivElement> => {
 }
 
 const PageHeader = ({
-  breadcrumbs = true,
+  breadcrumbs = false,
   children = DEFAULT_PAGE_HEADER_CHILDREN,
-  description = true,
+  description = false,
   descriptionText = 'Page description',
-  elementAfter = true,
+  elementAfter = false,
   elementAfterSlot,
-  iconBefore = true,
+  iconBefore = false,
   iconBeforeSlot,
-  tagsAfter = true,
+  tagsAfter = false,
   title = 'Page title',
 }: UXPinPageHeaderProps): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame()
@@ -141,7 +141,12 @@ const PageHeader = ({
 }
 
 PageHeader.defaultProps = {
-  children: DEFAULT_PAGE_HEADER_CHILDREN
+  breadcrumbs: false,
+  children: DEFAULT_PAGE_HEADER_CHILDREN,
+  description: false,
+  elementAfter: false,
+  iconBefore: false,
+  tagsAfter: false
 }
 
 export default PageHeader
