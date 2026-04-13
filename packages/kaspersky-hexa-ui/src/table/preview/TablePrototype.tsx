@@ -1,19 +1,21 @@
 import { ActionButton } from '@src/action-button'
 import { Textbox } from '@src/input'
 import { Link } from '@src/link'
+import { Placeholder as HexaPlaceholder } from '@src/placeholder'
+import { PlaceholderImageVariant, PlaceholderSize } from '@src/placeholder/types'
 import { Tooltip } from '@src/tooltip'
 import { Select } from '@src/select'
 import { Status } from '@src/status'
 import type { StatusMode } from '@src/status'
 import { Table } from '@src/table'
 import { TableColumn, TableRecord } from '@src/table/types'
-import { TagReductionGroup } from '@src/tag'
+import { TagProps, TagReductionGroup } from '@src/tag'
 import { Toggle } from '@src/toggle'
 import React, { CSSProperties, Key, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 
 import {
-  Placeholder,
+  Placeholder as PlaceholderIcon,
   Search,
   SettingsGear,
   StatusInfoOutline
@@ -48,6 +50,7 @@ export type TablePrototypeCellVariant =
 export type TablePrototypeCellType = TablePrototypeCellVariant
 
 export type TablePrototypeDataMode = 'generated' | 'manual'
+export type TablePrototypePlaceholderImage = 'error404' | 'no data' | 'error403' | 'error503'
 
 export type TablePrototypeOption = {
   label: string,
@@ -74,7 +77,8 @@ export type TablePrototypeStatusValue = {
 
 export type TablePrototypeToggleValue = {
   checked?: boolean,
-  text?: string
+  text?: string,
+  disabled?: boolean
 }
 
 export type TablePrototypeChoiceValue = {
@@ -82,7 +86,7 @@ export type TablePrototypeChoiceValue = {
 }
 
 export type TablePrototypeTagGroupValue = {
-  items?: Array<string | { label: string }>
+  items?: Array<string | TagProps>
 }
 
 export type TablePrototypeSelectValue = {
@@ -145,8 +149,19 @@ export type TablePrototypeColumnConfig = {
   filter?: TablePrototypeFilterState
 }
 
+export type TablePrototypePlaceholderConfig = {
+  size?: PlaceholderSize,
+  image?: boolean,
+  imageType?: TablePrototypePlaceholderImage,
+  titleText?: string,
+  description?: boolean,
+  descriptionText?: string,
+  children?: ReactNode
+}
+
 export type TablePrototypeProps = {
   columns?: TablePrototypeColumnConfig[],
+  placeholder?: TablePrototypePlaceholderConfig,
   dataMode?: TablePrototypeDataMode,
   dataSource?: TablePrototypeRow[],
   /** Preferred manual authoring format in UXPin. Expects a JSON array of rows. */
@@ -191,7 +206,8 @@ type ResolvedSelectValue = {
 
 type ResolvedToggleValue = {
   checked: boolean,
-  text: string
+  text: string,
+  disabled: boolean
 }
 
 type NormalizedColumn = {
@@ -226,6 +242,14 @@ const SELECT_OPTIONS: TablePrototypeOption[] = [
 
 const DEFAULT_PAGE_SIZE = 20
 const PROTOTYPE_PAGE_SIZE_OPTIONS = ['20', '50', '100']
+const DEFAULT_TABLE_PLACEHOLDER: TablePrototypePlaceholderConfig = {
+  size: 'small',
+  image: true,
+  imageType: 'no data',
+  titleText: 'No data',
+  description: true,
+  descriptionText: 'There is no table data to display yet.'
+}
 
 export const defaultTablePrototypeColumns: TablePrototypeColumnConfig[] = [
   {
@@ -268,6 +292,7 @@ export const defaultTablePrototypeColumns: TablePrototypeColumnConfig[] = [
 
 export const TablePrototype = ({
   columns = defaultTablePrototypeColumns,
+  placeholder = DEFAULT_TABLE_PLACEHOLDER,
   dataMode,
   dataSource,
   dataSourceJson,
@@ -288,7 +313,7 @@ export const TablePrototype = ({
   const [scrollViewportHeight, setScrollViewportHeight] = useState<number | undefined>(undefined)
   const [hasVerticalOverflow, setHasVerticalOverflow] = useState(false)
   const hasExplicitFrameHeight = fillFrameHeight || hasConcreteFrameHeightStyle(style)
-  const resolvedRowsCount = normalizePositiveInteger(rowsCount ?? rows, rows)
+  const resolvedRowsCount = normalizeNonNegativeInteger(rowsCount ?? rows, rows)
   const resolvedRowsPerPage = normalizePositiveInteger(rowsPerPage ?? pageSize, DEFAULT_PAGE_SIZE)
   const normalizedColumns = useMemo(
     () => {
@@ -373,7 +398,7 @@ export const TablePrototype = ({
         scrollingWrapper.querySelector('.ant-table-header') ||
         scrollingWrapper.querySelector('.ant-table-thead')
       ) as HTMLElement | null
-      const headerHeight = headerElement?.getBoundingClientRect().height ?? (size === 'compact' ? 29 : 41)
+      const headerHeight = headerElement?.getBoundingClientRect().height ?? (size === 'compact' ? 28 : 40)
       const wrapperHeight = scrollingWrapper.getBoundingClientRect().height
       const nextViewportHeight = Math.max(Math.floor(wrapperHeight - headerHeight), 80)
       const bodyContentElement = (
@@ -505,6 +530,7 @@ export const TablePrototype = ({
             width: selectionColumnWidth,
             align: 'center' as const,
             className: 'table-prototype-column table-prototype-column--selection',
+            ellipsis: false,
             resizing: { disabled: true },
             render: (_value: unknown, record: TableRecord) => (
               <PrototypeSelectionCell
@@ -527,6 +553,7 @@ export const TablePrototype = ({
         showResetFilterButton: column.resetFilterButton,
         width: column.width,
         className: `table-prototype-column table-prototype-column--${column.cellType}`,
+        ellipsis: false,
         align: column.cellType === 'checkbox' || column.cellType === 'radio' || column.cellType === 'icon'
           ? 'center' as const
           : undefined,
@@ -540,6 +567,7 @@ export const TablePrototype = ({
         render: (value: unknown, _record: TableRecord, rowIndex: number) => (
           <TablePrototypeCell
             column={column}
+            size={size}
             value={value}
             rowIndex={rowIndex}
           />
@@ -589,6 +617,15 @@ export const TablePrototype = ({
         }
       }
     : false
+  const placeholderKey = useMemo(() => JSON.stringify({
+    size: placeholder.size,
+    image: placeholder.image,
+    imageType: placeholder.imageType,
+    titleText: placeholder.titleText,
+    description: placeholder.description,
+    descriptionText: placeholder.descriptionText,
+    actionsCount: React.Children.count(placeholder.children)
+  }), [placeholder])
   const tableInstanceKey = useMemo(() => JSON.stringify({
     columns: layoutColumns.map((column) => ({
       key: column.key,
@@ -598,22 +635,30 @@ export const TablePrototype = ({
       sortable: column.sortable,
       filterable: column.filterable,
       filterItems: column.filterItems.join('|'),
+      defaultFilter: column.defaultFilter,
+      defaultSort: column.defaultSort,
       resetFilterButton: column.resetFilterButton
     })),
     selectionMode,
     showPagination,
     showPaginationSummary,
     showRowsPerPageSelector,
-    size
-  }), [layoutColumns, selectionMode, showPagination, showPaginationSummary, showRowsPerPageSelector, size])
+    size,
+    placeholder: placeholderKey
+  }), [layoutColumns, placeholderKey, selectionMode, showPagination, showPaginationSummary, showRowsPerPageSelector, size])
   const emptyText = resolvedManualData.error
     ? <ManualDataError>{resolvedManualData.error}</ManualDataError>
-    : resolvedDataMode === 'manual' && resolvedDataSource.length === 0
-      ? <ManualDataHint example={buildManualDataHintExample(normalizedColumns)} />
+    : resolvedDataSource.length === 0
+      ? <TablePrototypePlaceholder placeholder={placeholder} />
       : undefined
 
   return (
-    <PreviewRoot ref={rootRef} style={style}>
+    <PreviewRoot
+      ref={rootRef}
+      data-table-prototype-selection-mode={selectionMode}
+      data-table-prototype-size={size}
+      style={style}
+    >
       <Table
         key={tableInstanceKey}
         columns={tableColumns}
@@ -740,6 +785,19 @@ const normalizePositiveInteger = (
   const parsedValue = Number(value)
 
   if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return fallback
+  }
+
+  return Math.round(parsedValue)
+}
+
+const normalizeNonNegativeInteger = (
+  value: number | undefined,
+  fallback: number
+): number => {
+  const parsedValue = Number(value)
+
+  if (!Number.isFinite(parsedValue) || parsedValue < 0) {
     return fallback
   }
 
@@ -889,57 +947,11 @@ const resolveManualDataSource = ({
   }
 }
 
-const buildManualDataHintExample = (
-  columns: NormalizedColumn[]
-): string => {
-  const exampleRow: TablePrototypeRow = {
-    key: 'row-1'
-  }
-
-  columns.forEach((column) => {
-    exampleRow[column.field] = createManualHintCellValue(column)
-  })
-
-  return JSON.stringify([exampleRow], null, 2)
-}
-
-const createManualHintCellValue = (
-  column: NormalizedColumn
-): TablePrototypeCellValue => {
-  switch (column.cellType) {
-    case 'checkbox':
-    case 'radio':
-      return { checked: true }
-    case 'status':
-      return { label: 'Protected', mode: 'positive' }
-    case 'link':
-    case 'treeLink':
-      return { text: column.title, href: '#' }
-    case 'tag-group':
-      return { items: ['Region', 'HQ'] }
-    case 'toggle':
-      return { checked: true, text: 'On' }
-    case 'actions':
-      return 'Actions'
-    case 'input-select':
-      return { value: column.options[0]?.value ?? 'option-1' }
-    case 'input-multiselect':
-      return { value: column.options.slice(0, 2).map((option) => option.value) }
-    case 'icon':
-      return { icon: 'Placeholder' }
-    case 'tree':
-    case 'input-text':
-    case 'text':
-    default:
-      return { text: column.title }
-  }
-}
-
 const buildGeneratedRows = (
   columns: NormalizedColumn[],
   rows: number
 ): TablePrototypeRow[] => {
-  const safeRows = Math.max(1, rows)
+  const safeRows = Math.max(0, rows)
   const hasTreeColumn = columns.some((column) => (
     column.cellType === 'tree' || column.cellType === 'treeLink'
   ))
@@ -1002,14 +1014,14 @@ const createGeneratedCellValue = (
       case 'radio':
         return { checked: resolveCheckedValue(column.sampleValue) }
       case 'icon':
-        return { icon: extractIconValue(column.sampleValue) ?? column.elementBeforeSlot ?? <Placeholder /> }
+        return { icon: extractIconValue(column.sampleValue) ?? column.elementBeforeSlot ?? <PlaceholderIcon /> }
       case 'status':
         return extractStatusValue(column.sampleValue)
       case 'link':
       case 'treeLink':
         return extractLinkValue(column.sampleValue)
       case 'tag-group':
-        return { items: extractTagGroupItems(column.sampleValue).map((item) => item.label) }
+        return { items: extractTagGroupItems(column.sampleValue, 'medium').map((item) => extractTextContent(item.label, 'Tag')) }
       case 'toggle':
         return extractToggleValue(column.sampleValue)
       case 'input-select':
@@ -1028,7 +1040,7 @@ const createGeneratedCellValue = (
     case 'radio':
       return { checked: isEvenRow }
     case 'icon':
-      return { icon: column.elementBeforeSlot ?? <Placeholder /> }
+      return { icon: column.elementBeforeSlot ?? <PlaceholderIcon /> }
     case 'status':
       return {
         label: withDisplayId,
@@ -1165,7 +1177,7 @@ const resolveComparableValue = (
     case 'status':
       return extractStatusValue(value).label.toUpperCase()
     case 'tag-group':
-      return extractTagGroupItems(value).map((item) => item.label).join(' | ').toUpperCase()
+      return extractTagGroupItems(value, 'medium').map((item) => extractTextContent(item.label, '')).join(' | ').toUpperCase()
     case 'input-select':
     case 'input-multiselect':
       return extractSelectValue(value).value.join(' | ').toUpperCase()
@@ -1190,7 +1202,7 @@ const resolveFilterLabel = (
     case 'status':
       return extractStatusValue(value).label
     case 'tag-group':
-      return extractTagGroupItems(value).map((item) => item.label).join(', ')
+      return extractTagGroupItems(value, 'medium').map((item) => extractTextContent(item.label, '')).join(', ')
     case 'link':
     case 'treeLink':
       return extractLinkValue(value).text
@@ -1213,10 +1225,12 @@ const resolveFilterLabel = (
 
 const TablePrototypeCell = ({
   column,
+  size,
   value,
   rowIndex
 }: {
   column: NormalizedColumn,
+  size: TablePrototypeSize,
   value: unknown,
   rowIndex: number
 }): JSX.Element => {
@@ -1269,14 +1283,28 @@ const TablePrototypeCell = ({
     case 'tag-group':
       return (
         <StaticCell>
-          <TagReductionGroup items={extractTagGroupItems(value)} />
+          <TagGroupCell>
+            <TagReductionGroup
+              items={extractTagGroupItems(value, size === 'compact' ? 'small' : 'medium')}
+              reductionTag={{
+                outlined: true,
+                size: size === 'compact' ? 'small' : 'medium'
+              }}
+            />
+          </TagGroupCell>
         </StaticCell>
       )
     case 'toggle': {
       const toggle = extractToggleValue(value)
       return (
         <StaticCell>
-          <Toggle checked={toggle.checked} text={toggle.text} />
+          <Toggle
+            checked={checkedValue}
+            disabled={toggle.disabled}
+            onChange={(nextChecked) => setCheckedValue(Boolean(nextChecked))}
+          >
+            {toggle.text}
+          </Toggle>
         </StaticCell>
       )
     }
@@ -1285,7 +1313,7 @@ const TablePrototypeCell = ({
         <ActionsCell>
           <ActionButton mode="ghost" icon={<Search />} onClick={noop} />
           <ActionButton mode="ghost" icon={<SettingsGear />} onClick={noop} />
-          <ActionButton mode="ghost" icon={<Placeholder />} onClick={noop} />
+          <ActionButton mode="ghost" icon={<PlaceholderIcon />} onClick={noop} />
         </ActionsCell>
       )
     case 'input-text':
@@ -1409,6 +1437,7 @@ const extractToggleValue = (value: unknown): ResolvedToggleValue => {
   if (value && typeof value === 'object' && ('checked' in value || 'text' in value)) {
     return {
       checked: Boolean((value as TablePrototypeToggleValue).checked),
+      disabled: Boolean((value as TablePrototypeToggleValue).disabled),
       text: extractTextContent((value as TablePrototypeToggleValue).text, Boolean((value as TablePrototypeToggleValue).checked) ? 'On' : 'Off')
     }
   }
@@ -1416,29 +1445,37 @@ const extractToggleValue = (value: unknown): ResolvedToggleValue => {
   const checked = resolveCheckedValue(value)
   return {
     checked,
+    disabled: false,
     text: checked ? 'On' : 'Off'
   }
 }
 
 const extractTagGroupItems = (
-  value: unknown
-): Array<{ label: string }> => {
+  value: unknown,
+  size: TagProps['size']
+): TagProps[] => {
   if (Array.isArray(value)) {
-    return value.map((item) => ({ label: extractTextContent(item, 'Item') }))
+    return value.map((item) => (
+      typeof item === 'string'
+        ? { label: item, size }
+        : { ...item, label: extractTextContent(item.label, 'Item'), size: item.size ?? size }
+    ))
   }
 
   if (value && typeof value === 'object' && 'items' in value) {
     const items = (value as TablePrototypeTagGroupValue).items ?? []
-    return items.map((item) => ({
-      label: typeof item === 'string' ? item : extractTextContent(item.label, 'Item')
-    }))
+    return items.map((item) => (
+      typeof item === 'string'
+        ? { label: item, size }
+        : { ...item, label: extractTextContent(item.label, 'Item'), size: item.size ?? size }
+    ))
   }
 
   const baseText = extractTextContent(value, 'Tag')
   return [
-    { label: baseText },
-    { label: `${baseText} B` },
-    { label: `${baseText} C` }
+    { label: baseText, size },
+    { label: `${baseText} B`, size },
+    { label: `${baseText} C`, size }
   ]
 }
 
@@ -1486,7 +1523,47 @@ const resolveSlotContent = (
     return null
   }
 
-  return slot ?? <Placeholder />
+  return slot ?? <PlaceholderIcon />
+}
+
+const resolvePlaceholderImage = (
+  imageType: TablePrototypePlaceholderConfig['imageType']
+): PlaceholderImageVariant => (
+  imageType === 'no data' ? 'noData' : imageType ?? 'noData'
+)
+
+const TablePrototypePlaceholder = ({
+  placeholder
+}: {
+  placeholder: TablePrototypePlaceholderConfig
+}): JSX.Element => {
+  const {
+    children,
+    description = DEFAULT_TABLE_PLACEHOLDER.description,
+    descriptionText = DEFAULT_TABLE_PLACEHOLDER.descriptionText,
+    image = DEFAULT_TABLE_PLACEHOLDER.image,
+    imageType = DEFAULT_TABLE_PLACEHOLDER.imageType,
+    size = DEFAULT_TABLE_PLACEHOLDER.size,
+    titleText = DEFAULT_TABLE_PLACEHOLDER.titleText
+  } = placeholder
+  const resolvedChildren = React.Children.toArray(children).filter(Boolean)
+
+  return (
+    <TablePlaceholderRoot className="table-prototype-placeholder">
+      <HexaPlaceholder
+        mode="filled"
+        size={size}
+        image={image ? resolvePlaceholderImage(imageType) : undefined}
+        title={titleText ?? DEFAULT_TABLE_PLACEHOLDER.titleText ?? 'No data'}
+        description={description ? descriptionText : undefined}
+      />
+      {resolvedChildren.length > 0 && (
+        <TablePlaceholderActions>
+          {resolvedChildren}
+        </TablePlaceholderActions>
+      )}
+    </TablePlaceholderRoot>
+  )
 }
 
 const PrototypeHeaderTitle = ({
@@ -1585,6 +1662,10 @@ const PreviewRoot = styled.div`
       height: auto;
     }
 
+    .table-height-full .ant-table:has(.table-prototype-placeholder) table {
+      height: 100%;
+    }
+
     .table-height-full .ant-table-wrapper,
     .table-height-full .ant-spin-nested-loading,
     .table-height-full .ant-spin-container,
@@ -1599,6 +1680,92 @@ const PreviewRoot = styled.div`
       flex: 1 1 auto;
       display: block;
       min-height: 0;
+    }
+
+    .table-height-full .ant-table-tbody {
+      height: 100%;
+    }
+
+    .ant-table-tbody > tr.ant-table-placeholder > td {
+      padding: 0 !important;
+      background: #f4f6fa;
+    }
+
+    .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+      background: #f4f6fa;
+    }
+
+    .ant-table-placeholder > .ant-table-cell > .table-prototype-placeholder {
+      position: sticky;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      min-height: 200px;
+    }
+
+    .table-height-full .ant-table-placeholder,
+    .table-height-full .ant-table-placeholder > .ant-table-cell,
+    .table-height-full .ant-table-placeholder > .ant-table-cell > .table-prototype-placeholder {
+      height: 100%;
+    }
+
+    .ant-table-thead > tr > th.table-prototype-column {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      box-sizing: border-box !important;
+      vertical-align: middle !important;
+    }
+
+    .ant-table-thead > tr > th.table-prototype-column .kl6-table-dropdown {
+      display: flex;
+      align-items: center;
+      max-width: 100%;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      box-sizing: border-box;
+    }
+
+    .ant-table-thead > tr > th.table-prototype-column .kl6-table-dropdown > div {
+      align-items: center;
+      min-width: 0;
+    }
+
+    &[data-table-prototype-size="compact"] .ant-table-thead > tr > th.table-prototype-column {
+      height: 28px !important;
+      min-height: 28px !important;
+    }
+
+    &[data-table-prototype-size="compact"] .ant-table-thead > tr > th.table-prototype-column .kl6-table-dropdown,
+    &[data-table-prototype-size="compact"] .ant-table-thead > tr > th.table-prototype-column .kl6-table-dropdown > div {
+      height: 28px !important;
+      min-height: 28px !important;
+    }
+
+    &[data-table-prototype-size="standard"] .ant-table-thead > tr > th.table-prototype-column {
+      height: 40px !important;
+      min-height: 40px !important;
+    }
+
+    &[data-table-prototype-size="standard"] .ant-table-thead > tr > th.table-prototype-column .kl6-table-dropdown,
+    &[data-table-prototype-size="standard"] .ant-table-thead > tr > th.table-prototype-column .kl6-table-dropdown > div {
+      height: 40px !important;
+      min-height: 40px !important;
+    }
+
+    &[data-table-prototype-size="compact"] .ant-table-tbody > tr > td.table-prototype-column {
+      height: 28px !important;
+      padding-top: 4px !important;
+      padding-bottom: 3px !important;
+      box-sizing: border-box !important;
+    }
+
+    &[data-table-prototype-size="standard"] .ant-table-tbody > tr > td.table-prototype-column {
+      height: 40px !important;
+      padding-top: 10px !important;
+      padding-bottom: 9px !important;
+      box-sizing: border-box !important;
     }
 
     .ant-table-thead > tr > th.table-prototype-column,
@@ -1671,6 +1838,13 @@ const PreviewRoot = styled.div`
       padding-right: 0 !important;
     }
 
+    &[data-table-prototype-selection-mode="checkbox"] colgroup col:first-child,
+    &[data-table-prototype-selection-mode="radio"] colgroup col:first-child {
+      width: 22px !important;
+      min-width: 22px !important;
+      max-width: 22px !important;
+    }
+
     .table-prototype-column--selection .kl6-checkbox-wrapper,
     .table-prototype-column--selection .ant-checkbox-wrapper,
     .table-prototype-column--selection .ant-radio-wrapper,
@@ -1706,8 +1880,10 @@ const HeaderTitle = styled.span.withConfig<{ $compact: boolean }>({
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  height: 100%;
+  min-height: ${({ $compact }) => $compact ? '28px' : '40px'};
   min-width: 0;
-  padding: ${({ $compact }) => $compact ? '4px 0' : '10px 0'};
+  padding: 0;
 
   .text {
     min-width: 0;
@@ -1728,44 +1904,39 @@ const ManualDataError = styled.span`
   color: #d4380d;
 `
 
-const ManualDataHintRoot = styled.div`
-  display: inline-flex;
+const TablePlaceholderRoot = styled.div`
+  display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: 100%;
-  color: #5f6673;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 200px;
+  padding: 24px;
+  background: #f4f6fa;
 
-  .title {
-    font-size: 12px;
-    line-height: 18px;
-  }
-
-  .code {
-    margin: 0;
-    padding: 10px 12px;
-    background: #f8fafc;
-    border: 1px solid #e6ebf2;
-    border-radius: 8px;
-    color: #1f1f1f;
-    font-size: 11px;
-    line-height: 16px;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
+  .hexa-ui-placeholder {
+    height: auto;
+    padding: 0;
+    background: transparent;
   }
 `
 
-const ManualDataHint = ({
-  example
-}: {
-  example: string
-}): JSX.Element => (
-  <ManualDataHintRoot>
-    <span className="title">
-      Manual mode expects a JSON array of rows in <code>dataSourceJson</code>. Use row <code>key</code> as a unique row id, and use the column <code>field</code> values as property names inside each row object.
-    </span>
-    <pre className="code">{example}</pre>
-  </ManualDataHintRoot>
-)
+const TablePlaceholderActions = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+
+  > * {
+    width: auto !important;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+`
 
 const StaticCell = styled.div`
   display: flex;
@@ -1818,6 +1989,17 @@ const ChoiceCell = styled(StaticCell)`
 `
 
 const HeaderChoiceCell = styled(ChoiceCell)``
+
+const TagGroupCell = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+
+  > div {
+    min-width: 0;
+  }
+`
 
 const PrototypeCheckboxButton = styled.span.withConfig({
   shouldForwardProp: prop => !['$checked', '$indeterminate'].includes(String(prop))

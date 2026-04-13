@@ -29,7 +29,7 @@ type ResizableHeaderCellProps = {
   width: number
   onResize: (width: number) => void
   disabled?: boolean
-}
+} & React.ThHTMLAttributes<HTMLTableCellElement>
 
 const HeaderCell = styled.th<{ $width: number }>`
   position: relative;
@@ -41,7 +41,8 @@ const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
   children,
   width,
   onResize,
-  disabled
+  disabled,
+  ...restProps
 }) => {
   const handleRef = useRef<HTMLDivElement>(null)
   const [isResizing, setIsResizing] = useState(false)
@@ -97,7 +98,7 @@ const ResizableHeaderCell: React.FC<ResizableHeaderCellProps> = ({
   }, [isResizing, handleMouseMove, handleMouseUp])
 
   return (
-    <HeaderCell $width={width}>
+    <HeaderCell {...restProps} $width={width}>
       {children}
       {!disabled && (
         <div
@@ -133,12 +134,11 @@ const ResizableTitle = (props: any) => {
 
   return (
     <ResizableHeaderCell
+      {...tableHeaderCellProps}
       width={width}
       onResize={onResize}
       disabled={resizing?.disabled}
-    >
-      {children}
-    </ResizableHeaderCell>
+    />
   )
 }
 

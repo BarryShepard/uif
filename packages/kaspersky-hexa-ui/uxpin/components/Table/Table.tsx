@@ -1,7 +1,6 @@
 import {
   TablePrototypeDataMode,
   TablePrototype,
-  TablePrototypeRow,
   TablePrototypeSelectionMode,
   TablePrototypeSize,
   defaultTablePrototypeColumns
@@ -15,12 +14,13 @@ import TableColumn, {
   resolveTableColumnChildren,
   tableColumnElementsToConfigs
 } from '../TableColumn/TableColumn'
+import TablePlaceholder, {
+  resolveTablePlaceholderConfig
+} from '../TablePlaceholder/TablePlaceholder'
 
 type UXPinTableProps = {
-  /** "generated" creates sample rows automatically, "manual" uses dataSourceJson/dataSource. */
+  /** "generated" creates sample rows automatically, "manual" uses dataSourceJson. */
   dataMode?: TablePrototypeDataMode,
-  /** Programmatic manual rows. Mostly useful in stories and tests. */
-  dataSource?: TablePrototypeRow[],
   /** Preferred manual authoring format in UXPin. Expects a JSON array of rows. */
   dataSourceJson?: string,
   /** Total number of generated rows when dataMode is "generated". */
@@ -93,6 +93,14 @@ const DEFAULT_TABLE_CHILDREN = (
       width={152}
       cellType="actions"
     />
+    <TablePlaceholder
+      size="small"
+      image={true}
+      imageType="no data"
+      titleText="No data"
+      description={true}
+      descriptionText="There is no table data to display yet."
+    />
   </>
 )
 
@@ -109,7 +117,6 @@ const resolveRowsPerPage = (
 const Table = ({
   children = DEFAULT_TABLE_CHILDREN,
   dataMode,
-  dataSource,
   dataSourceJson,
   rowsCount = 5,
   rowsPerPage = '20 on page',
@@ -129,6 +136,10 @@ const Table = ({
     const resolvedColumns = tableColumnElementsToConfigs(resolvedChildren)
     return resolvedColumns.length ? resolvedColumns : defaultTablePrototypeColumns
   }, [resolvedChildren])
+  const placeholder = useMemo(
+    () => resolveTablePlaceholderConfig(children) ?? resolveTablePlaceholderConfig(DEFAULT_TABLE_CHILDREN),
+    [children]
+  )
   const resolvedRowsPerPage = resolveRowsPerPage(rowsPerPage)
   const shouldFillHeight = heightMode === 'fill'
 
@@ -142,8 +153,8 @@ const Table = ({
     })}>
       <TablePrototype
         columns={columns}
+        placeholder={placeholder}
         dataMode={dataMode}
-        dataSource={dataSource}
         dataSourceJson={dataSourceJson}
         rowsCount={rowsCount}
         rowsPerPage={resolvedRowsPerPage}

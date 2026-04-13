@@ -30,6 +30,8 @@ export type UXPinTableColumnProps = {
   cellType?: TablePrototypeCellType,
   /** Enables header sorting for this column. */
   sortable?: boolean,
+  /** Applies initial sorting when the table first renders. */
+  defaultSort?: TablePrototypeSortState,
   /** Enables header filtering for this column. */
   filterable?: boolean,
   /** Comma- or newline-separated filter items shown inside the column dropdown. Empty value derives options from row data. */
@@ -73,6 +75,9 @@ type TableColumnComponent = React.FC<UXPinTableColumnProps> & {
 }
 
 const TABLE_COLUMN_ROLE = 'hexa-uxpin-table-column'
+const TABLE_COLUMN_SEARCH_BOUNDARY_ROLES = new Set([
+  'hexa-uxpin-table-placeholder'
+])
 
 const hasTableColumnShape = (props: Record<string, unknown> = {}): boolean => (
   'title' in props ||
@@ -81,6 +86,7 @@ const hasTableColumnShape = (props: Record<string, unknown> = {}): boolean => (
   'fill' in props ||
   'cellType' in props ||
   'sortable' in props ||
+  'defaultSort' in props ||
   'filterable' in props ||
   'filterItems' in props ||
   'resetFilterButton' in props ||
@@ -95,9 +101,17 @@ const hasTableColumnShape = (props: Record<string, unknown> = {}): boolean => (
   'cellVariant' in props ||
   'elementBefore' in props ||
   'elementBeforeSlot' in props ||
-  'text' in props ||
   'elementAfter' in props ||
   'elementAfterSlot' in props
+)
+
+const isTableColumnSearchBoundary = (node: React.ReactNode): boolean => (
+  React.isValidElement(node) &&
+  (
+    TABLE_COLUMN_SEARCH_BOUNDARY_ROLES.has(String((node.type as { uxpinRole?: string })?.uxpinRole)) ||
+    (node.type as { displayName?: string })?.displayName === 'TablePlaceholder' ||
+    (node.type as { name?: string })?.name === 'TablePlaceholder'
+  )
 )
 
 export const isUXPinTableColumnElement = (
@@ -124,6 +138,10 @@ export const resolveTableColumnChildren = (
 
     if (isUXPinTableColumnElement(child)) {
       columns.push(child)
+      return
+    }
+
+    if (isTableColumnSearchBoundary(child)) {
       return
     }
 
@@ -158,7 +176,7 @@ export const tableColumnElementsToConfigs = (
       headerText: props.headerText,
       headerVariant: props.headerVariant,
       headerState: props.headerState,
-      sort: props.sort,
+      sort: props.defaultSort ?? props.sort,
       filter: props.filter,
       sortable: props.sortable,
       filterable: props.filterable,
@@ -215,6 +233,7 @@ TableColumn.defaultProps = {
   fill: false,
   cellType: 'text',
   sortable: false,
+  defaultSort: 'notApplied',
   filterable: false,
   filterItems: '',
   resetFilterButton: false,
