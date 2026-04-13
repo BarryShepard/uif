@@ -49,6 +49,11 @@ const GroupWrapperRoot = styled.div`
   > * {
     flex: 0 0 auto !important;
   }
+
+  > [data-hexa-uxpin-table-height-mode='fill'] {
+    flex: 1 1 auto !important;
+    min-height: 0;
+  }
 `
 
 const GroupWrapper = ({
@@ -62,6 +67,7 @@ const GroupWrapper = ({
       flexDirection: 'column',
       gap: 16,
       minWidth: 0,
+      minHeight: 0,
       boxSizing: 'border-box',
       ...getGroupWidthStyle(flexWidth),
       ...style

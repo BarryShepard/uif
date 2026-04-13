@@ -28,6 +28,13 @@ const PageWrapperRoot = styled.div`
   > * {
     flex: 0 0 auto !important;
   }
+
+  > [data-hexa-uxpin-table-height-mode='fill'],
+  > [data-hexa-uxpin-section-wrapper]:has([data-hexa-uxpin-table-height-mode='fill']),
+  > [data-hexa-uxpin-group-wrapper]:has([data-hexa-uxpin-table-height-mode='fill']) {
+    flex: 1 1 auto !important;
+    min-height: 0;
+  }
 `
 
 const EmptyPageWrapperHint = (): JSX.Element => (

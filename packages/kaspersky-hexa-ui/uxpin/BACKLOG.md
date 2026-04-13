@@ -62,6 +62,7 @@ Fallback solution to keep:
 - `frameHeight` explicitly sets table frame height in px.
 - The table then runs in `fillFrameHeight` mode, keeps pagination docked at the bottom, and scrolls rows internally.
 - This is less ergonomic than drag-resize, but it is a safe escape hatch if UXPin frame resizing becomes unstable.
+- Last checkpoint with the explicit `frameHeight` API: `897e3ac` (`checkpoint: save uxpin layout wrappers and table sizing`).
 
 ## Menu inside flex layouts
 

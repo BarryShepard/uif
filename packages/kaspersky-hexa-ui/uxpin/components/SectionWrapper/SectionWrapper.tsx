@@ -15,6 +15,7 @@ const sectionWrapperStyle: CSSProperties = {
   gap: 24,
   width: '100%',
   minWidth: 0,
+  minHeight: 0,
   flex: '0 0 auto',
   boxSizing: 'border-box'
 }
@@ -22,6 +23,12 @@ const sectionWrapperStyle: CSSProperties = {
 const SectionWrapperRoot = styled.div`
   > * {
     flex: 0 0 auto !important;
+  }
+
+  > [data-hexa-uxpin-table-height-mode='fill'],
+  > [data-hexa-uxpin-group-wrapper]:has([data-hexa-uxpin-table-height-mode='fill']) {
+    flex: 1 1 auto !important;
+    min-height: 0;
   }
 `
 

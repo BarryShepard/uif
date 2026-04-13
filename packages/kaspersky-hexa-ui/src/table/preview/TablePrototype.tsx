@@ -286,6 +286,7 @@ export const TablePrototype = ({
   const rootRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
   const [scrollViewportHeight, setScrollViewportHeight] = useState<number | undefined>(undefined)
+  const [hasVerticalOverflow, setHasVerticalOverflow] = useState(false)
   const hasExplicitFrameHeight = fillFrameHeight || hasConcreteFrameHeightStyle(style)
   const resolvedRowsCount = normalizePositiveInteger(rowsCount ?? rows, rows)
   const resolvedRowsPerPage = normalizePositiveInteger(rowsPerPage ?? pageSize, DEFAULT_PAGE_SIZE)
@@ -358,6 +359,7 @@ export const TablePrototype = ({
 
       if (!hasExplicitFrameHeight) {
         setScrollViewportHeight(undefined)
+        setHasVerticalOverflow(false)
         return
       }
 
@@ -374,9 +376,19 @@ export const TablePrototype = ({
       const headerHeight = headerElement?.getBoundingClientRect().height ?? (size === 'compact' ? 29 : 41)
       const wrapperHeight = scrollingWrapper.getBoundingClientRect().height
       const nextViewportHeight = Math.max(Math.floor(wrapperHeight - headerHeight), 80)
+      const bodyContentElement = (
+        scrollingWrapper.querySelector('.ant-table-tbody') ||
+        scrollingWrapper.querySelector('.ant-table-placeholder')
+      ) as HTMLElement | null
+      const bodyContentHeight = bodyContentElement?.getBoundingClientRect().height ?? 0
+      const nextHasVerticalOverflow = bodyContentHeight > nextViewportHeight + 1
+      const nextScrollViewportHeight = nextHasVerticalOverflow ? nextViewportHeight : undefined
 
       setScrollViewportHeight((currentHeight) => (
-        currentHeight === nextViewportHeight ? currentHeight : nextViewportHeight
+        currentHeight === nextScrollViewportHeight ? currentHeight : nextScrollViewportHeight
+      ))
+      setHasVerticalOverflow((currentValue) => (
+        currentValue === nextHasVerticalOverflow ? currentValue : nextHasVerticalOverflow
       ))
     }
 
@@ -397,7 +409,9 @@ export const TablePrototype = ({
       element.querySelector('.table-horizontal-scrollbar'),
       element.querySelector('.ant-pagination-container'),
       element.querySelector('.ant-table-header'),
-      element.querySelector('.ant-table-thead')
+      element.querySelector('.ant-table-thead'),
+      element.querySelector('.ant-table-tbody'),
+      element.querySelector('.ant-table-placeholder')
     ]
       .filter((node): node is Element => Boolean(node))
       .forEach((node) => resizeObserver.observe(node))
@@ -409,7 +423,7 @@ export const TablePrototype = ({
 
       resizeObserver.disconnect()
     }
-  }, [hasExplicitFrameHeight, showPagination, size])
+  }, [activeRowsPerPage, currentPage, hasExplicitFrameHeight, resolvedDataSource.length, showPagination, size])
 
   const prototypeFilters = useMemo(
     () => createPrototypeFilters(resolvedDataSource, normalizedColumns),
@@ -613,7 +627,7 @@ export const TablePrototype = ({
         resizingMode="manual"
         rowMode={size}
         scroll={scroll}
-        stickyFooter={hasExplicitFrameHeight && showPagination}
+        stickyFooter={hasExplicitFrameHeight && showPagination && hasVerticalOverflow}
       />
     </PreviewRoot>
   )

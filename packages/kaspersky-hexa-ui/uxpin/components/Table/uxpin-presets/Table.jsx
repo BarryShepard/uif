@@ -12,6 +12,7 @@ export default (
     showPaginationSummary={true}
     showRowsPerPageSelector={true}
     selectionMode="checkbox"
+    heightMode="hug"
     size="compact"
   >
     <TableColumn

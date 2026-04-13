@@ -33,8 +33,8 @@ type UXPinTableProps = {
   showRowsPerPageSelector?: boolean,
   /** Adds the built-in selection column. Its width is fixed by the table. */
   selectionMode?: TablePrototypeSelectionMode,
-  /** Optional fixed UXPin frame height in px. Leave empty to resize directly via the frame. */
-  frameHeight?: number,
+  /** Controls vertical sizing: "hug" follows content, "fill" fills the available wrapper/frame height. */
+  heightMode?: UXPinTableHeightMode,
   showPagination?: boolean,
   size?: TablePrototypeSize,
   children?: React.ReactNode,
@@ -42,13 +42,13 @@ type UXPinTableProps = {
 }
 
 type UXPinRowsPerPage = '20 on page' | '50 on page' | '100 on page'
+type UXPinTableHeightMode = 'hug' | 'fill'
 
 const PreviewRoot = styled.div`
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
   width: 100%;
-  height: 100%;
   min-width: 0;
   min-height: 0;
   align-self: stretch;
@@ -96,23 +96,6 @@ const DEFAULT_TABLE_CHILDREN = (
   </>
 )
 
-const resolveFrameHeightStyle = (
-  style: CSSProperties | undefined,
-  frameHeight: number | undefined
-): Pick<CSSProperties, 'height' | 'maxHeight' | 'minHeight'> => {
-  const fallbackHeight = frameHeight !== undefined ? frameHeight : undefined
-
-  return {
-    ...(style?.height !== undefined || fallbackHeight !== undefined
-      ? { height: style?.height ?? fallbackHeight }
-      : {}),
-    ...(style?.minHeight !== undefined
-      ? { minHeight: style.minHeight }
-      : {}),
-    ...(style?.maxHeight !== undefined ? { maxHeight: style.maxHeight } : {})
-  }
-}
-
 const resolveRowsPerPage = (
   rowsPerPage: UXPinRowsPerPage | number | undefined
 ): number => {
@@ -133,7 +116,7 @@ const Table = ({
   showPaginationSummary = true,
   showRowsPerPageSelector = true,
   selectionMode = 'checkbox',
-  frameHeight,
+  heightMode = 'hug',
   showPagination = true,
   size = 'compact',
   style
@@ -146,19 +129,16 @@ const Table = ({
     const resolvedColumns = tableColumnElementsToConfigs(resolvedChildren)
     return resolvedColumns.length ? resolvedColumns : defaultTablePrototypeColumns
   }, [resolvedChildren])
-  const frameHeightStyle = useMemo(
-    () => resolveFrameHeightStyle(style, frameHeight),
-    [frameHeight, style]
-  )
   const resolvedRowsPerPage = resolveRowsPerPage(rowsPerPage)
+  const shouldFillHeight = heightMode === 'fill'
 
   return (
-    <PreviewRoot data-hexa-uxpin-table-root="true" style={mergeFrameStyle({
+    <PreviewRoot data-hexa-uxpin-table-root="true" data-hexa-uxpin-table-height-mode={heightMode} style={mergeFrameStyle({
       width: '100%',
-      height: '100%',
+      height: shouldFillHeight ? '100%' : 'auto',
+      flex: shouldFillHeight ? '1 1 auto' : '0 0 auto',
       minHeight: 0,
-      ...style,
-      ...frameHeightStyle
+      ...style
     })}>
       <TablePrototype
         columns={columns}
@@ -170,13 +150,13 @@ const Table = ({
         showPaginationSummary={showPaginationSummary}
         showRowsPerPageSelector={showRowsPerPageSelector}
         selectionMode={selectionMode}
-        fillFrameHeight={true}
+        fillFrameHeight={shouldFillHeight}
         showPagination={showPagination}
         size={size}
         style={mergeFrameStyle({
           width: '100%',
-          height: '100%',
-          flex: 1,
+          height: shouldFillHeight ? '100%' : undefined,
+          flex: shouldFillHeight ? 1 : undefined,
           minHeight: 0
         })}
       />
@@ -191,6 +171,7 @@ Table.defaultProps = {
   showPaginationSummary: true,
   showRowsPerPageSelector: true,
   selectionMode: 'checkbox',
+  heightMode: 'hug',
   showPagination: true,
   size: 'compact'
 }
