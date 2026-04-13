@@ -101,7 +101,7 @@ interface ISortInfo {
   icon: React.ReactElement
 }
 
-interface IDropdownColumnTitleProps extends Pick<TableColumn, 'showFilterIcon' | 'hideDefaultMenuIcon'> {
+interface IDropdownColumnTitleProps extends Pick<TableColumn, 'showFilterIcon' | 'hideDefaultMenuIcon' | 'showResetFilterButton'> {
   testId?: string,
   klId?: string,
   dataIndex: string,
@@ -135,6 +135,7 @@ export const DropdownColumnTitle: FC<IDropdownColumnTitleProps> = ({
   setActiveSorting,
   closeDropdownOnSelect = true,
   showFilterIcon,
+  showResetFilterButton = true,
   hideDefaultMenuIcon,
   allowMultipleFilters
 }): React.ReactElement => {
@@ -341,7 +342,7 @@ export const DropdownColumnTitle: FC<IDropdownColumnTitleProps> = ({
             filterItems
           }
           {
-            filterItems && [
+            filterItems && showResetFilterButton && [
               <div key="resetFiltersDivider" className="hexa-ui-dropdown-item-divider-wrapper">
                 <Dropdown.MenuDivider className="hexa-ui-dropdown-item-divider" />
               </div>,

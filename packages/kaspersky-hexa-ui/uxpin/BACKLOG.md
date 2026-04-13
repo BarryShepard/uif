@@ -48,3 +48,40 @@ Recommended future implementation:
 2. Keep the search field mounted in the right toolbar section and animate visibility to the left of the trigger.
 3. Use applied-query state to drive the indicator after `Enter`.
 4. Verify the result against production toolbar layout and states before rolling it out more broadly.
+
+## Table height fallback
+
+Status: reference
+
+Context:
+- UXPin table height is sensitive to how nested frames pass height into React.
+- The preferred behavior is direct frame drag-resize: the table fills its own UXPin frame, while `PageWrapper` provides page-level scrolling when several tables overflow.
+- If UXPin nested frame height propagation regresses again, the previously working fallback is the optional `frameHeight` prop on UXPin `Table`.
+
+Fallback solution to keep:
+- `frameHeight` explicitly sets table frame height in px.
+- The table then runs in `fillFrameHeight` mode, keeps pagination docked at the bottom, and scrolls rows internally.
+- This is less ergonomic than drag-resize, but it is a safe escape hatch if UXPin frame resizing becomes unstable.
+
+## Menu inside flex layouts
+
+Status: pending
+
+Context:
+- UXPin `Menu` currently behaves like a full-width block inside flex containers.
+- When placed next to other elements inside a `flex` parent, it tends to share space evenly and stretch horizontally instead of keeping its natural sidebar width.
+- When `Menu` is collapsed with its own toggle button, the visual width decreases, but neighboring flex items do not move as if the original width is still reserved in layout.
+- The immediate workaround is a custom UXPin prop, but the component behavior itself should be improved.
+
+Likely root cause:
+- The UXPin `Menu` wrapper currently forces `width: 100%` on both the preview root and the menu preview shell.
+- In flex layouts this makes each `Menu` instance request the full available width, so flexbox shrinks siblings proportionally.
+- The collapsed visual state likely does not propagate back to the outer wrapper sizing model, so the wrapper keeps occupying the pre-collapse width in flex layout.
+
+Recommended future implementation:
+1. Revisit the UXPin `Menu` wrapper sizing model.
+2. Remove unconditional `width: 100%` from the menu wrapper path.
+3. Keep `minWidth: 280px` as the default sidebar floor.
+4. Make full-width behavior opt-in rather than default.
+5. Ensure collapsed width updates the outer layout width, not only the inner visual state.
+6. Verify behavior in plain frame layout and inside flexbox containers with multiple siblings.

@@ -32,6 +32,10 @@ export type UXPinTableColumnProps = {
   sortable?: boolean,
   /** Enables header filtering for this column. */
   filterable?: boolean,
+  /** Comma- or newline-separated filter items shown inside the column dropdown. Empty value derives options from row data. */
+  filterItems?: string,
+  /** Shows the Reset filter action inside the column dropdown. */
+  resetFilterButton?: boolean,
   /** Adds an info icon to the header title. */
   infoButton?: boolean,
   /** Text shown in the popover when the info icon is clicked. */
@@ -78,6 +82,8 @@ const hasTableColumnShape = (props: Record<string, unknown> = {}): boolean => (
   'cellType' in props ||
   'sortable' in props ||
   'filterable' in props ||
+  'filterItems' in props ||
+  'resetFilterButton' in props ||
   'infoButton' in props ||
   'sampleValue' in props ||
   'headerText' in props ||
@@ -156,6 +162,8 @@ export const tableColumnElementsToConfigs = (
       filter: props.filter,
       sortable: props.sortable,
       filterable: props.filterable,
+      filterItems: props.filterItems,
+      resetFilterButton: props.resetFilterButton,
       infoButton: props.infoButton ?? props.buttonInfo,
       infoText: props.infoText,
       cellType: props.cellType ?? props.cellVariant,
@@ -208,6 +216,8 @@ TableColumn.defaultProps = {
   cellType: 'text',
   sortable: false,
   filterable: false,
+  filterItems: '',
+  resetFilterButton: false,
   infoButton: false,
   elementBefore: false,
   elementAfter: false

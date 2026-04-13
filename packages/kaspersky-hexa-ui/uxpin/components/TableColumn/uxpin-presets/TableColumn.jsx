@@ -12,6 +12,8 @@ export default (
     cellType="text"
     sortable={false}
     filterable={false}
+    filterItems=""
+    resetFilterButton={false}
     infoButton={false}
     elementBefore={false}
     elementAfter={false}

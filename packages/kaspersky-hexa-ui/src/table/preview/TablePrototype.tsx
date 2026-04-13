@@ -125,6 +125,10 @@ export type TablePrototypeColumnConfig = {
   cellVariant?: TablePrototypeCellVariant,
   sortable?: boolean,
   filterable?: boolean,
+  /** Comma- or newline-separated labels shown in the column filter dropdown. Empty value derives options from row data. */
+  filterItems?: string,
+  /** Shows the Reset filter action in the column dropdown. */
+  resetFilterButton?: boolean,
   infoButton?: boolean,
   infoText?: string,
   buttonInfo?: boolean,
@@ -199,6 +203,8 @@ type NormalizedColumn = {
   cellType: TablePrototypeCellType,
   sortable: boolean,
   filterable: boolean,
+  filterItems: string[],
+  resetFilterButton: boolean,
   infoButton: boolean,
   infoText: string,
   sampleValue: TablePrototypeCellValue,
@@ -218,8 +224,8 @@ const SELECT_OPTIONS: TablePrototypeOption[] = [
   { label: 'Option 3', value: 'option-3' }
 ]
 
-const DEFAULT_PAGE_SIZE = 5
-const PROTOTYPE_PAGE_SIZE_OPTIONS = ['5', '10', '25', '50', '100']
+const DEFAULT_PAGE_SIZE = 20
+const PROTOTYPE_PAGE_SIZE_OPTIONS = ['20', '50', '100']
 
 export const defaultTablePrototypeColumns: TablePrototypeColumnConfig[] = [
   {
@@ -504,7 +510,7 @@ export const TablePrototype = ({
         columnId: column.key,
         title: <PrototypeHeaderTitle title={column.title} infoButton={column.infoButton} infoText={column.infoText} size={size} />,
         hideDefaultMenuIcon: !(column.sortable || column.filterable),
-        showFilterIcon: column.filterable || undefined,
+        showResetFilterButton: column.resetFilterButton,
         width: column.width,
         className: `table-prototype-column table-prototype-column--${column.cellType}`,
         align: column.cellType === 'checkbox' || column.cellType === 'radio' || column.cellType === 'icon'
@@ -576,7 +582,9 @@ export const TablePrototype = ({
       fill: column.fill,
       cellType: column.cellType,
       sortable: column.sortable,
-      filterable: column.filterable
+      filterable: column.filterable,
+      filterItems: column.filterItems.join('|'),
+      resetFilterButton: column.resetFilterButton
     })),
     selectionMode,
     showPagination,
@@ -649,6 +657,8 @@ const normalizePrototypeColumn = (
     cellType,
     sortable,
     filterable,
+    filterItems: parseFilterItems(column.filterItems),
+    resetFilterButton: column.resetFilterButton ?? false,
     infoButton: column.infoButton ?? column.buttonInfo ?? false,
     infoText: column.infoText ?? `About ${title}`,
     sampleValue: column.sampleValue ?? column.text ?? resolveDefaultSampleValue(cellType),
@@ -720,6 +730,17 @@ const normalizePositiveInteger = (
   }
 
   return Math.round(parsedValue)
+}
+
+const parseFilterItems = (value: string | undefined): string[] => {
+  if (!value?.trim()) {
+    return []
+  }
+
+  return value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
 }
 
 const hasConcreteFrameDimension = (
@@ -1092,13 +1113,15 @@ const createPrototypeFilters = (
       return acc
     }
 
-    const values = Array.from(
-      new Set(
-        flattenPrototypeRows(rows)
-          .map((row) => resolveFilterLabel(row[column.field], column.cellType))
-          .filter((value): value is string => Boolean(value))
-      )
-    ).slice(0, 8)
+    const values = column.filterItems.length
+      ? column.filterItems
+      : Array.from(
+        new Set(
+          flattenPrototypeRows(rows)
+            .map((row) => resolveFilterLabel(row[column.field], column.cellType))
+            .filter((value): value is string => Boolean(value))
+        )
+      ).slice(0, 8)
 
     acc[column.field] = values.map((value) => ({
       name: value,

@@ -233,6 +233,11 @@ export type TableColumn = Omit<
    * Useful for prototype scenarios where the header should stay visually closer to design mocks.
    */
   hideDefaultMenuIcon?: boolean,
+  /**
+   * Shows the reset filters action inside the column dropdown.
+   * Defaults to enabled for production tables.
+   */
+  showResetFilterButton?: boolean,
   width?: number | string,
   isUserDefinedWidth?: boolean,
   renderGroupTitle?: (data: string) => ReactNode,

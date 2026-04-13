@@ -26,7 +26,7 @@ type UXPinTableProps = {
   /** Total number of generated rows when dataMode is "generated". */
   rowsCount?: number,
   /** How many rows are visible on one page when pagination is enabled. */
-  rowsPerPage?: number,
+  rowsPerPage?: UXPinRowsPerPage,
   /** Shows the total summary block next to pagination controls. */
   showPaginationSummary?: boolean,
   /** Shows the rows-per-page selector on the right side of pagination. */
@@ -41,10 +41,12 @@ type UXPinTableProps = {
   style?: CSSProperties
 }
 
+type UXPinRowsPerPage = '20 on page' | '50 on page' | '100 on page'
+
 const PreviewRoot = styled.div`
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -53,6 +55,12 @@ const PreviewRoot = styled.div`
   background: transparent;
   box-sizing: border-box;
 `
+
+const ROWS_PER_PAGE_BY_OPTION: Record<UXPinRowsPerPage, number> = {
+  '20 on page': 20,
+  '50 on page': 50,
+  '100 on page': 100
+}
 
 const DEFAULT_TABLE_CHILDREN = (
   <>
@@ -105,19 +113,29 @@ const resolveFrameHeightStyle = (
   }
 }
 
+const resolveRowsPerPage = (
+  rowsPerPage: UXPinRowsPerPage | number | undefined
+): number => {
+  if (typeof rowsPerPage === 'number') {
+    return rowsPerPage
+  }
+
+  return rowsPerPage ? ROWS_PER_PAGE_BY_OPTION[rowsPerPage] : 20
+}
+
 const Table = ({
   children = DEFAULT_TABLE_CHILDREN,
   dataMode,
   dataSource,
   dataSourceJson,
   rowsCount = 5,
-  rowsPerPage = 5,
+  rowsPerPage = '20 on page',
   showPaginationSummary = true,
   showRowsPerPageSelector = true,
   selectionMode = 'checkbox',
   frameHeight,
   showPagination = true,
-  size = 'standard',
+  size = 'compact',
   style
 }: UXPinTableProps): JSX.Element => {
   const resolvedChildren = useMemo(() => {
@@ -132,10 +150,12 @@ const Table = ({
     () => resolveFrameHeightStyle(style, frameHeight),
     [frameHeight, style]
   )
+  const resolvedRowsPerPage = resolveRowsPerPage(rowsPerPage)
 
   return (
-    <PreviewRoot style={mergeFrameStyle({
+    <PreviewRoot data-hexa-uxpin-table-root="true" style={mergeFrameStyle({
       width: '100%',
+      height: '100%',
       minHeight: 0,
       ...style,
       ...frameHeightStyle
@@ -146,7 +166,7 @@ const Table = ({
         dataSource={dataSource}
         dataSourceJson={dataSourceJson}
         rowsCount={rowsCount}
-        rowsPerPage={rowsPerPage}
+        rowsPerPage={resolvedRowsPerPage}
         showPaginationSummary={showPaginationSummary}
         showRowsPerPageSelector={showRowsPerPageSelector}
         selectionMode={selectionMode}
@@ -167,12 +187,12 @@ const Table = ({
 Table.defaultProps = {
   children: DEFAULT_TABLE_CHILDREN,
   rowsCount: 5,
-  rowsPerPage: 5,
+  rowsPerPage: '20 on page',
   showPaginationSummary: true,
   showRowsPerPageSelector: true,
   selectionMode: 'checkbox',
   showPagination: true,
-  size: 'standard'
+  size: 'compact'
 }
 
 Table.displayName = 'Table'

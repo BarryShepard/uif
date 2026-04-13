@@ -7,12 +7,12 @@ export default (
   <Table
     uxpId="table-1"
     rowsCount={5}
-    rowsPerPage={5}
+    rowsPerPage="20 on page"
     showPagination={true}
     showPaginationSummary={true}
     showRowsPerPageSelector={true}
     selectionMode="checkbox"
-    size="standard"
+    size="compact"
   >
     <TableColumn
       uxpId="table-column-1"

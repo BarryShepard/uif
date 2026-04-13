@@ -97,6 +97,7 @@ export const SortingAndFilters: TableModule = Component => function SortingAndFi
             setActiveSorting={setExternalSorting || setActiveSorting}
             showFilterIcon={column.showFilterIcon}
             hideDefaultMenuIcon={column.hideDefaultMenuIcon}
+            showResetFilterButton={column.showResetFilterButton}
           />
       }
     })
