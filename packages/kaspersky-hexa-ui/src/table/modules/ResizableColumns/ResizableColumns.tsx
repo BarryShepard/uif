@@ -171,8 +171,10 @@ const mapColumns = (
     : ({
         ...col,
         onHeaderCell: (column: any) => {
+          const originalHeaderCellProps = col.onHeaderCell?.(column) ?? {}
           resizeColumnCallback?.(column)
           return ({
+            ...originalHeaderCellProps,
             resizing: column.resizing,
             width: column.width,
             onResize: (newWidth: number) => setTableColumns(resizeColumns(index, newWidth, tableColumns, onManualColumnResize))

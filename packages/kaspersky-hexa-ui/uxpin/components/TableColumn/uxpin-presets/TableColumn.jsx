@@ -15,6 +15,8 @@ export default (
     filterItems=""
     resetFilterButton={false}
     infoButton={false}
+    toggleOnText="Enabled"
+    toggleOffText="Disabled"
     elementBefore={false}
     elementAfter={false}
   />

@@ -44,6 +44,10 @@ export type UXPinTableColumnProps = {
   infoText?: string,
   /** Used only in generated mode to override the default example value. */
   sampleValue?: TablePrototypeCellValue,
+  /** Text shown next to toggle cells when the row value is enabled. */
+  toggleOnText?: string,
+  /** Text shown next to toggle cells when the row value is disabled. */
+  toggleOffText?: string,
   /** Used by select-based cell types in generated mode. */
   options?: TablePrototypeOption[],
   /** Adds a leading placeholder slot for text/link/tree text cells. */
@@ -92,6 +96,8 @@ const hasTableColumnShape = (props: Record<string, unknown> = {}): boolean => (
   'resetFilterButton' in props ||
   'infoButton' in props ||
   'sampleValue' in props ||
+  'toggleOnText' in props ||
+  'toggleOffText' in props ||
   'headerText' in props ||
   'headerVariant' in props ||
   'headerState' in props ||
@@ -187,6 +193,8 @@ export const tableColumnElementsToConfigs = (
       cellType: props.cellType ?? props.cellVariant,
       cellVariant: props.cellVariant,
       sampleValue: props.sampleValue ?? props.text,
+      toggleOnText: props.toggleOnText,
+      toggleOffText: props.toggleOffText,
       options: props.options,
       elementBefore: props.elementBefore,
       elementBeforeSlot: props.elementBeforeSlot,
@@ -238,6 +246,8 @@ TableColumn.defaultProps = {
   filterItems: '',
   resetFilterButton: false,
   infoButton: false,
+  toggleOnText: 'Enabled',
+  toggleOffText: 'Disabled',
   elementBefore: false,
   elementAfter: false
 }

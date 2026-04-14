@@ -11,6 +11,7 @@ import { TagProps, TagReductionGroupProps } from './types'
 const StyledTagReductionGroup = styled.div.withConfig<{ isMultiline: boolean }>({
   shouldForwardProp: prop => !['isMultiline'].includes(prop)
 })`
+  position: relative;
   width: 100%;
   display: flex;
   flex-grow: 1;
@@ -46,6 +47,7 @@ const TagWithReduction = styled(Tag)`
 
   &.hexa-tag-reduction-group-trunc-tag {
     overflow: visible;
+    flex: 0 0 auto;
   }
 `
 
@@ -106,7 +108,7 @@ export const TagReductionGroup: FC<TagReductionGroupProps> = ({
         setCentralItem(items[lastFittingItemIndex])
         setItemsToHide(items.slice(lastFittingItemIndex + 1))
     }
-  }, [lastFittingItemIndex])
+  }, [items, lastFittingItemIndex])
 
   return (
     <StyledTagReductionGroup ref={setContainerRef} isMultiline={isMultiline}>

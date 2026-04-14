@@ -11,7 +11,7 @@ import { Table } from '@src/table'
 import { TableColumn, TableRecord } from '@src/table/types'
 import { TagProps, TagReductionGroup } from '@src/tag'
 import { Toggle } from '@src/toggle'
-import React, { CSSProperties, Key, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import React, { CSSProperties, Key, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 
 import {
@@ -138,6 +138,8 @@ export type TablePrototypeColumnConfig = {
   buttonInfo?: boolean,
   sampleValue?: TablePrototypeCellValue,
   text?: string,
+  toggleOnText?: string,
+  toggleOffText?: string,
   options?: TablePrototypeOption[],
   elementBefore?: boolean,
   elementBeforeSlot?: ReactNode,
@@ -225,6 +227,8 @@ type NormalizedColumn = {
   infoText: string,
   sampleValue: TablePrototypeCellValue,
   hasCustomSampleValue: boolean,
+  toggleOnText: string,
+  toggleOffText: string,
   options: TablePrototypeOption[],
   elementBefore: boolean,
   elementBeforeSlot?: ReactNode,
@@ -234,11 +238,27 @@ type NormalizedColumn = {
   defaultFilter: TablePrototypeFilterState
 }
 
+type TablePrototypeCellOverrides = Record<string, Record<string, TablePrototypeCellValue>>
+
 const SELECT_OPTIONS: TablePrototypeOption[] = [
   { label: 'Option 1', value: 'option-1' },
   { label: 'Option 2', value: 'option-2' },
   { label: 'Option 3', value: 'option-3' }
 ]
+
+const CHOICE_COLUMN_WIDTH = 22
+const CHOICE_CONTROL_SIZE = 14
+const DEFAULT_TOGGLE_ON_TEXT = 'Enabled'
+const DEFAULT_TOGGLE_OFF_TEXT = 'Disabled'
+const CHECKED_TEXT_VALUES = new Set(['1', 'active', 'checked', 'enabled', 'on', 'true', 'yes'])
+const UNCHECKED_TEXT_VALUES = new Set(['0', 'disabled', 'false', 'inactive', 'no', 'off', 'unchecked'])
+const CHOICE_COLUMN_STYLE: CSSProperties = {
+  width: CHOICE_COLUMN_WIDTH,
+  minWidth: CHOICE_COLUMN_WIDTH,
+  maxWidth: CHOICE_COLUMN_WIDTH,
+  paddingLeft: 0,
+  paddingRight: 0
+}
 
 const DEFAULT_PAGE_SIZE = 20
 const PROTOTYPE_PAGE_SIZE_OPTIONS = ['20', '50', '100']
@@ -333,14 +353,41 @@ export const TablePrototype = ({
       : buildGeneratedRows(normalizedColumns, resolvedRowsCount),
     [normalizedColumns, resolvedDataMode, resolvedManualData.rows, resolvedRowsCount]
   )
+  const [cellOverrides, setCellOverrides] = useState<TablePrototypeCellOverrides>({})
   const rowKeys = useMemo(() => collectRowKeys(resolvedDataSource), [resolvedDataSource])
+  const interactiveDataSource = useMemo(
+    () => applyCellOverrides(resolvedDataSource, cellOverrides),
+    [cellOverrides, resolvedDataSource]
+  )
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [activeRowsPerPage, setActiveRowsPerPage] = useState(resolvedRowsPerPage)
 
   useEffect(() => {
+    setCellOverrides({})
+  }, [resolvedDataSource])
+
+  useEffect(() => {
     setSelectedRowKeys((prevKeys) => prevKeys.filter((key) => rowKeys.includes(key)))
   }, [rowKeys])
+
+  const updateCellValue = useCallback((
+    rowKey: Key | undefined,
+    field: string,
+    value: TablePrototypeCellValue
+  ) => {
+    if (rowKey === undefined) {
+      return
+    }
+
+    setCellOverrides((prevOverrides) => ({
+      ...prevOverrides,
+      [String(rowKey)]: {
+        ...prevOverrides[String(rowKey)],
+        [field]: value
+      }
+    }))
+  }, [])
 
   useEffect(() => {
     setActiveRowsPerPage(resolvedRowsPerPage)
@@ -356,12 +403,12 @@ export const TablePrototype = ({
       return
     }
 
-    const maxPage = Math.max(1, Math.ceil(resolvedDataSource.length / activeRowsPerPage))
+    const maxPage = Math.max(1, Math.ceil(interactiveDataSource.length / activeRowsPerPage))
 
     setCurrentPage((prevPage) => (
       prevPage > maxPage ? maxPage : prevPage
     ))
-  }, [activeRowsPerPage, currentPage, resolvedDataSource.length, showPagination])
+  }, [activeRowsPerPage, currentPage, interactiveDataSource.length, showPagination])
 
   useEffect(() => {
     const tableBody = rootRef.current?.querySelector('.ant-table-body') as HTMLElement | null
@@ -451,8 +498,8 @@ export const TablePrototype = ({
   }, [activeRowsPerPage, currentPage, hasExplicitFrameHeight, resolvedDataSource.length, showPagination, size])
 
   const prototypeFilters = useMemo(
-    () => createPrototypeFilters(resolvedDataSource, normalizedColumns),
-    [normalizedColumns, resolvedDataSource]
+    () => createPrototypeFilters(interactiveDataSource, normalizedColumns),
+    [interactiveDataSource, normalizedColumns]
   )
   const initialSorting = useMemo(() => {
     const sortedColumn = normalizedColumns.find((column) => column.defaultSort !== 'notApplied')
@@ -489,7 +536,7 @@ export const TablePrototype = ({
 
     return Object.keys(appliedFilters).length ? appliedFilters : undefined
   }, [normalizedColumns, prototypeFilters])
-  const selectionColumnWidth = selectionMode === 'none' ? 0 : 22
+  const selectionColumnWidth = selectionMode === 'none' ? 0 : CHOICE_COLUMN_WIDTH
   const layoutColumns = useMemo(
     () => resolvePrototypeLayoutColumns(normalizedColumns, containerWidth, selectionColumnWidth),
     [normalizedColumns, containerWidth, selectionColumnWidth]
@@ -527,11 +574,13 @@ export const TablePrototype = ({
                   />
                 )
               : '',
-            width: selectionColumnWidth,
+            width: CHOICE_COLUMN_WIDTH,
             align: 'center' as const,
             className: 'table-prototype-column table-prototype-column--selection',
             ellipsis: false,
             resizing: { disabled: true },
+            onCell: () => ({ style: CHOICE_COLUMN_STYLE }),
+            onHeaderCell: () => ({ style: CHOICE_COLUMN_STYLE }),
             render: (_value: unknown, record: TableRecord) => (
               <PrototypeSelectionCell
                 selectionMode={selectionMode}
@@ -547,7 +596,7 @@ export const TablePrototype = ({
       ...layoutColumns.map((column) => ({
         key: column.key,
         dataIndex: column.field,
-        columnId: column.key,
+        columnId: column.field,
         title: <PrototypeHeaderTitle title={column.title} infoButton={column.infoButton} infoText={column.infoText} size={size} />,
         hideDefaultMenuIcon: !(column.sortable || column.filterable),
         showResetFilterButton: column.resetFilterButton,
@@ -568,10 +617,18 @@ export const TablePrototype = ({
           <TablePrototypeCell
             column={column}
             size={size}
-            value={value}
+            value={resolveRecordColumnValue(_record, column, value)}
             rowIndex={rowIndex}
+            rowKey={_record.key}
+            onCellValueChange={updateCellValue}
           />
-        )
+        ),
+        ...(isChoiceCellType(column.cellType)
+          ? {
+              onCell: () => ({ style: CHOICE_COLUMN_STYLE }),
+              onHeaderCell: () => ({ style: CHOICE_COLUMN_STYLE })
+            }
+          : {})
       }))
     ]
   ), [
@@ -580,9 +637,9 @@ export const TablePrototype = ({
     partiallySelected,
     prototypeFilters,
     selectedRowKeys,
-    selectionColumnWidth,
     selectionMode,
     size,
+    updateCellValue,
     rowKeys
   ])
   const treeColumn = layoutColumns.find((column) => (
@@ -662,7 +719,7 @@ export const TablePrototype = ({
       <Table
         key={tableInstanceKey}
         columns={tableColumns}
-        dataSource={resolvedDataSource}
+        dataSource={interactiveDataSource}
         expandable={treeColumn ? { expandColumnName: treeColumn.field } : undefined}
         emptyText={emptyText}
         fullHeight={hasExplicitFrameHeight}
@@ -722,6 +779,8 @@ const normalizePrototypeColumn = (
     infoText: column.infoText ?? `About ${title}`,
     sampleValue: column.sampleValue ?? column.text ?? resolveDefaultSampleValue(cellType),
     hasCustomSampleValue,
+    toggleOnText: column.toggleOnText ?? DEFAULT_TOGGLE_ON_TEXT,
+    toggleOffText: column.toggleOffText ?? DEFAULT_TOGGLE_OFF_TEXT,
     options: column.options?.length ? column.options : SELECT_OPTIONS,
     elementBefore: column.elementBefore ?? false,
     elementBeforeSlot: column.elementBeforeSlot,
@@ -901,11 +960,87 @@ const resolveFixedWidth = (
   cellType: TablePrototypeCellType,
   width: number | undefined
 ): number => {
-  if (cellType === 'checkbox' || cellType === 'radio') {
-    return 22
+  if (isChoiceCellType(cellType)) {
+    return CHOICE_COLUMN_WIDTH
   }
 
   return width ?? resolveDefaultColumnWidth(cellType)
+}
+
+const isChoiceCellType = (cellType: TablePrototypeCellType): boolean => (
+  cellType === 'checkbox' || cellType === 'radio'
+)
+
+const applyCellOverrides = (
+  rows: TablePrototypeRow[],
+  overrides: TablePrototypeCellOverrides
+): TablePrototypeRow[] => {
+  if (!Object.keys(overrides).length) {
+    return rows
+  }
+
+  return rows.map((row) => {
+    const rowKey = row.key === undefined ? undefined : String(row.key)
+    const rowOverrides = rowKey ? overrides[rowKey] : undefined
+    const nextRow: TablePrototypeRow = rowOverrides
+      ? { ...row, ...rowOverrides }
+      : { ...row }
+
+    if (row.children) {
+      nextRow.children = applyCellOverrides(row.children, overrides)
+    }
+
+    return nextRow
+  })
+}
+
+const resolveRecordColumnValue = (
+  record: TableRecord,
+  column: NormalizedColumn,
+  value: unknown
+): unknown => {
+  if (value !== undefined) {
+    return value
+  }
+
+  for (const alias of getColumnFieldAliases(column)) {
+    if (alias in record && record[alias] !== undefined) {
+      return record[alias]
+    }
+  }
+
+  return value
+}
+
+const getColumnFieldAliases = (column: NormalizedColumn): string[] => {
+  const aliases = [
+    column.field,
+    column.key,
+    column.title,
+    ...createFieldNameAliases(column.title)
+  ]
+
+  return Array.from(new Set(aliases.filter(Boolean)))
+}
+
+const createFieldNameAliases = (value: string): string[] => {
+  const words = value.match(/[A-Za-zА-Яа-я0-9]+/g) ?? []
+
+  if (!words.length) {
+    return []
+  }
+
+  const normalizedWords = words.map((word) => word.toLowerCase())
+  const camelCase = normalizedWords
+    .map((word, index) => index === 0 ? word : `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join('')
+
+  return [
+    camelCase,
+    normalizedWords.join('_'),
+    normalizedWords.join('-'),
+    normalizedWords.join('')
+  ]
 }
 
 const resolveManualDataSource = ({
@@ -1023,7 +1158,7 @@ const createGeneratedCellValue = (
       case 'tag-group':
         return { items: extractTagGroupItems(column.sampleValue, 'medium').map((item) => extractTextContent(item.label, 'Tag')) }
       case 'toggle':
-        return extractToggleValue(column.sampleValue)
+        return extractToggleValue(column.sampleValue, column)
       case 'input-select':
       case 'input-multiselect':
         return extractSelectValue(column.sampleValue)
@@ -1061,7 +1196,7 @@ const createGeneratedCellValue = (
     case 'toggle':
       return {
         checked: isEvenRow,
-        text: isEvenRow ? 'On' : 'Off'
+        text: isEvenRow ? column.toggleOnText : column.toggleOffText
       }
     case 'input-select':
       return {
@@ -1115,8 +1250,8 @@ const collectRowKeys = (rows: TablePrototypeRow[]): Key[] => (
 
 const createPrototypeSorter = (column: NormalizedColumn) => (
   (rowA: TableRecord, rowB: TableRecord, isAsc: boolean): number => {
-    const valueA = resolveComparableValue(rowA[column.field], column.cellType)
-    const valueB = resolveComparableValue(rowB[column.field], column.cellType)
+    const valueA = resolveComparableValue(resolveRecordColumnValue(rowA, column, rowA[column.field]), column)
+    const valueB = resolveComparableValue(resolveRecordColumnValue(rowB, column, rowB[column.field]), column)
 
     if (valueA === valueB) {
       return 0
@@ -1144,14 +1279,14 @@ const createPrototypeFilters = (
       : Array.from(
         new Set(
           flattenPrototypeRows(rows)
-            .map((row) => resolveFilterLabel(row[column.field], column.cellType))
+            .map((row) => resolveFilterLabel(resolveRecordColumnValue(row, column, row[column.field]), column))
             .filter((value): value is string => Boolean(value))
         )
       ).slice(0, 8)
 
     acc[column.field] = values.map((value) => ({
       name: value,
-      filter: (row: TablePrototypeRow) => resolveFilterLabel(row[column.field], column.cellType) === value
+      filter: (row: TablePrototypeRow) => resolveFilterLabel(resolveRecordColumnValue(row, column, row[column.field]), column) === value
     }))
 
     return acc
@@ -1167,13 +1302,14 @@ const flattenPrototypeRows = (rows: TablePrototypeRow[]): TablePrototypeRow[] =>
 
 const resolveComparableValue = (
   value: unknown,
-  cellType: TablePrototypeCellType
+  column: Pick<NormalizedColumn, 'cellType' | 'toggleOffText' | 'toggleOnText'>
 ): string | number => {
-  switch (cellType) {
+  switch (column.cellType) {
     case 'checkbox':
     case 'radio':
-    case 'toggle':
       return resolveCheckedValue(value) ? 1 : 0
+    case 'toggle':
+      return resolveCheckedValue(value, column) ? 1 : 0
     case 'status':
       return extractStatusValue(value).label.toUpperCase()
     case 'tag-group':
@@ -1196,9 +1332,9 @@ const resolveComparableValue = (
 
 const resolveFilterLabel = (
   value: unknown,
-  cellType: TablePrototypeCellType
+  column: Pick<NormalizedColumn, 'cellType' | 'toggleOffText' | 'toggleOnText'>
 ): string => {
-  switch (cellType) {
+  switch (column.cellType) {
     case 'status':
       return extractStatusValue(value).label
     case 'tag-group':
@@ -1211,8 +1347,9 @@ const resolveFilterLabel = (
       return extractSelectValue(value).value.join(', ')
     case 'checkbox':
     case 'radio':
-    case 'toggle':
       return resolveCheckedValue(value) ? 'Enabled' : 'Disabled'
+    case 'toggle':
+      return resolveCheckedValue(value, column) ? column.toggleOnText : column.toggleOffText
     case 'actions':
       return ''
     case 'tree':
@@ -1225,20 +1362,25 @@ const resolveFilterLabel = (
 
 const TablePrototypeCell = ({
   column,
+  onCellValueChange,
   size,
   value,
+  rowKey,
   rowIndex
 }: {
   column: NormalizedColumn,
+  onCellValueChange?: (rowKey: Key | undefined, field: string, value: TablePrototypeCellValue) => void,
   size: TablePrototypeSize,
   value: unknown,
+  rowKey?: Key,
   rowIndex: number
 }): JSX.Element => {
-  const [checkedValue, setCheckedValue] = useState(resolveCheckedValue(value))
+  const checkedColumn = column.cellType === 'toggle' ? column : undefined
+  const [checkedValue, setCheckedValue] = useState(resolveCheckedValue(value, checkedColumn))
 
   useEffect(() => {
-    setCheckedValue(resolveCheckedValue(value))
-  }, [value])
+    setCheckedValue(resolveCheckedValue(value, checkedColumn))
+  }, [checkedColumn, value])
 
   switch (column.cellType) {
     case 'checkbox':
@@ -1295,15 +1437,26 @@ const TablePrototypeCell = ({
         </StaticCell>
       )
     case 'toggle': {
-      const toggle = extractToggleValue(value)
+      const toggle = extractToggleValue(value, column)
+      const toggleText = checkedValue ? column.toggleOnText : column.toggleOffText
+      const handleToggleChange = (nextChecked: boolean) => {
+        const checked = Boolean(nextChecked)
+        setCheckedValue(checked)
+        onCellValueChange?.(rowKey, column.field, {
+          checked,
+          disabled: toggle.disabled,
+          text: checked ? column.toggleOnText : column.toggleOffText
+        })
+      }
+
       return (
         <StaticCell>
           <Toggle
             checked={checkedValue}
             disabled={toggle.disabled}
-            onChange={(nextChecked) => setCheckedValue(Boolean(nextChecked))}
+            onChange={handleToggleChange}
           >
-            {toggle.text}
+            {toggleText}
           </Toggle>
         </StaticCell>
       )
@@ -1362,17 +1515,73 @@ const TablePrototypeCell = ({
   }
 }
 
-const resolveCheckedValue = (value: unknown): boolean => {
+const resolveCheckedValue = (
+  value: unknown,
+  column?: Pick<NormalizedColumn, 'toggleOffText' | 'toggleOnText'>
+): boolean => {
   if (typeof value === 'boolean') {
     return value
   }
 
+  if (typeof value === 'number') {
+    return value !== 0
+  }
+
+  if (typeof value === 'string') {
+    return resolveCheckedTextValue(value, column)
+  }
+
   if (value && typeof value === 'object' && 'checked' in value) {
-    return Boolean((value as TablePrototypeChoiceValue).checked)
+    const checked = (value as TablePrototypeChoiceValue).checked
+
+    if (checked !== undefined) {
+      return typeof checked === 'boolean' ? checked : resolveCheckedValue(checked, column)
+    }
+  }
+
+  if (value && typeof value === 'object' && 'text' in value) {
+    return resolveCheckedTextValue((value as TablePrototypeToggleValue).text, column)
   }
 
   return false
 }
+
+const resolveCheckedTextValue = (
+  value: unknown,
+  column?: Pick<NormalizedColumn, 'toggleOffText' | 'toggleOnText'>
+): boolean => {
+  const normalizedValue = normalizeBooleanText(value)
+
+  if (!normalizedValue) {
+    return false
+  }
+
+  if (column) {
+    if (normalizedValue === normalizeBooleanText(column.toggleOnText)) {
+      return true
+    }
+
+    if (normalizedValue === normalizeBooleanText(column.toggleOffText)) {
+      return false
+    }
+  }
+
+  if (CHECKED_TEXT_VALUES.has(normalizedValue)) {
+    return true
+  }
+
+  if (UNCHECKED_TEXT_VALUES.has(normalizedValue)) {
+    return false
+  }
+
+  return false
+}
+
+const normalizeBooleanText = (value: unknown): string => (
+  typeof value === 'string' || typeof value === 'number'
+    ? String(value).trim().toLowerCase()
+    : ''
+)
 
 const extractIconValue = (value: unknown): ReactNode | null => {
   if (value && typeof value === 'object' && 'icon' in value) {
@@ -1433,20 +1642,27 @@ const extractTextValue = (
   }
 }
 
-const extractToggleValue = (value: unknown): ResolvedToggleValue => {
-  if (value && typeof value === 'object' && ('checked' in value || 'text' in value)) {
+const extractToggleValue = (
+  value: unknown,
+  column?: Pick<NormalizedColumn, 'toggleOffText' | 'toggleOnText'>
+): ResolvedToggleValue => {
+  if (value && typeof value === 'object' && ('checked' in value || 'text' in value || 'disabled' in value)) {
+    const checked = resolveCheckedValue(value, column)
     return {
-      checked: Boolean((value as TablePrototypeToggleValue).checked),
+      checked,
       disabled: Boolean((value as TablePrototypeToggleValue).disabled),
-      text: extractTextContent((value as TablePrototypeToggleValue).text, Boolean((value as TablePrototypeToggleValue).checked) ? 'On' : 'Off')
+      text: extractTextContent(
+        (value as TablePrototypeToggleValue).text,
+        checked ? column?.toggleOnText ?? DEFAULT_TOGGLE_ON_TEXT : column?.toggleOffText ?? DEFAULT_TOGGLE_OFF_TEXT
+      )
     }
   }
 
-  const checked = resolveCheckedValue(value)
+  const checked = resolveCheckedValue(value, column)
   return {
     checked,
     disabled: false,
-    text: checked ? 'On' : 'Off'
+    text: checked ? column?.toggleOnText ?? DEFAULT_TOGGLE_ON_TEXT : column?.toggleOffText ?? DEFAULT_TOGGLE_OFF_TEXT
   }
 }
 
@@ -1455,29 +1671,56 @@ const extractTagGroupItems = (
   size: TagProps['size']
 ): TagProps[] => {
   if (Array.isArray(value)) {
-    return value.map((item) => (
-      typeof item === 'string'
-        ? { label: item, size }
-        : { ...item, label: extractTextContent(item.label, 'Item'), size: item.size ?? size }
-    ))
+    return normalizeTagGroupItems(value, size)
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return parseTagGroupText(String(value)).map((label) => ({ label, size }))
   }
 
   if (value && typeof value === 'object' && 'items' in value) {
     const items = (value as TablePrototypeTagGroupValue).items ?? []
-    return items.map((item) => (
-      typeof item === 'string'
-        ? { label: item, size }
-        : { ...item, label: extractTextContent(item.label, 'Item'), size: item.size ?? size }
-    ))
+
+    if (Array.isArray(items)) {
+      return normalizeTagGroupItems(items, size)
+    }
+
+    if (typeof items === 'string' || typeof items === 'number') {
+      return parseTagGroupText(String(items)).map((label) => ({ label, size }))
+    }
   }
 
-  const baseText = extractTextContent(value, 'Tag')
-  return [
-    { label: baseText, size },
-    { label: `${baseText} B`, size },
-    { label: `${baseText} C`, size }
-  ]
+  return []
 }
+
+const normalizeTagGroupItems = (
+  items: Array<string | number | TagProps>,
+  size: TagProps['size']
+): TagProps[] => (
+  items.map((item, index) => {
+    if (typeof item === 'string' || typeof item === 'number') {
+      return { label: String(item), size }
+    }
+
+    const rawLabel = item.label ?? (item as { text?: ReactNode }).text ?? (item as { value?: ReactNode }).value
+    const label = React.isValidElement(rawLabel)
+      ? rawLabel
+      : extractTextContent(rawLabel, `Tag ${index + 1}`)
+
+    return {
+      ...item,
+      label,
+      size: item.size ?? size
+    }
+  })
+)
+
+const parseTagGroupText = (value: string): string[] => (
+  value
+    .split(/[\n,|;]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+)
 
 const extractSelectValue = (value: unknown): ResolvedSelectValue => {
   if (value && typeof value === 'object' && ('value' in value || 'options' in value)) {
@@ -1823,13 +2066,14 @@ const PreviewRoot = styled.div`
     .ant-table-tbody > tr > td.table-prototype-column--checkbox,
     .ant-table-tbody > tr > td.table-prototype-column--radio,
     .ant-table-tbody > tr > td.table-prototype-column--selection {
-      width: 22px !important;
-      min-width: 22px !important;
-      max-width: 22px !important;
+      width: ${CHOICE_COLUMN_WIDTH}px !important;
+      min-width: ${CHOICE_COLUMN_WIDTH}px !important;
+      max-width: ${CHOICE_COLUMN_WIDTH}px !important;
       padding-left: 0 !important;
       padding-right: 0 !important;
     }
 
+    && .ant-table .ant-table-tbody > tr > td.table-prototype-column--selection:first-child,
     .ant-table-thead > tr > th.table-prototype-column--selection:first-child,
     .ant-table-tbody > tr > td.table-prototype-column--selection:first-child,
     .ant-table-tbody > tr > td.table-prototype-column--checkbox:first-child,
@@ -1840,17 +2084,29 @@ const PreviewRoot = styled.div`
 
     &[data-table-prototype-selection-mode="checkbox"] colgroup col:first-child,
     &[data-table-prototype-selection-mode="radio"] colgroup col:first-child {
-      width: 22px !important;
-      min-width: 22px !important;
-      max-width: 22px !important;
+      width: ${CHOICE_COLUMN_WIDTH}px !important;
+      min-width: ${CHOICE_COLUMN_WIDTH}px !important;
+      max-width: ${CHOICE_COLUMN_WIDTH}px !important;
+    }
+
+    .ant-table-thead > tr > th.table-prototype-column--selection,
+    .ant-table-thead > tr > th.table-prototype-column--checkbox,
+    .ant-table-thead > tr > th.table-prototype-column--radio,
+    .ant-table-tbody > tr > td.table-prototype-column--selection,
+    .ant-table-tbody > tr > td.table-prototype-column--checkbox,
+    .ant-table-tbody > tr > td.table-prototype-column--radio {
+      flex: 0 0 ${CHOICE_COLUMN_WIDTH}px !important;
+      overflow: visible !important;
     }
 
     .table-prototype-column--selection .kl6-checkbox-wrapper,
     .table-prototype-column--selection .ant-checkbox-wrapper,
     .table-prototype-column--selection .ant-radio-wrapper,
+    .table-prototype-column--selection .table-prototype-checkbox,
     .table-prototype-column--selection .table-prototype-radio,
     .table-prototype-column--checkbox .kl6-checkbox-wrapper,
     .table-prototype-column--checkbox .ant-checkbox-wrapper,
+    .table-prototype-column--checkbox .table-prototype-checkbox,
     .table-prototype-column--checkbox .table-prototype-radio,
     .table-prototype-column--radio .ant-radio-wrapper,
     .table-prototype-column--radio .table-prototype-radio {
