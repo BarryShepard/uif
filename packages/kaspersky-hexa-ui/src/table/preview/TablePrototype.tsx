@@ -730,6 +730,7 @@ export const TablePrototype = ({
         rowMode={size}
         scroll={scroll}
         stickyFooter={hasExplicitFrameHeight && showPagination && hasVerticalOverflow}
+        tableLayout={horizontalScrollX ? 'fixed' : undefined}
       />
     </PreviewRoot>
   )
