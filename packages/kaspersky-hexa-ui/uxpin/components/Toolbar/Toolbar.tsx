@@ -7,17 +7,17 @@ import { mergeFrameStyle } from '../../preview'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import ToolbarLeftItems, {
-  resolveToolbarLeftItemsChildren
+  isUXPinToolbarLeftItemsElement
 } from '../ToolbarLeftItems/ToolbarLeftItems'
 import ToolbarRightItems, {
-  resolveToolbarRightItemsChildren
+  isUXPinToolbarRightItemsElement
 } from '../ToolbarRightItems/ToolbarRightItems'
 import ToolbarSearch, {
   DEFAULT_TOOLBAR_SEARCH_PROPS,
   isUXPinToolbarSearchElement,
   resolveToolbarSearchChildProps
 } from '../ToolbarSearch/ToolbarSearch'
-import { toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement, toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinToolbarProps = {
   /** Shows the left section with action items. */
@@ -27,6 +27,7 @@ export type UXPinToolbarProps = {
   /** Shows the right section with action items. */
   rightItems?: boolean,
   children?: React.ReactNode,
+  overriddenCodeProps?: Partial<UXPinToolbarProps & LegacyUXPinToolbarProps>,
   style?: CSSProperties
 }
 
@@ -79,27 +80,48 @@ const resolveToolbarSectionItems = (
 }
 
 const Toolbar = ({
-  autoDropdown,
-  children,
-  left,
-  leftItems,
-  leftLimit,
-  right,
-  rightItems,
-  search,
-  style
+  overriddenCodeProps,
+  ...props
 }: ToolbarRuntimeProps): JSX.Element => {
+  const {
+    autoDropdown,
+    children,
+    left,
+    leftItems,
+    leftLimit,
+    right,
+    rightItems,
+    search,
+    style
+  } = {
+    ...props,
+    ...(overriddenCodeProps || {})
+  }
   const rootRef = useAutoHeightMergeFrame()
   const resolvedChildren = children ?? DEFAULT_TOOLBAR_CHILDREN
-  const directChildren = React.Children.toArray(resolvedChildren).filter(React.isValidElement)
-  const leftSectionElement = directChildren.find((child) => !isUXPinToolbarSearchElement(child)) ?? null
-  const rightSectionElement = [...directChildren].reverse().find((child) => (
-    !isUXPinToolbarSearchElement(child) && child !== leftSectionElement
-  )) ?? null
+  const allDirectChildren = React.Children.toArray(resolvedChildren).filter(React.isValidElement)
+  const directChildren = allDirectChildren.filter((child): child is React.ReactElement => (
+    !isUXPinHiddenElement(child)
+  ))
+  const hasHiddenSearchElement = allDirectChildren.some((child) => (
+    isUXPinToolbarSearchElement(child) && isUXPinHiddenElement(child)
+  ))
+  const leftSectionElement = (
+    directChildren.find(isUXPinToolbarLeftItemsElement) ??
+    directChildren.find((child) => !isUXPinToolbarSearchElement(child) && !isUXPinToolbarRightItemsElement(child)) ??
+    null
+  )
+  const rightSectionElement = (
+    [...directChildren].reverse().find(isUXPinToolbarRightItemsElement) ??
+    [...directChildren].reverse().find((child) => (
+      !isUXPinToolbarSearchElement(child) && child !== leftSectionElement
+    )) ??
+    null
+  )
   const legacyLeftItems = Array.isArray(left) && left.length ? left : undefined
   const legacyRightItems = Array.isArray(right) && right.length ? right : undefined
   const showLeftItems = leftItems ?? (!legacyLeftItems && !legacyRightItems ? true : Boolean(legacyLeftItems?.length))
-  const showSearch = search ?? false
+  const showSearch = (search ?? false) && !hasHiddenSearchElement
   const showRightItems = rightItems ?? (!legacyLeftItems && !legacyRightItems ? true : Boolean(legacyRightItems?.length))
 
   let resolvedLeft: ToolbarItems[] | undefined
@@ -111,23 +133,13 @@ const Toolbar = ({
 
     resolvedLeft = resolvedLeftButtons.length
       ? resolvedLeftButtons
-      : resolveToolbarLeftItemsChildren(resolvedChildren).map((element, index) => ({
-        type: 'children' as const,
-        key: typeof element.key === 'string' && element.key.length
-          ? element.key
-          : `toolbar-left-section-${index + 1}`,
-        children: (
-          <div style={{ display: 'flex', minWidth: 0, width: '100%', flex: '1 1 auto' }}>
-            {element}
-          </div>
-        )
-      }))
+      : undefined
   }
 
   const resolvedRightItems: ToolbarItems[] = []
 
   if (showSearch) {
-    const searchProps = resolveToolbarSearchChildProps(resolvedChildren) ?? DEFAULT_TOOLBAR_SEARCH_PROPS
+    const searchProps = resolveToolbarSearchChildProps(directChildren) ?? DEFAULT_TOOLBAR_SEARCH_PROPS
     resolvedRightItems.push({
       type: 'children',
       key: 'toolbar-search',
@@ -144,18 +156,6 @@ const Toolbar = ({
 
     if (resolvedRightButtons.length) {
       resolvedRightItems.push(...resolvedRightButtons)
-    } else {
-      resolvedRightItems.push(...resolveToolbarRightItemsChildren(resolvedChildren).map((element, index) => ({
-        type: 'children' as const,
-        key: typeof element.key === 'string' && element.key.length
-          ? element.key
-          : `toolbar-right-section-${index + 1}`,
-        children: (
-          <div style={{ display: 'flex', width: 'max-content', minWidth: 0 }}>
-            {element}
-          </div>
-        )
-      })))
     }
   }
 

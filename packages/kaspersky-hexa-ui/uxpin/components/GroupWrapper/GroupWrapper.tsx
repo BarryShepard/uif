@@ -2,6 +2,7 @@ import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
+import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 export type UXPinGroupWrapperProps = {
   /** Group content. Place controls, form fields, cards, tables, or any other blocks here. */
@@ -49,34 +50,34 @@ const GroupWrapperRoot = styled.div`
   > * {
     flex: 0 0 auto !important;
   }
-
-  > [data-hexa-uxpin-table-height-mode='fill'] {
-    flex: 1 1 auto !important;
-    min-height: 0;
-  }
 `
 
 const GroupWrapper = ({
   children,
   flexWidth = true,
   style
-}: UXPinGroupWrapperProps): JSX.Element => (
-  <GroupWrapperRoot
-    style={mergeFrameStyle({
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 16,
-      minWidth: 0,
-      minHeight: 0,
-      boxSizing: 'border-box',
-      ...getGroupWidthStyle(flexWidth),
-      ...style
-    })}
-    data-hexa-uxpin-group-wrapper="true"
-  >
-    {children ?? <EmptyGroupWrapperHint />}
-  </GroupWrapperRoot>
-)
+}: UXPinGroupWrapperProps): JSX.Element => {
+  const rootRef = useAutoHeightMergeFrame()
+
+  return (
+    <GroupWrapperRoot
+      ref={rootRef}
+      style={mergeFrameStyle({
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        minWidth: 0,
+        minHeight: 0,
+        boxSizing: 'border-box',
+        ...getGroupWidthStyle(flexWidth),
+        ...style
+      })}
+      data-hexa-uxpin-group-wrapper="true"
+    >
+      {children ?? <EmptyGroupWrapperHint />}
+    </GroupWrapperRoot>
+  )
+}
 
 GroupWrapper.defaultProps = {
   flexWidth: true

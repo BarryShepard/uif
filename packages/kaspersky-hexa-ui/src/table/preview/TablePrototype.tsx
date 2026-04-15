@@ -239,6 +239,7 @@ type NormalizedColumn = {
 }
 
 type TablePrototypeCellOverrides = Record<string, Record<string, TablePrototypeCellValue>>
+type TablePrototypeRowLookup = Map<string, TablePrototypeRow>
 
 const SELECT_OPTIONS: TablePrototypeOption[] = [
   { label: 'Option 1', value: 'option-1' },
@@ -354,18 +355,30 @@ export const TablePrototype = ({
     [normalizedColumns, resolvedDataMode, resolvedManualData.rows, resolvedRowsCount]
   )
   const [cellOverrides, setCellOverrides] = useState<TablePrototypeCellOverrides>({})
+  const cellOverridesRef = useRef(cellOverrides)
+  const [committedCellOverrides, setCommittedCellOverrides] = useState<TablePrototypeCellOverrides>({})
   const rowKeys = useMemo(() => collectRowKeys(resolvedDataSource), [resolvedDataSource])
-  const interactiveDataSource = useMemo(
-    () => applyCellOverrides(resolvedDataSource, cellOverrides),
-    [cellOverrides, resolvedDataSource]
+  const committedDataSource = useMemo(
+    () => applyCellOverrides(resolvedDataSource, committedCellOverrides),
+    [committedCellOverrides, resolvedDataSource]
+  )
+  const committedRowsByKey = useMemo(
+    () => createPrototypeRowLookup(committedDataSource),
+    [committedDataSource]
   )
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [activeRowsPerPage, setActiveRowsPerPage] = useState(resolvedRowsPerPage)
 
   useEffect(() => {
+    cellOverridesRef.current = {}
     setCellOverrides({})
+    setCommittedCellOverrides({})
   }, [resolvedDataSource])
+
+  useEffect(() => {
+    cellOverridesRef.current = cellOverrides
+  }, [cellOverrides])
 
   useEffect(() => {
     setSelectedRowKeys((prevKeys) => prevKeys.filter((key) => rowKeys.includes(key)))
@@ -380,13 +393,22 @@ export const TablePrototype = ({
       return
     }
 
-    setCellOverrides((prevOverrides) => ({
-      ...prevOverrides,
-      [String(rowKey)]: {
-        ...prevOverrides[String(rowKey)],
-        [field]: value
+    setCellOverrides((prevOverrides) => {
+      const nextOverrides = {
+        ...prevOverrides,
+        [String(rowKey)]: {
+          ...prevOverrides[String(rowKey)],
+          [field]: value
+        }
       }
-    }))
+
+      cellOverridesRef.current = nextOverrides
+
+      return nextOverrides
+    })
+  }, [])
+  const commitInteractiveDataState = useCallback(() => {
+    setCommittedCellOverrides(cellOverridesRef.current)
   }, [])
 
   useEffect(() => {
@@ -403,12 +425,12 @@ export const TablePrototype = ({
       return
     }
 
-    const maxPage = Math.max(1, Math.ceil(interactiveDataSource.length / activeRowsPerPage))
+    const maxPage = Math.max(1, Math.ceil(resolvedDataSource.length / activeRowsPerPage))
 
     setCurrentPage((prevPage) => (
       prevPage > maxPage ? maxPage : prevPage
     ))
-  }, [activeRowsPerPage, currentPage, interactiveDataSource.length, showPagination])
+  }, [activeRowsPerPage, currentPage, resolvedDataSource.length, showPagination])
 
   useEffect(() => {
     const tableBody = rootRef.current?.querySelector('.ant-table-body') as HTMLElement | null
@@ -498,8 +520,8 @@ export const TablePrototype = ({
   }, [activeRowsPerPage, currentPage, hasExplicitFrameHeight, resolvedDataSource.length, showPagination, size])
 
   const prototypeFilters = useMemo(
-    () => createPrototypeFilters(interactiveDataSource, normalizedColumns),
-    [interactiveDataSource, normalizedColumns]
+    () => createPrototypeFilters(committedDataSource, normalizedColumns, committedRowsByKey),
+    [committedDataSource, committedRowsByKey, normalizedColumns]
   )
   const initialSorting = useMemo(() => {
     const sortedColumn = normalizedColumns.find((column) => column.defaultSort !== 'notApplied')
@@ -610,14 +632,14 @@ export const TablePrototype = ({
           ? { disabled: true }
           : undefined,
         isSortable: column.sortable,
-        sorter: column.sortable ? createPrototypeSorter(column) : undefined,
+        sorter: column.sortable ? createPrototypeSorter(column, committedRowsByKey) : undefined,
         filters: column.filterable ? prototypeFilters[column.field] : undefined,
         allowMultipleFilters: false,
         render: (value: unknown, _record: TableRecord, rowIndex: number) => (
           <TablePrototypeCell
             column={column}
             size={size}
-            value={resolveRecordColumnValue(_record, column, value)}
+            value={resolveVisibleRecordColumnValue(_record, column, value, cellOverrides)}
             rowIndex={rowIndex}
             rowKey={_record.key}
             onCellValueChange={updateCellValue}
@@ -633,8 +655,10 @@ export const TablePrototype = ({
     ]
   ), [
     allRowsSelected,
+    cellOverrides,
     layoutColumns,
     partiallySelected,
+    committedRowsByKey,
     prototypeFilters,
     selectedRowKeys,
     selectionMode,
@@ -719,12 +743,14 @@ export const TablePrototype = ({
       <Table
         key={tableInstanceKey}
         columns={tableColumns}
-        dataSource={interactiveDataSource}
+        dataSource={resolvedDataSource}
         expandable={treeColumn ? { expandColumnName: treeColumn.field } : undefined}
         emptyText={emptyText}
         fullHeight={hasExplicitFrameHeight}
         initialFilters={initialFilters}
         initialSorting={initialSorting}
+        onDropdownFiltersChange={commitInteractiveDataState}
+        onSortChange={commitInteractiveDataState}
         pagination={pagination}
         resizingMode="manual"
         rowMode={size}
@@ -1013,6 +1039,21 @@ const resolveRecordColumnValue = (
   return value
 }
 
+const resolveVisibleRecordColumnValue = (
+  record: TableRecord,
+  column: NormalizedColumn,
+  value: unknown,
+  overrides: TablePrototypeCellOverrides
+): unknown => {
+  const rowOverrides = record.key !== undefined ? overrides[String(record.key)] : undefined
+
+  if (rowOverrides && Object.prototype.hasOwnProperty.call(rowOverrides, column.field)) {
+    return rowOverrides[column.field]
+  }
+
+  return resolveRecordColumnValue(record, column, value)
+}
+
 const getColumnFieldAliases = (column: NormalizedColumn): string[] => {
   const aliases = [
     column.field,
@@ -1249,10 +1290,34 @@ const collectRowKeys = (rows: TablePrototypeRow[]): Key[] => (
   })
 )
 
-const createPrototypeSorter = (column: NormalizedColumn) => (
+const createPrototypeRowLookup = (rows: TablePrototypeRow[]): TablePrototypeRowLookup => {
+  const rowsByKey: TablePrototypeRowLookup = new Map()
+
+  flattenPrototypeRows(rows).forEach((row) => {
+    if (row.key !== undefined) {
+      rowsByKey.set(String(row.key), row)
+    }
+  })
+
+  return rowsByKey
+}
+
+const resolveOperationRow = (
+  row: TableRecord,
+  rowsByKey: TablePrototypeRowLookup
+): TableRecord => (
+  row.key !== undefined ? rowsByKey.get(String(row.key)) ?? row : row
+)
+
+const createPrototypeSorter = (
+  column: NormalizedColumn,
+  rowsByKey: TablePrototypeRowLookup
+) => (
   (rowA: TableRecord, rowB: TableRecord, isAsc: boolean): number => {
-    const valueA = resolveComparableValue(resolveRecordColumnValue(rowA, column, rowA[column.field]), column)
-    const valueB = resolveComparableValue(resolveRecordColumnValue(rowB, column, rowB[column.field]), column)
+    const operationRowA = resolveOperationRow(rowA, rowsByKey)
+    const operationRowB = resolveOperationRow(rowB, rowsByKey)
+    const valueA = resolveComparableValue(resolveRecordColumnValue(operationRowA, column, operationRowA[column.field]), column)
+    const valueB = resolveComparableValue(resolveRecordColumnValue(operationRowB, column, operationRowB[column.field]), column)
 
     if (valueA === valueB) {
       return 0
@@ -1268,7 +1333,8 @@ const createPrototypeSorter = (column: NormalizedColumn) => (
 
 const createPrototypeFilters = (
   rows: TablePrototypeRow[],
-  columns: NormalizedColumn[]
+  columns: NormalizedColumn[],
+  rowsByKey: TablePrototypeRowLookup
 ): Record<string, NonNullable<TableColumn['filters']>> => (
   columns.reduce<Record<string, NonNullable<TableColumn['filters']>>>((acc, column) => {
     if (!column.filterable) {
@@ -1287,7 +1353,11 @@ const createPrototypeFilters = (
 
     acc[column.field] = values.map((value) => ({
       name: value,
-      filter: (row: TablePrototypeRow) => resolveFilterLabel(resolveRecordColumnValue(row, column, row[column.field]), column) === value
+      filter: (row: TablePrototypeRow) => {
+        const operationRow = resolveOperationRow(row, rowsByKey)
+
+        return resolveFilterLabel(resolveRecordColumnValue(operationRow, column, operationRow[column.field]), column) === value
+      }
     }))
 
     return acc

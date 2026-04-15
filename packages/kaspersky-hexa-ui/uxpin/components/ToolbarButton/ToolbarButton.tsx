@@ -38,6 +38,27 @@ type ToolbarButtonComponent = React.FC<UXPinToolbarButtonProps> & {
   defaultProps?: Partial<UXPinToolbarButtonProps>
 }
 
+type UXPinElementVisibilityProps = {
+  hidden?: boolean,
+  isHidden?: boolean,
+  isVisible?: boolean,
+  stateIa?: string,
+  uxpinHidden?: boolean,
+  visible?: boolean,
+  style?: React.CSSProperties,
+  codeComponentProps?: UXPinElementVisibilityProps,
+  overriddenCodeProps?: {
+    codeComponentProps?: UXPinElementVisibilityProps,
+    hidden?: boolean,
+    isHidden?: boolean,
+    isVisible?: boolean,
+    stateIa?: string,
+    visible?: boolean,
+    style?: React.CSSProperties,
+    uxpinHidden?: boolean
+  }
+}
+
 const resolveToolbarButtonRuntimeProps = (
   rawProps: UXPinToolbarButtonProps = {}
 ): UXPinToolbarButtonProps => ({
@@ -108,6 +129,41 @@ const hasToolbarButtonShape = (props: Record<string, unknown> = {}): boolean => 
   const overriddenCodeProps = props.overriddenCodeProps as Record<string, unknown> | undefined
 
   return hasToolbarButtonOwnShape(props) || hasToolbarButtonOwnShape(overriddenCodeProps || {})
+}
+
+export const isUXPinHiddenElement = (node: React.ReactNode): boolean => {
+  if (!React.isValidElement<UXPinElementVisibilityProps>(node)) {
+    return false
+  }
+
+  const { codeComponentProps, overriddenCodeProps, style } = node.props
+  const resolvedStyle = {
+    ...style,
+    ...codeComponentProps?.style,
+    ...overriddenCodeProps?.style
+  }
+  const visibilitySources = [
+    node.props,
+    codeComponentProps,
+    overriddenCodeProps,
+    overriddenCodeProps?.codeComponentProps
+  ].filter(Boolean) as UXPinElementVisibilityProps[]
+
+  const hasHiddenState = visibilitySources.some((props) => (
+    props.hidden === true ||
+    props.isHidden === true ||
+    props.uxpinHidden === true ||
+    props.visible === false ||
+    props.isVisible === false ||
+    props.stateIa === 'hidden' ||
+    props.stateIa === 'invisible'
+  ))
+
+  return (
+    hasHiddenState ||
+    resolvedStyle.display === 'none' ||
+    resolvedStyle.visibility === 'hidden'
+  )
 }
 
 const resolveToolbarButtonIcon = (
@@ -219,7 +275,7 @@ export const toolbarNodeToItem = (
   index: number,
   prefix: string
 ): ToolbarItems | null => {
-  if (!node) {
+  if (!node || isUXPinHiddenElement(node)) {
     return null
   }
 
@@ -260,7 +316,7 @@ export const toolbarChildrenToItems = (
   const items: ToolbarItems[] = []
 
   React.Children.forEach(children, (child, index) => {
-    if (!child) {
+    if (!child || isUXPinHiddenElement(child)) {
       return
     }
 
@@ -282,29 +338,9 @@ export const toolbarChildrenToItems = (
   return items
 }
 
-const ToolbarButton: ToolbarButtonComponent = ({
-  disabled = false,
-  hideText = false,
-  iconAfter = false,
-  iconAfterSlot,
-  iconBefore = false,
-  iconBeforeSlot,
-  indicator = false,
-  text = 'Button',
-  variant = 'default'
-}: UXPinToolbarButtonProps): JSX.Element => {
+const ToolbarButton: ToolbarButtonComponent = (props: UXPinToolbarButtonProps): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame()
-  const runtimeProps = resolveToolbarButtonRuntimeProps({
-    disabled,
-    hideText,
-    iconAfter,
-    iconAfterSlot,
-    iconBefore,
-    iconBeforeSlot,
-    indicator,
-    text,
-    variant
-  })
+  const runtimeProps = resolveToolbarButtonRuntimeProps(props)
 
   return (
     <div ref={rootRef} style={{ width: '100%' }}>

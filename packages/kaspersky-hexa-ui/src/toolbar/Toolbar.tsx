@@ -37,6 +37,7 @@ import {
   ToolbarButton as StyledToolbarButton,
   toolbarCss,
   ToolbarItemWrap,
+  ToolbarMeasureLayer,
   ToolbarSearch
 } from './toolbarCss'
 import { ToolbarSearch as ToolbarCollapsibleSearch } from './ToolbarSearch'
@@ -242,8 +243,21 @@ export const Toolbar: FC<ToolbarProps> & ToolbarVariants = (props: ToolbarProps)
   const [dropdownOpened, setDropdownOpened] = useState(false)
 
   const [containerRef, setContainerRef] = useImmutableRef<HTMLDivElement>()
+  const intersectionRenderCounter = leftVisible.reduce((accumulator, item, index) => {
+    const itemRecord = item as Record<string, unknown>
+    const itemSignature = `${index}:${String(itemRecord.key ?? '')}:${String(itemRecord.label ?? '')}:${String(itemRecord.type ?? '')}`
 
-  const lastFittingItemIndex = useIntersectionChildren(containerRef, INTERSECTION_PADDING)
+    return Array.from(itemSignature).reduce((signatureAccumulator, character) => (
+      signatureAccumulator + character.charCodeAt(0)
+    ), accumulator)
+  }, leftVisible.length)
+
+  const lastFittingItemIndex = useIntersectionChildren(
+    containerRef,
+    INTERSECTION_PADDING,
+    undefined,
+    intersectionRenderCounter
+  )
   const hasIntersection = isNumber(lastFittingItemIndex)
   const shouldShowMoreButton =
     hasIntersection && lastFittingItemIndex < leftVisible.length - 1
@@ -251,6 +265,12 @@ export const Toolbar: FC<ToolbarProps> & ToolbarVariants = (props: ToolbarProps)
   const dropdownItems = hasIntersection
     ? leftVisible.slice(lastFittingItemIndex + 1, leftVisible.length)
     : []
+  const renderedLeftItems =
+    autoDropdown && shouldShowMoreButton
+      ? leftVisible.slice(0, lastFittingItemIndex + 1)
+      : autoDropdown
+        ? leftVisible
+        : leftVisible.slice(0, leftLimit)
 
   return (
     <>
@@ -275,9 +295,13 @@ export const Toolbar: FC<ToolbarProps> & ToolbarVariants = (props: ToolbarProps)
             style={styleLeft}
             $oneElement={false}
             $autoDropdown={autoDropdown}
-            ref={setContainerRef}
           >
-            {toolbarItemsRender(autoDropdown ? leftVisible : leftVisible.slice(0, leftLimit), autoDropdown, hasIntersection, lastFittingItemIndex)}
+            {autoDropdown && (
+              <ToolbarMeasureLayer ref={setContainerRef} aria-hidden="true">
+                {toolbarItemsRender(leftVisible, true)}
+              </ToolbarMeasureLayer>
+            )}
+            {toolbarItemsRender(renderedLeftItems, autoDropdown)}
             {leftVisible.length > leftLimit && !autoDropdown && (
               <Dropdown
                 trigger={['click']}

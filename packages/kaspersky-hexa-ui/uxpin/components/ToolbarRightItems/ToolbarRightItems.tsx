@@ -5,7 +5,7 @@ import { Toolbar as HexaToolbar } from '@src/toolbar'
 import { FrameFill } from '../../preview'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
-import ToolbarButton, { toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
+import ToolbarButton, { isUXPinHiddenElement, toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinToolbarRightItemsProps = {
   children?: React.ReactNode,
@@ -64,7 +64,7 @@ export const resolveToolbarRightItemsChildren = (
   const elements: Array<React.ReactElement<UXPinToolbarRightItemsProps>> = []
 
   React.Children.forEach(children, (child) => {
-    if (!child) {
+    if (!child || isUXPinHiddenElement(child)) {
       return
     }
 
@@ -107,11 +107,13 @@ export const resolveToolbarRightItemsChildNodes = (
 }
 
 const ToolbarRightItems: ToolbarRightItemsComponent = ({
-  children = DEFAULT_TOOLBAR_RIGHT_ITEMS_CHILDREN
+  children = DEFAULT_TOOLBAR_RIGHT_ITEMS_CHILDREN,
+  overriddenCodeProps
 }: UXPinToolbarRightItemsProps): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame({
     skipIfWithinSelector: '[data-hexa-uxpin-toolbar-root="true"]'
   })
+  const resolvedChildren = overriddenCodeProps?.children ?? children
 
   return (
     <div ref={rootRef} style={{ width: 'fit-content', minWidth: 0, maxWidth: '100%' }}>
@@ -124,7 +126,7 @@ const ToolbarRightItems: ToolbarRightItemsComponent = ({
         }}
       >
         <HexaToolbar
-          right={toolbarChildrenToItems(children, 'toolbar-right-preview')}
+          right={toolbarChildrenToItems(resolvedChildren, 'toolbar-right-preview')}
         />
       </FrameFill>
     </div>

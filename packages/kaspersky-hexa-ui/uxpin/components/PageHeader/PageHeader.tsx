@@ -8,6 +8,7 @@ import { TagGroupProps } from '@src/tag/types'
 import { Placeholder } from '@kaspersky/hexa-ui-icons/24'
 
 import { FrameFill, previewPageHeaderTags } from '../../preview'
+import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import BreadcrumbItem from '../BreadcrumbItem/BreadcrumbItem'
 import Breadcrumbs from '../Breadcrumbs/Breadcrumbs'
@@ -76,31 +77,6 @@ const DEFAULT_PAGE_HEADER_CHILDREN = (
     />
   </Breadcrumbs>
 )
-
-const useAutoHeightMergeFrame = (): React.RefObject<HTMLDivElement> => {
-  const rootRef = React.useRef<HTMLDivElement>(null)
-
-  React.useLayoutEffect(() => {
-    const mergeComponent = rootRef.current?.closest('.merge-component') as HTMLDivElement | null
-
-    if (!mergeComponent) {
-      return undefined
-    }
-
-    const previousHeight = mergeComponent.style.height
-    const previousMinHeight = mergeComponent.style.minHeight
-
-    mergeComponent.style.height = 'auto'
-    mergeComponent.style.minHeight = '0'
-
-    return () => {
-      mergeComponent.style.height = previousHeight
-      mergeComponent.style.minHeight = previousMinHeight
-    }
-  }, [])
-
-  return rootRef
-}
 
 const PageHeader = ({
   breadcrumbs = false,

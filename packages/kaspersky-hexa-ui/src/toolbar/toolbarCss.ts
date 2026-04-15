@@ -133,15 +133,27 @@ export const ToolbarItemWrap = styled.div<ToolbarItemWrapProps>`
   min-height: 100%;
   display: flex;
   align-items: center;
+  opacity: ${({ $isHidden }) => $isHidden ? 0 : 1};
+  pointer-events: ${({ $isHidden }) => $isHidden ? 'none' : 'auto'};
   transition: opacity .2s;
-  ${({ $isHidden }) => $isHidden && 'opacity: 0; pointer-events: none;'}
+`
+
+export const ToolbarMeasureLayer = styled.div`
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: visible;
+  visibility: hidden;
+  pointer-events: none;
 `
 
 export const AutoDropdownPart = styled.div<ToolbarItemWrapProps>`
-  visibility: ${({ $isHidden }) => $isHidden ? 'hidden' : 'visible'};
+  display: ${({ $isHidden }) => $isHidden ? 'none' : 'block'};
   flex-shrink: 0;
-  position: absolute;
-  right: 0;
 `
 
 type StyledSearchProps = {

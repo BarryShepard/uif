@@ -6,6 +6,12 @@ type AutoHeightMergeFrameOptions = {
   skipIfWithinSelector?: string
 }
 
+const WRAPPER_BOUNDARY_SELECTOR = [
+  '[data-hexa-uxpin-page-wrapper="true"]',
+  '[data-hexa-uxpin-section-wrapper="true"]',
+  '[data-hexa-uxpin-group-wrapper="true"]'
+].join(', ')
+
 export const useAutoHeightMergeFrame = (
   options: AutoHeightMergeFrameOptions = {}
 ): React.RefObject<HTMLDivElement> => {
@@ -21,9 +27,17 @@ export const useAutoHeightMergeFrame = (
       return undefined
     }
 
-    const mergeComponent = rootRef.current?.closest('.merge-component') as HTMLDivElement | null
+    const rootElement = rootRef.current
+    const mergeComponent = rootElement?.closest('.merge-component') as HTMLDivElement | null
 
     if (!mergeComponent) {
+      return undefined
+    }
+
+    const wrapperBoundary = rootElement?.parentElement?.closest(WRAPPER_BOUNDARY_SELECTOR)
+    const wrapperMergeComponent = wrapperBoundary?.closest('.merge-component')
+
+    if (wrapperMergeComponent === mergeComponent) {
       return undefined
     }
 

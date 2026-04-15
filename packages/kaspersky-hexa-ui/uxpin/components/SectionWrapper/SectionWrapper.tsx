@@ -2,6 +2,7 @@ import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
+import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 export type UXPinSectionWrapperProps = {
   /** Section content. Place GroupWrapper, Toolbar, Table, forms, or cards here. */
@@ -23,12 +24,6 @@ const sectionWrapperStyle: CSSProperties = {
 const SectionWrapperRoot = styled.div`
   > * {
     flex: 0 0 auto !important;
-  }
-
-  > [data-hexa-uxpin-table-height-mode='fill'],
-  > [data-hexa-uxpin-group-wrapper]:has([data-hexa-uxpin-table-height-mode='fill']) {
-    flex: 1 1 auto !important;
-    min-height: 0;
   }
 `
 
@@ -53,17 +48,22 @@ const EmptySectionWrapperHint = (): JSX.Element => (
 const SectionWrapper = ({
   children,
   style
-}: UXPinSectionWrapperProps): JSX.Element => (
-  <SectionWrapperRoot
-    style={mergeFrameStyle({
-      ...sectionWrapperStyle,
-      ...style
-    })}
-    data-hexa-uxpin-section-wrapper="true"
-  >
-    {children ?? <EmptySectionWrapperHint />}
-  </SectionWrapperRoot>
-)
+}: UXPinSectionWrapperProps): JSX.Element => {
+  const rootRef = useAutoHeightMergeFrame()
+
+  return (
+    <SectionWrapperRoot
+      ref={rootRef}
+      style={mergeFrameStyle({
+        ...sectionWrapperStyle,
+        ...style
+      })}
+      data-hexa-uxpin-section-wrapper="true"
+    >
+      {children ?? <EmptySectionWrapperHint />}
+    </SectionWrapperRoot>
+  )
+}
 
 SectionWrapper.displayName = 'SectionWrapper'
 
