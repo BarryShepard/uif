@@ -9,6 +9,8 @@ import { ArrowDown1, Placeholder } from '@kaspersky/hexa-ui-icons/16'
 import { FrameFill } from '../../preview'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
+import { dropdownNodeToOverlay } from '../Dropdown/Dropdown'
+
 export type UXPinToolbarButtonVariant = 'default' | 'dropdown' | 'toggle'
 
 export type UXPinToolbarButtonProps = {
@@ -30,6 +32,8 @@ export type UXPinToolbarButtonProps = {
   iconAfterSlot?: React.ReactNode,
   /** Shows the critical indicator dot near the icon. */
   indicator?: boolean,
+  /** Dropdown instance used as overlay for dropdown variant. */
+  dropdown?: React.ReactNode,
   overriddenCodeProps?: Partial<UXPinToolbarButtonProps>
 }
 
@@ -122,7 +126,8 @@ const hasToolbarButtonOwnShape = (props: Record<string, unknown> = {}): boolean 
   'hideText' in props ||
   'iconAfter' in props ||
   'iconAfterSlot' in props ||
-  'indicator' in props
+  'indicator' in props ||
+  'dropdown' in props
 )
 
 const hasToolbarButtonShape = (props: Record<string, unknown> = {}): boolean => {
@@ -206,6 +211,7 @@ export const toolbarButtonElementToItem = (
   const runtimeProps = resolveToolbarButtonRuntimeProps(element.props)
   const {
     disabled = false,
+    dropdown,
     hideText = false,
     iconAfter = false,
     iconAfterSlot,
@@ -227,6 +233,8 @@ export const toolbarButtonElementToItem = (
   const resolvedLabel = hideText ? undefined : text
 
   if (variant === 'dropdown') {
+    const dropdownOverlay = dropdownNodeToOverlay(dropdown)
+
     return {
       type: 'dropdown',
       key,
@@ -235,7 +243,9 @@ export const toolbarButtonElementToItem = (
       iconBefore: resolvedIconBefore,
       iconAfter: resolvedIconAfter,
       showIndicator: indicator,
-      overlay: DEFAULT_DROPDOWN_OVERLAY
+      overlay: dropdownOverlay?.items ?? DEFAULT_DROPDOWN_OVERLAY,
+      popupMaxHeight: dropdownOverlay?.maxHeight,
+      selectedItemsKeys: dropdownOverlay?.selectedKeys
     }
   }
 

@@ -30,8 +30,8 @@ const PageWrapperRoot = styled.div`
   }
 
   > [data-hexa-uxpin-table-height-mode='fill'],
-  > [data-hexa-uxpin-section-wrapper]:has([data-hexa-uxpin-table-height-mode='fill']),
-  > [data-hexa-uxpin-group-wrapper]:has([data-hexa-uxpin-table-height-mode='fill']) {
+  > [data-hexa-uxpin-section-wrapper][data-hexa-uxpin-flex-height='true'],
+  > [data-hexa-uxpin-group-wrapper][data-hexa-uxpin-flex-height='true'] {
     flex: 1 1 auto !important;
     min-height: 0;
   }

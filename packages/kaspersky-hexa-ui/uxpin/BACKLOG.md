@@ -49,6 +49,40 @@ Recommended future implementation:
 3. Use applied-query state to drive the indicator after `Enter`.
 4. Verify the result against production toolbar layout and states before rolling it out more broadly.
 
+## Reusable Dropdown for UXPin actions
+
+Status: draft, paused
+
+Context:
+- Toolbar dropdown buttons, table header sorting/filtering, and future table toolbar actions need the same configurable dropdown model.
+- UXPin authors should be able to compose a dropdown from nested `DropdownItem` components, assign interactions to individual items, and reuse the same dropdown as an overlay instance for buttons or table controls.
+- The first scaffold exists locally as UXPin `Dropdown` and `DropdownItem`, but the behavior should be validated in UXPin before broad rollout.
+
+Desired component model:
+- `Dropdown` owns overlay-level behavior: `variant`, `maxHeight`, sticky header slot, sticky footer slot, and scroll when content exceeds max height.
+- `DropdownItem` owns item-level behavior: disabled, selected, before/after slots, text, description, nested subitems, and action click handler.
+- `DropdownItem` with `variant="buttons"` should render a horizontal action row without toolbar overflow/More behavior.
+- Sticky footer should default to a Reset filter style action, but stay replaceable through a slot.
+
+Variants to support:
+- Single choice.
+- Multiple choice.
+- Tree single choice.
+- Tree multiple choice.
+- With subitems.
+
+Integration ideas:
+- `ToolbarButton` with `variant="dropdown"` should accept a dropdown instance/slot and use its items as the overlay.
+- Table column sorting/filtering should later accept the same dropdown instance/slot, so options are authored once and reused.
+- Dropdown item actions should be assignable in UXPin, not hardcoded in the component.
+- Table filter dropdowns need reset behavior per column, option groups, selected states, and a clear visual distinction between sorting and filtering actions.
+
+Validation needed before continuing:
+- Confirm UXPin supports passing a composed `Dropdown` instance into a toolbar button slot reliably.
+- Check how UXPin serializes nested item visibility and click interactions inside dropdown overlays.
+- Verify sticky header/footer behavior inside portal and non-portal contexts.
+- Compare visual spacing and selected/disabled states against Storybook `Dropdown`.
+
 ## Table height fallback
 
 Status: reference

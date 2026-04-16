@@ -4,9 +4,13 @@ import GroupWrapper from '../../GroupWrapper/GroupWrapper';
 import SectionWrapper from '../SectionWrapper';
 
 export default (
-  <SectionWrapper uxpId="section-wrapper-1">
+  <SectionWrapper
+    uxpId="section-wrapper-1"
+    flexHeight={false}
+  >
     <GroupWrapper
       uxpId="group-wrapper-1"
+      flexHeight={false}
       flexWidth={true}
     />
   </SectionWrapper>

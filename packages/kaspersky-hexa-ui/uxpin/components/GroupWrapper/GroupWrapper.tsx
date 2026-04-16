@@ -7,6 +7,8 @@ import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 export type UXPinGroupWrapperProps = {
   /** Group content. Place controls, form fields, cards, tables, or any other blocks here. */
   children?: React.ReactNode,
+  /** When enabled, the group fills available vertical space and can stretch fill-height children. */
+  flexHeight?: boolean,
   /** When enabled, the group stretches to available width. When disabled, width is fixed to 872px. */
   flexWidth?: boolean,
   style?: CSSProperties
@@ -28,6 +30,17 @@ const getGroupWidthStyle = (flexWidth: boolean): CSSProperties => (
     }
 )
 
+const getGroupHeightStyle = (flexHeight: boolean): CSSProperties => (
+  flexHeight
+    ? {
+      height: '100%',
+      flex: '1 1 auto'
+    }
+    : {
+      height: 'auto'
+    }
+)
+
 const EmptyGroupWrapperHint = (): JSX.Element => (
   <div
     style={{
@@ -46,21 +59,32 @@ const EmptyGroupWrapperHint = (): JSX.Element => (
   </div>
 )
 
-const GroupWrapperRoot = styled.div`
+const GroupWrapperRoot = styled.div<{ $flexHeight?: boolean }>`
   > * {
     flex: 0 0 auto !important;
   }
+
+  ${({ $flexHeight }) => $flexHeight && `
+    > [data-hexa-uxpin-table-height-mode='fill'] {
+      flex: 1 1 auto !important;
+      min-height: 0;
+    }
+  `}
 `
 
 const GroupWrapper = ({
   children,
+  flexHeight = false,
   flexWidth = true,
   style
 }: UXPinGroupWrapperProps): JSX.Element => {
-  const rootRef = useAutoHeightMergeFrame()
+  const rootRef = useAutoHeightMergeFrame({
+    disabled: flexHeight
+  })
 
   return (
     <GroupWrapperRoot
+      $flexHeight={flexHeight}
       ref={rootRef}
       style={mergeFrameStyle({
         display: 'flex',
@@ -70,9 +94,11 @@ const GroupWrapper = ({
         minHeight: 0,
         boxSizing: 'border-box',
         ...getGroupWidthStyle(flexWidth),
+        ...getGroupHeightStyle(flexHeight),
         ...style
       })}
       data-hexa-uxpin-group-wrapper="true"
+      data-hexa-uxpin-flex-height={flexHeight ? 'true' : 'false'}
     >
       {children ?? <EmptyGroupWrapperHint />}
     </GroupWrapperRoot>
@@ -80,6 +106,7 @@ const GroupWrapper = ({
 }
 
 GroupWrapper.defaultProps = {
+  flexHeight: false,
   flexWidth: true
 }
 

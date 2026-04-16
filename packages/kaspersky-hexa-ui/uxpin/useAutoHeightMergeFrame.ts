@@ -1,6 +1,7 @@
 import React from 'react'
 
 type AutoHeightMergeFrameOptions = {
+  disabled?: boolean,
   width?: React.CSSProperties['width'],
   minWidth?: React.CSSProperties['minWidth'],
   skipIfWithinSelector?: string
@@ -17,12 +18,17 @@ export const useAutoHeightMergeFrame = (
 ): React.RefObject<HTMLDivElement> => {
   const rootRef = React.useRef<HTMLDivElement>(null)
   const {
+    disabled,
     minWidth,
     skipIfWithinSelector,
     width
   } = options
 
   React.useLayoutEffect(() => {
+    if (disabled) {
+      return undefined
+    }
+
     if (skipIfWithinSelector && rootRef.current?.closest(skipIfWithinSelector)) {
       return undefined
     }
@@ -63,7 +69,7 @@ export const useAutoHeightMergeFrame = (
       mergeComponent.style.width = previousWidth
       mergeComponent.style.minWidth = previousMinWidth
     }
-  }, [minWidth, skipIfWithinSelector, width])
+  }, [disabled, minWidth, skipIfWithinSelector, width])
 
   return rootRef
 }
