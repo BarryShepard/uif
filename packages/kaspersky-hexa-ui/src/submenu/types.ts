@@ -3,7 +3,7 @@ import { TestingAttributes, TestingProps } from '@helpers/typesHelpers'
 import { ActionButtonProps } from '@src/action-button'
 import { BadgeMode, BadgeProps } from '@src/badge'
 import { IndicatorMode } from '@src/indicator'
-import { ReactNode } from 'react'
+import { DragEvent, ReactNode } from 'react'
 
 export type SubmenuThemeProps = {
   /** Custom theme */
@@ -35,6 +35,7 @@ export type RowProps = {
   contentClassName?: string,
   disabled?: boolean,
   draggable?: boolean,
+  expanded?: boolean,
   iconBefore?: ReactNode,
   elementAfter?: ReactNode,
   hoverElementAfter?: ReactNode,
@@ -94,17 +95,46 @@ export type LeveledRowProps = RowProps & {
 
 export type LeveledSubmenuItemProps = DividerProps | TitleProps | LeveledRowProps
 
+export type SubmenuDropPosition = 'before' | 'after'
+
+export type SubmenuDragTarget = {
+  parentKey?: string,
+  position: SubmenuDropPosition,
+  targetKey: string
+}
+
 export type CommonSubComponentProps = {
   truncateText: boolean,
   collapseOnTextClick: boolean,
   activeRowKey?: string,
-  handleActiveRowChange: (row: LeveledRowProps) => void
+  draggedRowKey?: string,
+  dragTarget?: SubmenuDragTarget | null,
+  handleActiveRowChange: (row: LeveledRowProps) => void,
+  handleRowDragEnd?: () => void,
+  handleRowDragOver?: (
+    event: DragEvent<HTMLDivElement>,
+    row: LeveledRowProps,
+    parentKey?: string
+  ) => void,
+  handleRowDragStart?: (
+    event: DragEvent<HTMLDivElement>,
+    row: LeveledRowProps,
+    parentKey?: string
+  ) => void,
+  handleRowDrop?: (
+    event: DragEvent<HTMLDivElement>,
+    row: LeveledRowProps,
+    parentKey?: string
+  ) => void
 }
 
 export type RowViewProps = Omit<CommonSubComponentProps, 'activeRowKey' | 'handleActiveRowChange'> & {
   row: LeveledRowProps,
   selected: boolean,
   collapsible: boolean,
+  dragged?: boolean,
+  dropPosition?: SubmenuDropPosition,
+  parentKey?: string,
   onCollapsibleClick?: () => void,
   onClick?: () => void
 }

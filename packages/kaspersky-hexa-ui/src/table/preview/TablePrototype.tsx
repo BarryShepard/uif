@@ -565,6 +565,7 @@ export const TablePrototype = ({
   )
   const allRowsSelected = selectionMode !== 'none' && rowKeys.length > 0 && rowKeys.every((rowKey) => selectedRowKeys.includes(rowKey))
   const partiallySelected = selectionMode === 'checkbox' && selectedRowKeys.length > 0 && !allRowsSelected
+  const selectedRowKeySet = useMemo(() => new Set(selectedRowKeys), [selectedRowKeys])
   const toggleAllRows = (checked: boolean) => {
     setSelectedRowKeys(checked ? rowKeys : [])
   }
@@ -755,6 +756,11 @@ export const TablePrototype = ({
         resizingMode="manual"
         rowMode={size}
         scroll={scroll}
+        rowClassName={(record) => (
+          record.key !== undefined && selectedRowKeySet.has(record.key)
+            ? 'ant-table-row-selected'
+            : ''
+        )}
         stickyFooter={hasExplicitFrameHeight && showPagination && hasVerticalOverflow}
         tableLayout={horizontalScrollX ? 'fixed' : undefined}
       />
@@ -1486,7 +1492,7 @@ const TablePrototypeCell = ({
     case 'treeLink': {
       const link = extractLinkValue(value)
       return (
-        <TextCell>
+        <TextCell className={column.cellType === 'treeLink' ? 'table-prototype-tree-link-cell' : undefined}>
           {link.before && <span className="slot">{link.before}</span>}
           <Link href={link.href} text={link.text} />
           {link.after && <span className="slot">{link.after}</span>}
@@ -2197,6 +2203,26 @@ const PreviewRoot = styled.div`
     .table-prototype-column--radio .ant-radio-wrapper > span + span:empty {
       display: none !important;
       padding: 0 !important;
+    }
+
+    .ant-table-tbody > tr > td.table-prototype-column--treeLink.ant-table-cell-with-append {
+      vertical-align: middle !important;
+    }
+
+    .ant-table-tbody > tr > td.table-prototype-column--treeLink.ant-table-cell-with-append .kl-components-expandable-icon.icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 20px;
+      margin-top: 0;
+      vertical-align: middle;
+    }
+
+    .ant-table-tbody > tr > td.table-prototype-column--treeLink.ant-table-cell-with-append .table-prototype-tree-link-cell {
+      display: inline-flex;
+      width: auto;
+      max-width: calc(100% - 24px);
+      vertical-align: middle;
     }
   }
 `

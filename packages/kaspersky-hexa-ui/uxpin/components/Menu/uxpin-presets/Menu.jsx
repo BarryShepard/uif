@@ -14,58 +14,38 @@ export default (
   >
     <MenuItem
       uxpId="menu-item-1"
-      label="Overview"
+      label="Administration server"
       elementBefore={true}
-      elementBeforeIcon="Browser"
-      state="active"
+      elementBeforeIcon="StorageServer"
+      state="enabled"
     />
     <MenuItem
       uxpId="menu-item-2"
-      label="Monitoring & reporting"
+      label="Console navigation"
       elementBefore={true}
-      elementBeforeIcon="Browser"
-      notification={true}
-      collapsible={true}
-    >
-      <MenuItem uxpId="menu-item-2-1" label="Dashboard" state="active" />
-      <MenuItem uxpId="menu-item-2-2" label="Reports" />
-      <MenuItem uxpId="menu-item-2-3" label="Notifications" notification={true} />
-    </MenuItem>
+      elementBeforeIcon="Map"
+      state="enabled"
+    />
     <MenuItem
       uxpId="menu-item-3"
-      label="Assets (Devices)"
+      label="Monitoring"
       elementBefore={true}
-      elementBeforeIcon="Shield"
-      description={true}
-      descriptionText="Nested navigation"
-      collapsible={true}
-    >
-      <MenuItem uxpId="menu-item-3-1" label="Policies & profiles" />
-      <MenuItem uxpId="menu-item-3-2" label="Tasks" />
-      <MenuItem uxpId="menu-item-3-3" label="Managed devices" />
-    </MenuItem>
+      elementBeforeIcon="EngineeringStation"
+      state="enabled"
+    />
     <MenuItem
       uxpId="menu-item-4"
-      label="Users & roles"
+      label="Detection and response"
       elementBefore={true}
-      elementBeforeIcon="UserGroup"
-      collapsible={true}
-    >
-      <MenuItem uxpId="menu-item-4-1" label="Users" />
-      <MenuItem uxpId="menu-item-4-2" label="Roles" />
-      <MenuItem
-        uxpId="menu-item-4-3"
-        label="Groups"
-        elementBefore={true}
-        elementBeforeIcon="Folder"
-      />
-    </MenuItem>
+      elementBeforeIcon="Sensor"
+      state="enabled"
+    />
     <MenuItem
       uxpId="menu-item-5"
       label="Settings"
       elementBefore={true}
       elementBeforeIcon="SettingsGear"
-      elementAfter={true}
+      state="enabled"
     />
   </Menu>
 );

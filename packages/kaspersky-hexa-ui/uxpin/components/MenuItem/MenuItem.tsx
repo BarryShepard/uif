@@ -470,50 +470,34 @@ MenuItem.defaultProps = {
 export const defaultMenuItemChildren = (
   <>
     <MenuItem
-      label="Overview"
+      label="Administration server"
       elementBefore
-      elementBeforeIcon="Browser"
-      state="active"
+      elementBeforeIcon="StorageServer"
+      state="enabled"
     />
     <MenuItem
-      label="Monitoring & reporting"
+      label="Console navigation"
       elementBefore
-      elementBeforeIcon="Browser"
-      notification
-      collapsible
-    >
-      <MenuItem label="Dashboard" state="active" />
-      <MenuItem label="Reports" />
-      <MenuItem label="Notifications" notification />
-    </MenuItem>
+      elementBeforeIcon="Map"
+      state="enabled"
+    />
     <MenuItem
-      label="Assets (Devices)"
+      label="Monitoring"
       elementBefore
-      elementBeforeIcon="Shield"
-      description
-      descriptionText="Nested navigation"
-      collapsible
-    >
-      <MenuItem label="Policies & profiles" />
-      <MenuItem label="Tasks" />
-      <MenuItem label="Managed devices" />
-    </MenuItem>
+      elementBeforeIcon="EngineeringStation"
+      state="enabled"
+    />
     <MenuItem
-      label="Users & roles"
+      label="Detection and response"
       elementBefore
-      elementBeforeIcon="UserGroup"
-      collapsible
-    >
-      <MenuItem label="Users" />
-      <MenuItem label="Roles" />
-      <MenuItem label="Groups" elementBefore elementBeforeIcon="Folder" />
-    </MenuItem>
+      elementBeforeIcon="Sensor"
+      state="enabled"
+    />
     <MenuItem
       label="Settings"
       elementBefore
       elementBeforeIcon="SettingsGear"
-      elementAfter
-      elementAfterSlot={<Placeholder />}
+      state="enabled"
     />
   </>
 )

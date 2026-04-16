@@ -118,7 +118,7 @@ const Table = ({
   children = DEFAULT_TABLE_CHILDREN,
   dataMode,
   dataSourceJson,
-  rowsCount = 5,
+  rowsCount = 30,
   rowsPerPage = '20 on page',
   showPaginationSummary = true,
   showRowsPerPageSelector = true,
@@ -177,7 +177,7 @@ const Table = ({
 
 Table.defaultProps = {
   children: DEFAULT_TABLE_CHILDREN,
-  rowsCount: 5,
+  rowsCount: 30,
   rowsPerPage: '20 on page',
   showPaginationSummary: true,
   showRowsPerPageSelector: true,

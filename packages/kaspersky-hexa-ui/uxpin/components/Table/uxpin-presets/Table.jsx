@@ -8,7 +8,7 @@ import Button from '../../Button/Button';
 export default (
   <Table
     uxpId="table-1"
-    rowsCount={5}
+    rowsCount={30}
     rowsPerPage="20 on page"
     showPagination={true}
     showPaginationSummary={true}

@@ -1,4 +1,4 @@
-import React, { CSSProperties, useMemo } from 'react'
+import React, { CSSProperties, useLayoutEffect, useMemo, useRef } from 'react'
 import styled from 'styled-components'
 
 import { MenuPreviewShell, cloneNavItems, withPreviewUserAvailabilityItems } from '@src/menu/preview/MenuPreview'
@@ -12,13 +12,20 @@ import {
 } from '../MenuItem/MenuItem'
 import { mergeFrameStyle } from '../../preview'
 
-type UXPinMenuProps = {
+export type UXPinMenuProps = {
+  /** Collapses the menu to icon-only mode. */
   minimized?: boolean,
+  /** Shows the menu header with logo, title, and description. */
   header?: boolean,
+  /** Shows the footer user/settings area. */
   footer?: boolean,
+  /** Slot for the header logo. */
   logo?: React.ReactNode,
+  /** Header title text. */
   title?: string,
+  /** Header subtitle text. */
   description?: string,
+  /** MenuItem children shown in the navigation tree. */
   children?: React.ReactNode,
   style?: CSSProperties
 }
@@ -50,8 +57,49 @@ const resolveMenuChildren = (children?: React.ReactNode): React.ReactNode => {
   return menuItemChildren
 }
 
+const useSyncMenuFrameHeight = (): React.RefObject<HTMLDivElement> => {
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const rootElement = rootRef.current
+    const mergeComponent = rootElement?.closest('.merge-component') as HTMLDivElement | null
+
+    if (!rootElement || !mergeComponent) {
+      return undefined
+    }
+
+    const previousHeight = mergeComponent.style.height
+    const previousMinHeight = mergeComponent.style.minHeight
+
+    const syncFrameHeight = (): void => {
+      const measuredHeight = rootElement.getBoundingClientRect().height
+
+      if (measuredHeight > 0) {
+        const nextHeight = `${Math.ceil(measuredHeight)}px`
+        mergeComponent.style.height = nextHeight
+        mergeComponent.style.minHeight = nextHeight
+      }
+    }
+
+    syncFrameHeight()
+
+    const resizeObserver = new ResizeObserver(syncFrameHeight)
+    resizeObserver.observe(rootElement)
+    window.addEventListener('resize', syncFrameHeight)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', syncFrameHeight)
+      mergeComponent.style.height = previousHeight
+      mergeComponent.style.minHeight = previousMinHeight
+    }
+  }, [])
+
+  return rootRef
+}
+
 const Menu = ({
-  children = defaultMenuItemChildren,
+  children,
   description = 'Kaspersky Next',
   footer = true,
   header = true,
@@ -60,6 +108,7 @@ const Menu = ({
   style,
   title = 'Configuration Service'
 }: UXPinMenuProps): JSX.Element => {
+  const rootRef = useSyncMenuFrameHeight()
   const resolvedMenuChildren = useMemo(() => resolveMenuChildren(children), [children])
   const derivedNavItems = useMemo(
     () => menuItemElementsToNavItems(resolvedMenuChildren),
@@ -71,13 +120,16 @@ const Menu = ({
   const resolvedFrameHeight = style?.height ?? '100vh'
 
   return (
-    <PreviewRoot style={mergeFrameStyle({
-      minWidth: 280,
-      width: '100%',
-      height: resolvedFrameHeight,
-      minHeight: resolvedFrameHeight,
-      ...style
-    })}>
+    <PreviewRoot
+      ref={rootRef}
+      style={mergeFrameStyle({
+        minWidth: 280,
+        width: '100%',
+        height: resolvedFrameHeight,
+        minHeight: resolvedFrameHeight,
+        ...style
+      })}
+    >
       <MenuPreviewShell
         applyAppTheme={true}
         beforeItems={EMPTY_ITEMS}

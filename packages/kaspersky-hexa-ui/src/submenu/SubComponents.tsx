@@ -9,6 +9,7 @@ import { Text, TextProps } from '@src/typography/text'
 import cn from 'classnames'
 import React, { FC } from 'react'
 
+import { DragDrop } from '@kaspersky/hexa-ui-icons/16'
 import { ArrowDownSolid, ArrowRightSolid } from '@kaspersky/hexa-ui-icons/8'
 
 import styles from './Submenu.module.scss'
@@ -22,11 +23,15 @@ export const HoverRowBlock: FC<React.HTMLAttributes<HTMLSpanElement>> = props =>
 
 export const StyledRow: FC<React.HTMLAttributes<HTMLDivElement> & {
   disabled?: boolean,
+  dragged?: boolean,
+  dropPosition?: 'before' | 'after',
   leftOffset: number,
   selected?: boolean,
   truncateText?: boolean
 }> = ({
   disabled,
+  dragged,
+  dropPosition,
   leftOffset,
   selected,
   truncateText,
@@ -39,6 +44,9 @@ export const StyledRow: FC<React.HTMLAttributes<HTMLDivElement> & {
       styles.row,
       {
         [styles.disabled]: disabled,
+        [styles.dragged]: dragged,
+        [styles.dropBefore]: dropPosition === 'before',
+        [styles.dropAfter]: dropPosition === 'after',
         [styles.selected]: selected,
         [styles.truncateText]: truncateText
       }
@@ -57,23 +65,43 @@ export const SubmenuRow: FC<RowViewProps> = ({
   truncateText,
   selected,
   collapsible,
+  dragged,
+  dropPosition,
   onCollapsibleClick,
-  onClick
+  onClick,
+  handleRowDragEnd,
+  handleRowDragOver,
+  handleRowDragStart,
+  handleRowDrop,
+  parentKey
 }) => {
   const handleClick = row?.disabled ? undefined : onClick
+  const isDraggable = Boolean(row?.draggable && !row?.disabled)
   
   return (
     <StyledRow
       className="hexa-ui-submenu-row"
       disabled={row?.disabled}
+      dragged={dragged}
+      draggable={isDraggable}
+      dropPosition={dropPosition}
       leftOffset={8 + (row?.level || 0) * 20 + (row?.extraLeftPadding || 0)}
       onClick={handleClick}
+      onDragEnd={isDraggable ? handleRowDragEnd : undefined}
+      onDragOver={isDraggable ? (event) => handleRowDragOver?.(event, row, parentKey) : undefined}
+      onDragStart={isDraggable ? (event) => handleRowDragStart?.(event, row, parentKey) : undefined}
+      onDrop={isDraggable ? (event) => handleRowDrop?.(event, row, parentKey) : undefined}
       onKeyDown={e => e.key === 'Enter' ? handleClick?.() : undefined}
       selected={selected}
       tabIndex={0}
       truncateText={truncateText}
       {...row.testAttributes}
     >
+      {row.draggable && (
+        <span className={styles.dragHandle}>
+          <DragDrop />
+        </span>
+      )}
       {collapsible && (
         <ActionButton
           className={styles.arrowButton}

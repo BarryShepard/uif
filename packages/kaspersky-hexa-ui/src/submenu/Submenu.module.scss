@@ -71,11 +71,16 @@
 
 .submenu {
   display: flex;
+  flex: 0 0 264px;
   flex-direction: column;
+  width: 264px;
+  min-width: 264px;
+  max-width: 264px;
   padding: 24px 0;
   gap: 24px;
   background: var(--submenu--bg_subtle);
   border-right: 1px solid var(--submenu--border);
+  box-sizing: border-box;
 }
 
 .itemsStack {
@@ -85,6 +90,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .arrowButton {
@@ -103,7 +109,7 @@
 
 .divider {
   width: 100%;
-  min-width: 216px;
+  min-width: 0;
   margin: 4px 8px;
   min-height: 1px;
 }
@@ -112,7 +118,7 @@
   display: flex;
   gap: 4px;
   width: 100%;
-  min-width: 216px;
+  min-width: 0;
   height: 16px;
   margin: 0 8px;
   margin-top: 16px;
@@ -125,11 +131,29 @@
 }
 
 .description {
-  color: var(--submenu_item--text--description--enabled);
+  color: var(--text--secondary, var(--submenu_item--text--description--enabled)) !important;
+
+  * {
+    color: inherit !important;
+  }
 
   &.disabled {
-    color: var(--submenu_item--text--description--disabled);
+    color: var(--submenu_item--text--description--disabled) !important;
   }
+}
+
+.dragHandle {
+  position: absolute;
+  top: 6px;
+  left: -16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text--secondary, var(--submenu_item--icon--enabled));
+  cursor: grab;
+  pointer-events: auto;
 }
 
 .rowTextCol {
@@ -141,17 +165,47 @@
 }
 
 .row {
+  position: relative;
   display: flex;
   gap: 4px;
   cursor: pointer;
   border-radius: 8px;
   width: 100%;
-  min-width: 232px;
+  min-width: 0;
   padding: 6px 8px;
   padding-left: calc(var(--left-offset) * 1px);
+  transition:
+    opacity 120ms ease,
+    padding 120ms ease,
+    transform 120ms ease,
+    background 120ms ease;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    left: 8px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--focus--stroke);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  &::before {
+    top: 6px;
+  }
+
+  &::after {
+    bottom: 6px;
+  }
 
   .rowText {
+    min-width: 0;
     width: 100%;
+    overflow-wrap: anywhere;
   }
 
   .rowBlock,
@@ -169,6 +223,28 @@
 
   &.selected {
     @include apply-colors(true);
+  }
+
+  &.dragged {
+    opacity: 0.48;
+  }
+
+  &.dropBefore {
+    padding-top: 18px;
+    transform: translateY(2px);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  &.dropAfter {
+    padding-bottom: 18px;
+    transform: translateY(-2px);
+
+    &::after {
+      opacity: 1;
+    }
   }
 
   &.truncateText .rowText {

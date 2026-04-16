@@ -1,5 +1,21 @@
 # UXPin Backlog
 
+## Submenu drag-and-drop polish
+
+Status: pending
+
+Context:
+- UXPin `Submenu` now supports runtime row reordering with visual drop feedback.
+- The current implementation is usable for prototypes, but the interaction still feels rough.
+- Drop targets and row spacing need additional visual tuning so the movement feels closer to native design tools and production-quality drag-and-drop.
+
+Recommended future improvements:
+1. Add smoother row displacement while dragging across targets.
+2. Make the insertion line and spacing match the design system interaction language.
+3. Add clearer feedback when dragging over an invalid target or a different nesting level.
+4. Decide whether UXPin layer order should remain independent from runtime order, or whether we need a documented authoring pattern for persistent layer-level ordering.
+5. Re-test nested submenu drag behavior after tree nesting authoring is finalized.
+
 ## Table + Toolbar integration
 
 Status: pending
@@ -7,6 +23,7 @@ Status: pending
 Context:
 - `Toolbar` is a standalone component, but in real product flows it is often owned by `Table`.
 - Table-related actions depend on table state: selection, filtered rows, visible columns, pagination, grouping, search, and entity actions.
+- UXPin needs a clear connection model between toolbar buttons and table rows/entities, so prototype authors can use buttons to delete, open, duplicate, export, or otherwise mutate entities inside the table.
 - In production `hexa-ui` this is already modeled through table-side integration rather than by merging `Toolbar` into the base `Table` component.
 
 Decision for future work:
@@ -23,12 +40,14 @@ Recommended implementation direction:
 2. Keep state ownership in `Table`: selection, filtering, search, pagination, visible rows, visible columns.
 3. Expose toolbar actions from the table integration layer instead of binding them directly inside standalone `Toolbar`.
 4. Reuse the existing production patterns from `src/table/modules/ToolbarIntegration`.
-5. Preserve standalone `Toolbar` for page-level scenarios not tied to a table.
+5. Add row/entity mutation actions for prototypes, starting with delete selected rows and open selected entity.
+6. Preserve standalone `Toolbar` for page-level scenarios not tied to a table.
 
 Open questions for later:
 - Which toolbar actions should be available by default in the table prototype: create, delete, export, filter, search, settings, open entity?
 - Should UXPin support both embedded table toolbar and standalone toolbar linked to a table, or only the embedded mode first?
 - How should entity actions interact with manual table data in prototype mode?
+- How should UXPin authors assign actions to toolbar buttons: action prop presets, event handlers, or binding a `ToolbarButton` to table-owned actions?
 
 ## Toolbar collapsible search
 
@@ -98,6 +117,26 @@ Fallback solution to keep:
 - This is less ergonomic than drag-resize, but it is a safe escape hatch if UXPin frame resizing becomes unstable.
 - Last checkpoint with the explicit `frameHeight` API: `897e3ac` (`checkpoint: save uxpin layout wrappers and table sizing`).
 
+## Table tree link nesting authoring
+
+Status: pending
+
+Context:
+- `treeLink` currently relies on row `children` to render expandable nested rows.
+- Generated data can create demo nesting automatically, but UXPin authors need a clear way to define real nested data for prototypes.
+- The current manual JSON format can technically express `children`, but it is not documented or optimized for authoring.
+
+Questions to resolve:
+- Should nested `treeLink` data be authored only through `dataSourceJson` with recursive `children` arrays?
+- Do we need a friendlier UXPin prop or helper format for common one/two-level trees?
+- How should nested rows interact with sorting, filtering, pagination, selection, and row count generation?
+- Should table columns ever accept nested items directly, or should nesting remain strictly row-data-owned?
+
+Recommended direction:
+- Keep row nesting data-owned to stay close to production table behavior.
+- Document the JSON shape with examples.
+- Later consider a small authoring helper if JSON becomes too painful for designers.
+
 ## Menu inside flex layouts
 
 Status: pending
@@ -120,3 +159,23 @@ Recommended future implementation:
 4. Make full-width behavior opt-in rather than default.
 5. Ensure collapsed width updates the outer layout width, not only the inner visual state.
 6. Verify behavior in plain frame layout and inside flexbox containers with multiple siblings.
+
+## Menu-driven page switching
+
+Status: pending
+
+Context:
+- UXPin prototypes need a way to switch visible page/content areas when the user clicks menu items.
+- Today `Menu` can model navigation structure and active/expanded states, but it does not own or coordinate page-level content visibility.
+- Without a shared mechanism, authors have to manually wire every menu item to frame visibility, which is slow and error-prone.
+
+Questions to resolve:
+- Should menu page switching be driven by UXPin interactions only, or should `MenuItem` expose a stable page/action key?
+- Should `Menu` control sibling `PageWrapper`/section visibility, or should we introduce a higher-level layout/navigation wrapper?
+- How should nested menu items map to pages, especially when parent items are expandable but not real pages?
+- How should active menu state stay in sync when the page changes from another control?
+
+Recommended direction:
+- Start with explicit `pageKey`/`actionKey` style metadata on `MenuItem`.
+- Keep the visual menu component independent, but document a recommended UXPin interaction pattern for switching page containers.
+- Later consider a page navigation wrapper if manual UXPin wiring remains too expensive.
