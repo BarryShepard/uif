@@ -119,6 +119,10 @@ Checks: npm run test
 - Start a dedicated orchestrator chat from `.agents/orchestrator-chat.md`
 - Use the compact task template from `.agents/task-brief.md`
 - Pick role cards from `.agents/roles/`
-- Repo-local skill source: `codex-skills/uif-orchestrator/`
-- Skill install helper: `codex-tools/install-uif-orchestrator-skill.sh`
+- Repo-local skill sources: `codex-skills/`
+- Skill install helper: `codex-tools/install-uif-skills.sh`
+- UXPin component integration skill: `codex-skills/uif-uxpin-component-integration/`
+- UXPin runtime debug skill: `codex-skills/uif-uxpin-runtime-debug/`
+- UXPin publish skill: `codex-skills/uif-uxpin-push/`
+- GitHub publish summary skill: `codex-skills/uif-github-push-summary/`
 - Hexa UI contract audit: `cd packages/kaspersky-hexa-ui && npm run audit:contracts`

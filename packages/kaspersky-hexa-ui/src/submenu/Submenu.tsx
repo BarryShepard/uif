@@ -138,7 +138,7 @@ export const Submenu: FC<SubmenuProps> = (rawProps) => {
 
   return (
     <div className={styles.wrapper}>
-      <div 
+      <div
         {...rest}
         {...testAttributes}
         className={cn(styles.submenu, getClassNameWithTheme(rawProps))}
@@ -174,7 +174,7 @@ export const Submenu: FC<SubmenuProps> = (rawProps) => {
 }
 
 const findFirstRow = (items: LeveledSubmenuItemProps[]) => (
-  items.find((item) => item.type === 'row') as LeveledRowProps | undefined
+  items.find(isLeveledRowItem)
 )
 
 type DraggedRow = {
@@ -190,9 +190,13 @@ type ReorderOptions = {
 
 const ROOT_ORDER_KEY = '__root__'
 
+const isRowItem = (item: SubmenuItemProps): item is RowProps => item.type === 'row'
+
+const isLeveledRowItem = (item: LeveledSubmenuItemProps): item is LeveledRowProps => item.type === 'row'
+
 const findPathToActiveRow = (items: SubmenuItemProps[], activeKey?: string): RowProps[] | undefined => {
   for (const item of items) {
-    if (item.type === 'row') {
+    if (isRowItem(item)) {
       if (item.key === activeKey) {
         return [item]
       }
@@ -239,26 +243,23 @@ const applyOrderToItems = (
   orderByParentKey: Record<string, string[]>,
   parentKey?: string
 ): SubmenuItemProps[] => {
-  const rowOrder = orderByParentKey[getParentOrderKey(parentKey)]
+  const rowOrder = orderByParentKey[getParentOrderKey(parentKey)] ?? []
+  const rowItems = items.filter(isRowItem)
   const rowsByKey = new Map(
-    items
-      .filter((item): item is RowProps => item.type === 'row')
-      .map((item) => [item.key, item])
+    rowItems.map((item) => [item.key, item])
   )
   const orderedRows = [
-    ...(rowOrder || []).map((key) => rowsByKey.get(key)).filter(Boolean),
-    ...items.filter((item): item is RowProps => (
-      item.type === 'row' && !(rowOrder || []).includes(item.key)
-    ))
-  ] as RowProps[]
+    ...rowOrder.map((key) => rowsByKey.get(key)).filter((row): row is RowProps => Boolean(row)),
+    ...rowItems.filter((item) => !rowOrder.includes(item.key))
+  ]
   let nextRowIndex = 0
 
   return items.map((item) => {
-    if (item.type !== 'row') {
+    if (!isRowItem(item)) {
       return item
     }
 
-    const nextRow = orderedRows[nextRowIndex++]
+    const nextRow = orderedRows[nextRowIndex++] ?? item
 
     return {
       ...nextRow,
@@ -275,12 +276,12 @@ const findSiblingRowKeys = (
 ): string[] => {
   if (!parentKey) {
     return items
-      .filter((item): item is RowProps => item.type === 'row')
+      .filter(isRowItem)
       .map((item) => item.key)
   }
 
   for (const item of items) {
-    if (item.type !== 'row' || !item.children) {
+    if (!isRowItem(item) || !item.children) {
       continue
     }
 

@@ -12,6 +12,10 @@ Use this skill for UIF tasks where the user wants less prompting overhead and mo
 - Treat the repository as package-oriented. Identify the owner package before proposing work.
 - For component API, Storybook, or design-system sync work in `packages/kaspersky-hexa-ui`, run `npm run audit:contracts` early.
 - Read `references/uif-hexa-contract.md` before changing component contract files, Storybook metadata, or docs completeness.
+- For UXPin Merge component setup, nested editable layers, presets, slots, or frame sizing, use `uif-uxpin-component-integration`.
+- For stale UXPin editor/prototype behavior, hidden layers still rendering, added/removed children not updating, or frame bugs, use `uif-uxpin-runtime-debug`.
+- For UXPin publishing, revision errors, token checks, or a UXPin changelog since the previous push, use `uif-uxpin-push`.
+- For GitHub push/commit work with a changelog since the previous push, use `uif-github-push-summary`.
 - Prefer additive changes first: audits, exports, metadata, docs, and safe typing improvements before behavioral refactors.
 
 ## Working Rules

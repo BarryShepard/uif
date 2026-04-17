@@ -1,0 +1,7 @@
+interface:
+  display_name: "UIF UXPin Debug"
+  short_description: "Debug stale UXPin layers and frames"
+  default_prompt: "Use $uif-uxpin-runtime-debug to diagnose why this UXPin component is not updating correctly in editor or prototype mode."
+
+policy:
+  allow_implicit_invocation: true

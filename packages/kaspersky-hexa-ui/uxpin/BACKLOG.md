@@ -1,5 +1,21 @@
 # UXPin Backlog
 
+## Sidebar footer button layer updates
+
+Status: verify in UXPin
+
+Context:
+- `SidebarFooter` is visible in the sidebar, but editable `SidebarFooterLeftItems` and `SidebarFooterRightItems` must reflect layer changes immediately.
+- Adding, deleting, hiding, or reordering buttons inside the left/right footer zones should update the canvas and prototype without requiring prop toggles or component reinsertion.
+- The likely recurring cause is UXPin target placeholders inside `overriddenCodeProps.children`; they must be converted into real button components instead of rendered as inert placeholders.
+
+Validation checklist:
+1. Add a new button to `SidebarFooterLeftItems`; it appears in the footer left zone.
+2. Hide and delete a left-zone button; it disappears from the canvas.
+3. Enable `additionalContent`, add a button to `SidebarFooterRightItems`; it appears in the right zone.
+4. Hide and delete a right-zone button; it disappears from the canvas.
+5. Check that standalone `SidebarFooterLeftItems` and `SidebarFooterRightItems` still hug content.
+
 ## Submenu drag-and-drop polish
 
 Status: pending

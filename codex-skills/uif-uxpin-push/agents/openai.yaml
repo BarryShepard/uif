@@ -1,0 +1,7 @@
+interface:
+  display_name: "UIF UXPin Push"
+  short_description: "Publish UIF components to UXPin safely"
+  default_prompt: "Use $uif-uxpin-push to validate, summarize, and publish the current Hexa UI UXPin Merge changes."
+
+policy:
+  allow_implicit_invocation: true

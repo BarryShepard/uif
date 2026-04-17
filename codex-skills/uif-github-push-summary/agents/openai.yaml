@@ -1,0 +1,7 @@
+interface:
+  display_name: "UIF GitHub Push"
+  short_description: "Push UIF changes with a changelog"
+  default_prompt: "Use $uif-github-push-summary to commit, summarize, and push the current UIF changes to GitHub."
+
+policy:
+  allow_implicit_invocation: true

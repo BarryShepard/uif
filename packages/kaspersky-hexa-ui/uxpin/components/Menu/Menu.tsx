@@ -83,12 +83,15 @@ const useSyncMenuFrameHeight = (): React.RefObject<HTMLDivElement> => {
 
     syncFrameHeight()
 
-    const resizeObserver = new ResizeObserver(syncFrameHeight)
-    resizeObserver.observe(rootElement)
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(syncFrameHeight)
+      : undefined
+
+    resizeObserver?.observe(rootElement)
     window.addEventListener('resize', syncFrameHeight)
 
     return () => {
-      resizeObserver.disconnect()
+      resizeObserver?.disconnect()
       window.removeEventListener('resize', syncFrameHeight)
       mergeComponent.style.height = previousHeight
       mergeComponent.style.minHeight = previousMinHeight

@@ -13,21 +13,38 @@ export const SubmenuItems: FC<CommonSubComponentProps & {
   ...props
 }) => (
   <>
-    {items.map((rawItem, index) => {
-      const item = useTestAttribute(rawItem)
-      switch (item.type) {
-        case 'row':
-          return <Row {...props} parentKey={parentKey} row={item} key={item.key} />
-        case 'title':
-          return <SubmenuTitle {...item} key={item.key} />
-        case 'divider':
-          return <SubmenuDivider {...item} key={index} />
-        default:
-          return null
-      }
-    })}
+    {items.map((item, index) => (
+      <SubmenuItemView
+        {...props}
+        item={item}
+        key={item.type === 'divider' ? `divider-${index}` : item.key}
+        parentKey={parentKey}
+      />
+    ))}
   </>
 )
+
+const SubmenuItemView: FC<CommonSubComponentProps & {
+  item: LeveledSubmenuItemProps,
+  parentKey?: string
+}> = ({
+  item: rawItem,
+  parentKey,
+  ...props
+}) => {
+  const item = useTestAttribute(rawItem)
+
+  switch (item.type) {
+    case 'row':
+      return <Row {...props} parentKey={parentKey} row={item} />
+    case 'title':
+      return <SubmenuTitle {...item} />
+    case 'divider':
+      return <SubmenuDivider {...item} />
+    default:
+      return null
+  }
+}
 
 const Row: FC<CommonSubComponentProps & {
   parentKey?: string,

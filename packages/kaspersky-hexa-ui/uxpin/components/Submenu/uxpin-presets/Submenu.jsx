@@ -8,7 +8,6 @@ export default (
     uxpId="submenu-1"
     draggable={false}
     truncateText={true}
-    collapseOnTextClick={true}
   >
     <SubmenuItem
       uxpId="submenu-item-1"

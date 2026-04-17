@@ -6,7 +6,13 @@ import { RowProps, SubmenuItemProps as HexaSubmenuItemProps } from '@src/submenu
 
 import { mergeFrameStyle } from '../../preview'
 import {
+  getUXPinPropSources,
+  resolveUXPinChildrenFromProps,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
+import {
   defaultSubmenuItemChildren,
+  hasUXPinSubmenuItemChildren,
   isUXPinSubmenuItemElement,
   submenuChildrenToItems
 } from '../SubmenuItem/SubmenuItem'
@@ -19,15 +25,45 @@ export type UXPinSubmenuProps = {
   draggable?: boolean,
   /** Truncates long item labels. */
   truncateText?: boolean,
-  /** Collapses or expands nested items when clicking item text. */
-  collapseOnTextClick?: boolean,
   /** Slot above the submenu items. */
-  elementBefore?: React.ReactNode,
+  topSlot?: React.ReactNode,
   /** Slot below the submenu items. */
-  elementAfter?: React.ReactNode,
+  bottomSlot?: React.ReactNode,
   /** SubmenuItem children. Non-item children render as a content area. */
   children?: React.ReactNode,
   style?: CSSProperties
+}
+
+type UXPinSubmenuRuntimeProps = UXPinSubmenuProps & {
+  overriddenCodeProps?: Partial<UXPinSubmenuProps>,
+  withinSidebar?: boolean
+}
+
+type SubmenuComponent = React.FC<UXPinSubmenuProps> & {
+  uxpinRole?: string,
+  defaultProps?: Partial<UXPinSubmenuProps>
+}
+
+const SUBMENU_ROLE = 'hexa-uxpin-submenu'
+
+const hasSubmenuOwnShape = (props: Record<string, unknown> = {}): boolean => (
+  'defaultActiveKey' in props ||
+  'draggable' in props ||
+  'truncateText' in props ||
+  'topSlot' in props ||
+  'bottomSlot' in props ||
+  // Legacy prop names help recognize older UXPin instances after component API cleanup.
+  'elementBefore' in props ||
+  'elementAfter' in props ||
+  'collapseOnTextClick' in props
+)
+
+const hasSubmenuShape = (props: Record<string, unknown> = {}): boolean => {
+  return (
+    hasSubmenuOwnShape(props) ||
+    hasUXPinSubmenuItemChildren(resolveUXPinChildrenFromProps(props)) ||
+    getUXPinPropSources(props).some((source) => source !== props && hasSubmenuShape(source))
+  )
 }
 
 const SubmenuRoot = styled.div`
@@ -51,6 +87,21 @@ const SubmenuRoot = styled.div`
   }
 `
 
+const DEFAULT_SUBMENU_FRAME_HEIGHT = '100vh'
+const DEFAULT_SUBMENU_MIN_WIDTH = 232
+
+const getSubmenuFrameStyle = (
+  style: CSSProperties | undefined,
+  frameHeight: CSSProperties['height']
+): CSSProperties => mergeFrameStyle({
+  ...style,
+  width: 'fit-content',
+  minWidth: DEFAULT_SUBMENU_MIN_WIDTH,
+  maxWidth: 'fit-content',
+  height: frameHeight,
+  minHeight: frameHeight
+})
+
 const useSyncSubmenuFrameSize = (): React.RefObject<HTMLDivElement> => {
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -58,7 +109,7 @@ const useSyncSubmenuFrameSize = (): React.RefObject<HTMLDivElement> => {
     const rootElement = rootRef.current
     const mergeComponent = rootElement?.closest('.merge-component') as HTMLDivElement | null
 
-    if (!rootElement || !mergeComponent) {
+    if (!rootElement || !mergeComponent || rootElement.closest('[data-hexa-uxpin-sidebar="true"]')) {
       return undefined
     }
 
@@ -110,12 +161,7 @@ const useSyncSubmenuFrameSize = (): React.RefObject<HTMLDivElement> => {
 
 const resolveSubmenuItems = (children?: React.ReactNode): SubmenuItemsResolution => {
   const resolved = submenuChildrenToItems(children)
-
-  if (resolved.items.length) {
-    return resolved
-  }
-
-  return submenuChildrenToItems(defaultSubmenuItemChildren)
+  return resolved
 }
 
 type SubmenuItemsResolution = {
@@ -150,19 +196,33 @@ const getDirectContentChildren = (
   ))
 )
 
-const Submenu = ({
-  children,
-  collapseOnTextClick = true,
-  defaultActiveKey,
-  draggable = false,
-  elementAfter,
-  elementBefore,
-  style,
-  truncateText = true
-}: UXPinSubmenuProps): JSX.Element => {
+export const isUXPinSubmenuElement = (
+  node: React.ReactNode
+): node is React.ReactElement<UXPinSubmenuProps> => (
+  React.isValidElement(node) &&
+  (
+    (node.type as SubmenuComponent)?.uxpinRole === SUBMENU_ROLE ||
+    (node.type as { displayName?: string })?.displayName === 'Submenu' ||
+    (node.type as { name?: string })?.name === 'Submenu' ||
+    getUXPinPropSources(node.props).some(hasSubmenuShape)
+  )
+)
+
+const Submenu: SubmenuComponent = (rawProps: UXPinSubmenuProps): JSX.Element => {
+  const resolvedProps = resolveUXPinRuntimeProps(rawProps as UXPinSubmenuRuntimeProps)
+  const {
+    bottomSlot,
+    children,
+    defaultActiveKey,
+    draggable = false,
+    style,
+    topSlot,
+    truncateText = true
+  } = resolvedProps
+  const { withinSidebar = false } = rawProps as UXPinSubmenuRuntimeProps
   const rootRef = useSyncSubmenuFrameSize()
-  const resolvedChildren = children ?? defaultSubmenuItemChildren
-  const resolvedFrameHeight = style?.height ?? '100vh'
+  const resolvedChildren = children
+  const resolvedFrameHeight = withinSidebar ? '100%' : style?.height ?? DEFAULT_SUBMENU_FRAME_HEIGHT
   const { items: resolvedItems, selectedKey } = useMemo(
     () => resolveSubmenuItems(resolvedChildren),
     [resolvedChildren]
@@ -172,24 +232,16 @@ const Submenu = ({
     [resolvedItems, draggable]
   )
   const directContent = useMemo(
-    () => getDirectContentChildren(children),
-    [children]
+    () => getDirectContentChildren(resolvedChildren),
+    [resolvedChildren]
   )
 
   return (
-    <SubmenuRoot ref={rootRef} style={mergeFrameStyle({
-      ...style,
-      width: 'fit-content',
-      minWidth: 232,
-      maxWidth: 'fit-content',
-      height: resolvedFrameHeight,
-      minHeight: resolvedFrameHeight
-    })}>
+    <SubmenuRoot ref={rootRef} style={getSubmenuFrameStyle(style, resolvedFrameHeight)}>
       <HexaSubmenu
-        collapseOnTextClick={collapseOnTextClick}
         defaultActiveKey={selectedKey ?? defaultActiveKey}
-        elementAfter={elementAfter}
-        elementBefore={elementBefore}
+        elementAfter={bottomSlot}
+        elementBefore={topSlot}
         items={items}
         truncateText={truncateText}
       />
@@ -202,13 +254,14 @@ const Submenu = ({
   )
 }
 
+Submenu.uxpinRole = SUBMENU_ROLE
+Submenu.displayName = 'Submenu'
+
 Submenu.defaultProps = {
-  children: defaultSubmenuItemChildren,
-  collapseOnTextClick: true,
   draggable: false,
   truncateText: true
 }
 
-Submenu.displayName = 'Submenu'
+export { defaultSubmenuItemChildren }
 
 export default Submenu

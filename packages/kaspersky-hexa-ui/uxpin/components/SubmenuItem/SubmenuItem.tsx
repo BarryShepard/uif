@@ -7,6 +7,11 @@ import Icons16Pack, { Placeholder } from '@kaspersky/hexa-ui-icons/16'
 import { ArrowDownSolid, ArrowRightSolid } from '@kaspersky/hexa-ui-icons/8'
 
 import { FrameFill } from '../../preview'
+import {
+  getUXPinPropSources,
+  resolveUXPinElementChildren,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
 
@@ -84,9 +89,7 @@ const hasSubmenuItemShape = (props: Record<string, unknown> = {}): boolean => (
 const resolveSubmenuItemRuntimeProps = (
   rawProps: UXPinSubmenuItemProps = {}
 ): UXPinSubmenuItemProps => ({
-  ...SUBMENU_ITEM_DEFAULT_PROPS,
-  ...rawProps,
-  ...(rawProps.overriddenCodeProps || {})
+  ...resolveUXPinRuntimeProps(rawProps, SUBMENU_ITEM_DEFAULT_PROPS)
 })
 
 const resolveNamedIcon = (iconName?: SubmenuItemIconName): React.ReactNode => {
@@ -133,7 +136,7 @@ export const isUXPinSubmenuItemElement = (
     (node.type as SubmenuItemComponent)?.uxpinRole === SUBMENU_ITEM_ROLE ||
     (node.type as { displayName?: string })?.displayName === 'SubmenuItem' ||
     (node.type as { name?: string })?.name === 'SubmenuItem' ||
-    hasSubmenuItemShape((node.props as Record<string, unknown>) || {})
+    getUXPinPropSources(node.props).some(hasSubmenuItemShape)
   )
 )
 
@@ -149,11 +152,24 @@ const getSubmenuItemChildren = (
 
     if (isUXPinSubmenuItemElement(child)) {
       items.push(child)
+      return
+    }
+
+    if (React.isValidElement(child)) {
+      const nestedChildren = resolveUXPinElementChildren(child)
+
+      if (nestedChildren) {
+        items.push(...getSubmenuItemChildren(nestedChildren))
+      }
     }
   })
 
   return items
 }
+
+export const hasUXPinSubmenuItemChildren = (children: React.ReactNode): boolean => (
+  getSubmenuItemChildren(children).length > 0
+)
 
 const getSubmenuItemContent = (
   children: React.ReactNode
@@ -161,7 +177,11 @@ const getSubmenuItemContent = (
   const content = React.Children.toArray(children).filter((child) => (
     child &&
     !isUXPinHiddenElement(child) &&
-    !isUXPinSubmenuItemElement(child)
+    !isUXPinSubmenuItemElement(child) &&
+    !(
+      React.isValidElement(child) &&
+      hasUXPinSubmenuItemChildren(resolveUXPinElementChildren(child))
+    )
   ))
 
   return content.length ? <>{content}</> : undefined
@@ -188,7 +208,7 @@ export const submenuItemElementToItem = (
     variant = 'item'
   } = runtimeProps
   const key = resolveSubmenuItemKey(element, prefix, index)
-  const children = runtimeProps.overriddenCodeProps?.children ?? runtimeProps.children ?? element.props.children
+  const children = runtimeProps.children ?? resolveUXPinElementChildren(element)
 
   if (variant === 'divider') {
     return {
@@ -338,8 +358,25 @@ const SubmenuItemPreviewRoot = styled.div`
   }
 `
 
-const SubmenuItem = (rawProps: UXPinSubmenuItemProps): JSX.Element => {
+const SubmenuItemPreviewFrame = ({
+  children
+}: {
+  children: React.ReactNode
+}): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame()
+
+  return (
+    <div ref={rootRef}>
+      <FrameFill style={{ height: 'fit-content' }}>
+        <SubmenuItemPreviewRoot>
+          {children}
+        </SubmenuItemPreviewRoot>
+      </FrameFill>
+    </div>
+  )
+}
+
+const SubmenuItem = (rawProps: UXPinSubmenuItemProps): JSX.Element => {
   const {
     children,
     description = false,
@@ -359,74 +396,62 @@ const SubmenuItem = (rawProps: UXPinSubmenuItemProps): JSX.Element => {
 
   if (variant === 'divider') {
     return (
-      <div ref={rootRef}>
-        <FrameFill style={{ height: 'fit-content' }}>
-          <SubmenuItemPreviewRoot>
-            <div className="submenu-item-preview-divider" />
-          </SubmenuItemPreviewRoot>
-        </FrameFill>
-      </div>
+      <SubmenuItemPreviewFrame>
+        <div className="submenu-item-preview-divider" />
+      </SubmenuItemPreviewFrame>
     )
   }
 
   if (variant === 'title') {
     return (
-      <div ref={rootRef}>
-        <FrameFill style={{ height: 'fit-content' }}>
-          <SubmenuItemPreviewRoot>
-            <div className="submenu-item-preview-title">{text}</div>
-          </SubmenuItemPreviewRoot>
-        </FrameFill>
-      </div>
+      <SubmenuItemPreviewFrame>
+        <div className="submenu-item-preview-title">{text}</div>
+      </SubmenuItemPreviewFrame>
     )
   }
 
   return (
-    <div ref={rootRef}>
-      <FrameFill style={{ height: 'fit-content' }}>
-        <SubmenuItemPreviewRoot>
-          <div className={[
-            'submenu-item-preview-row',
-            'truncate',
-            selected ? 'selected' : '',
-            disabled ? 'disabled' : ''
-          ].filter(Boolean).join(' ')}
-          >
-            {nestedItems.length > 0 && (
-              <span className="submenu-item-preview-arrow">
-                {expanded ? <ArrowDownSolid /> : <ArrowRightSolid />}
-              </span>
-            )}
-            {iconBefore && (
-              <span className="submenu-item-preview-icon">
-                {resolveIconBefore(iconBefore, iconBeforeSlot)}
-              </span>
-            )}
-            <span className="submenu-item-preview-labels">
-              <span className="submenu-item-preview-text">{text}</span>
-              {description && (
-                <span className="submenu-item-preview-description">{descriptionText}</span>
-              )}
-            </span>
-            {elementAfter && (
-              <span className="submenu-item-preview-after">
-                {resolveElementAfter(elementAfter, elementAfterSlot)}
-              </span>
-            )}
-            {notification && (
-              <span className="submenu-item-preview-after">
-                <Indicator mode="critical" />
-              </span>
-            )}
-          </div>
-          {expanded && nestedItems.length > 0 && (
-            <div className="submenu-item-preview-children">
-              {nestedItems}
-            </div>
+    <SubmenuItemPreviewFrame>
+      <div className={[
+        'submenu-item-preview-row',
+        'truncate',
+        selected ? 'selected' : '',
+        disabled ? 'disabled' : ''
+      ].filter(Boolean).join(' ')}
+      >
+        {nestedItems.length > 0 && (
+          <span className="submenu-item-preview-arrow">
+            {expanded ? <ArrowDownSolid /> : <ArrowRightSolid />}
+          </span>
+        )}
+        {iconBefore && (
+          <span className="submenu-item-preview-icon">
+            {resolveIconBefore(iconBefore, iconBeforeSlot)}
+          </span>
+        )}
+        <span className="submenu-item-preview-labels">
+          <span className="submenu-item-preview-text">{text}</span>
+          {description && (
+            <span className="submenu-item-preview-description">{descriptionText}</span>
           )}
-        </SubmenuItemPreviewRoot>
-      </FrameFill>
-    </div>
+        </span>
+        {elementAfter && (
+          <span className="submenu-item-preview-after">
+            {resolveElementAfter(elementAfter, elementAfterSlot)}
+          </span>
+        )}
+        {notification && (
+          <span className="submenu-item-preview-after">
+            <Indicator mode="critical" />
+          </span>
+        )}
+      </div>
+      {expanded && nestedItems.length > 0 && (
+        <div className="submenu-item-preview-children">
+          {nestedItems}
+        </div>
+      )}
+    </SubmenuItemPreviewFrame>
   )
 }
 
