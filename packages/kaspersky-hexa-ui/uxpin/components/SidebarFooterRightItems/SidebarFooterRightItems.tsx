@@ -3,14 +3,18 @@ import styled from 'styled-components'
 
 import { FrameFill } from '../../preview'
 import {
-  getUXPinPropSources,
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
   hasUXPinChildrenProp,
   resolveUXPinChildrenFromProps,
-  resolveUXPinElementChildren,
+  resolveUXPinElementChildren
 } from '../../uxpinRuntime'
 import Button from '../Button/Button'
 import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
-import { renderSidebarFooterButtonChildren } from '../SidebarFooterLeftItems/SidebarFooterLeftItems'
+import {
+  renderSidebarFooterButtonChildren
+} from '../SidebarFooterLeftItems/SidebarFooterLeftItems'
 
 export type UXPinSidebarFooterRightItemsProps = {
   children?: React.ReactNode,
@@ -40,14 +44,22 @@ export const DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN = (
 )
 
 const resolveElementChildren = (
-  element: React.ReactElement<UXPinSidebarFooterRightItemsProps>
+  element: React.ReactNode
 ): React.ReactNode => {
-  if (!hasUXPinChildrenProp(element.props)) {
+  const props = getUXPinElementProps(element) as UXPinSidebarFooterRightItemsProps | undefined
+
+  if (!props || !hasUXPinChildrenProp(props)) {
+    return DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN
+  }
+
+  const resolvedChildren = resolveUXPinChildrenFromProps(props)
+
+  if (resolvedChildren === undefined) {
     return DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN
   }
 
   return renderSidebarFooterButtonChildren(
-    resolveUXPinChildrenFromProps(element.props),
+    resolvedChildren,
     'sidebar-footer-right-items'
   )
 }
@@ -55,10 +67,9 @@ const resolveElementChildren = (
 const hasSidebarFooterRightItemsSlotIdentity = (
   node: React.ReactNode
 ): boolean => (
-  React.isValidElement(node) &&
   (
-    (typeof node.key === 'string' && node.key.includes(SIDEBAR_FOOTER_RIGHT_ITEMS_SLOT_ID)) ||
-    getUXPinPropSources(node.props).some((props) => (
+    (React.isValidElement(node) && typeof node.key === 'string' && node.key.includes(SIDEBAR_FOOTER_RIGHT_ITEMS_SLOT_ID)) ||
+    getUXPinElementPropSources(node).some((props) => (
       (typeof props.uxpId === 'string' && props.uxpId.includes(SIDEBAR_FOOTER_RIGHT_ITEMS_SLOT_ID)) ||
       (typeof props.id === 'string' && props.id.includes(SIDEBAR_FOOTER_RIGHT_ITEMS_SLOT_ID)) ||
       (typeof props.presetElementId === 'string' && props.presetElementId.includes(SIDEBAR_FOOTER_RIGHT_ITEMS_SLOT_ID)) ||
@@ -70,44 +81,44 @@ const hasSidebarFooterRightItemsSlotIdentity = (
 
 export const isUXPinSidebarFooterRightItemsElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinSidebarFooterRightItemsProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as SidebarFooterRightItemsComponent)?.uxpinRole === SIDEBAR_FOOTER_RIGHT_ITEMS_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'SidebarFooterRightItems' ||
-    (node.type as { name?: string })?.name === 'SidebarFooterRightItems' ||
-    hasSidebarFooterRightItemsSlotIdentity(node)
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as SidebarFooterRightItemsComponent)?.uxpinRole === SIDEBAR_FOOTER_RIGHT_ITEMS_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'SidebarFooterRightItems' ||
+      (node.type as { name?: string })?.name === 'SidebarFooterRightItems'
+    )
+  ) ||
+  hasSidebarFooterRightItemsSlotIdentity(node)
 )
 
 export const resolveSidebarFooterRightItemsChildren = (
   children: React.ReactNode
 ): React.ReactNode | undefined => {
-  const elements: Array<React.ReactElement<UXPinSidebarFooterRightItemsProps>> = []
+  const elements: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child || isUXPinHiddenElement(child)) {
       return
     }
 
     if (isUXPinSidebarFooterRightItemsElement(child)) {
-      elements.push(child)
+      elements.push(resolveElementChildren(child))
       return
     }
 
-    if (React.isValidElement(child)) {
-      const nestedChildren = resolveUXPinElementChildren(child)
-      const nested = nestedChildren
-        ? resolveSidebarFooterRightItemsChildren(nestedChildren)
-        : undefined
+    const nestedChildren = resolveUXPinElementChildren(child)
+    const nested = nestedChildren
+      ? resolveSidebarFooterRightItemsChildren(nestedChildren)
+      : undefined
 
-      if (nested) {
-        elements.push(
-          <SidebarFooterRightItems key={`sidebar-footer-right-items-nested-${elements.length + 1}`}>
-            {nested}
-          </SidebarFooterRightItems>
-        )
-      }
+    if (nested) {
+      elements.push(
+        <React.Fragment key={`sidebar-footer-right-items-nested-${elements.length + 1}`}>
+          {nested}
+        </React.Fragment>
+      )
     }
   })
 
@@ -118,8 +129,8 @@ export const resolveSidebarFooterRightItemsChildren = (
   return (
     <>
       {elements.map((element, index) => (
-        <React.Fragment key={element.key ?? `sidebar-footer-right-items-${index + 1}`}>
-          {resolveElementChildren(element)}
+        <React.Fragment key={`sidebar-footer-right-items-${index + 1}`}>
+          {element}
         </React.Fragment>
       ))}
     </>
@@ -129,9 +140,10 @@ export const resolveSidebarFooterRightItemsChildren = (
 const SidebarFooterRightItems: SidebarFooterRightItemsComponent = (
   rawProps: UXPinSidebarFooterRightItemsProps
 ): JSX.Element => {
-  const resolvedChildren = hasUXPinChildrenProp(rawProps)
+  const runtimeChildren = resolveUXPinChildrenFromProps(rawProps)
+  const resolvedChildren = hasUXPinChildrenProp(rawProps) && runtimeChildren !== undefined
     ? renderSidebarFooterButtonChildren(
-      resolveUXPinChildrenFromProps(rawProps),
+      runtimeChildren,
       'sidebar-footer-right-items-preview'
     )
     : DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN

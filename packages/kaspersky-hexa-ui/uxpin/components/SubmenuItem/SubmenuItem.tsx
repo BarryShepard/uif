@@ -8,7 +8,9 @@ import { ArrowDownSolid, ArrowRightSolid } from '@kaspersky/hexa-ui-icons/8'
 
 import { FrameFill } from '../../preview'
 import {
-  getUXPinPropSources,
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
@@ -116,36 +118,85 @@ const resolveElementAfter = (
   elementAfter ? elementAfterSlot ?? <Placeholder /> : undefined
 )
 
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
 const resolveSubmenuItemKey = (
-  element: React.ReactElement<UXPinSubmenuItemProps>,
+  element: React.ReactNode,
   prefix: string,
   index: number
 ): string => {
-  if (typeof element.key === 'string' && element.key.length) {
+  const explicitId = getFirstStringProp(element, ['id', 'uxpId'])
+
+  if (explicitId) {
+    return explicitId
+  }
+
+  const presetId = getFirstStringProp(element, ['presetElementId', 'uxpinPresetElementId'])
+
+  if (presetId) {
+    return `${prefix}-${presetId}-${index + 1}`
+  }
+
+  if (React.isValidElement(element) && typeof element.key === 'string' && element.key.length) {
     return element.key
   }
 
   return `${prefix}-${index + 1}`
 }
 
+const hasSubmenuItemIdentity = (
+  node: React.ReactNode
+): boolean => (
+  (
+    React.isValidElement(node) &&
+    typeof node.key === 'string' &&
+    node.key.toLowerCase().includes('submenu-item')
+  ) ||
+  getUXPinElementPropSources(node).some((props) => (
+    (typeof props.uxpId === 'string' && props.uxpId.toLowerCase().includes('submenu-item')) ||
+    (typeof props.id === 'string' && props.id.toLowerCase().includes('submenu-item')) ||
+    (typeof props.presetElementId === 'string' && props.presetElementId.toLowerCase().includes('submenu-item')) ||
+    (typeof props.uxpinPresetElementId === 'string' && props.uxpinPresetElementId.toLowerCase().includes('submenu-item')) ||
+    props.name === 'SubmenuItem'
+  ))
+)
+
 export const isUXPinSubmenuItemElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinSubmenuItemProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as SubmenuItemComponent)?.uxpinRole === SUBMENU_ITEM_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'SubmenuItem' ||
-    (node.type as { name?: string })?.name === 'SubmenuItem' ||
-    getUXPinPropSources(node.props).some(hasSubmenuItemShape)
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as SubmenuItemComponent)?.uxpinRole === SUBMENU_ITEM_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'SubmenuItem' ||
+      (node.type as { name?: string })?.name === 'SubmenuItem'
+    )
+  ) ||
+  hasSubmenuItemIdentity(node) ||
+  getUXPinElementPropSources(node).some(hasSubmenuItemShape)
 )
 
 const getSubmenuItemChildren = (
   children: React.ReactNode
-): Array<React.ReactElement<UXPinSubmenuItemProps>> => {
-  const items: Array<React.ReactElement<UXPinSubmenuItemProps>> = []
+): React.ReactNode[] => {
+  const items: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child || isUXPinHiddenElement(child)) {
       return
     }
@@ -155,12 +206,10 @@ const getSubmenuItemChildren = (
       return
     }
 
-    if (React.isValidElement(child)) {
-      const nestedChildren = resolveUXPinElementChildren(child)
+    const nestedChildren = resolveUXPinElementChildren(child)
 
-      if (nestedChildren) {
-        items.push(...getSubmenuItemChildren(nestedChildren))
-      }
+    if (nestedChildren) {
+      items.push(...getSubmenuItemChildren(nestedChildren))
     }
   })
 
@@ -174,25 +223,28 @@ export const hasUXPinSubmenuItemChildren = (children: React.ReactNode): boolean 
 const getSubmenuItemContent = (
   children: React.ReactNode
 ): React.ReactNode | undefined => {
-  const content = React.Children.toArray(children).filter((child) => (
+  const content = getUXPinChildrenArray(children).filter((child) => (
     child &&
     !isUXPinHiddenElement(child) &&
     !isUXPinSubmenuItemElement(child) &&
-    !(
-      React.isValidElement(child) &&
-      hasUXPinSubmenuItemChildren(resolveUXPinElementChildren(child))
-    )
+    !hasUXPinSubmenuItemChildren(resolveUXPinElementChildren(child))
   ))
 
   return content.length ? <>{content}</> : undefined
 }
 
 export const submenuItemElementToItem = (
-  element: React.ReactElement<UXPinSubmenuItemProps>,
+  element: React.ReactNode,
   index: number,
   prefix: string
 ): SubmenuItemsBuildResult => {
-  const runtimeProps = resolveSubmenuItemRuntimeProps(element.props)
+  const elementProps = getUXPinElementProps(element) as UXPinSubmenuItemProps | undefined
+
+  if (!elementProps) {
+    return { items: [] }
+  }
+
+  const runtimeProps = resolveSubmenuItemRuntimeProps(elementProps)
   const {
     description = false,
     descriptionText,

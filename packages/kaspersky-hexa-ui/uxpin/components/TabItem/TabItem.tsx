@@ -5,7 +5,9 @@ import { Tabs as HexaTabs } from '@src/tabs'
 
 import { FrameFill } from '../../preview'
 import {
-  getUXPinPropSources,
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
@@ -77,11 +79,40 @@ const resolveTabItemRuntimeProps = (
   ...resolveUXPinRuntimeProps(rawProps, TAB_ITEM_DEFAULT_PROPS)
 })
 
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
 const resolveTabItemKey = (
-  element: React.ReactElement<UXPinTabItemProps>,
+  element: React.ReactNode,
   index: number
 ): string => {
-  if (typeof element.key === 'string' && element.key.length) {
+  const explicitId = getFirstStringProp(element, ['id', 'uxpId'])
+
+  if (explicitId) {
+    return explicitId
+  }
+
+  const presetId = getFirstStringProp(element, ['presetElementId', 'uxpinPresetElementId'])
+
+  if (presetId) {
+    return `${presetId}-${index + 1}`
+  }
+
+  if (React.isValidElement(element) && typeof element.key === 'string' && element.key.length) {
     return element.key
   }
 
@@ -97,24 +128,59 @@ const resolveTabItemLabel = ({
     : text ?? 'Tab'
 )
 
+const hasTabItemIdentity = (
+  node: React.ReactNode
+): boolean => (
+  (
+    React.isValidElement(node) &&
+    typeof node.key === 'string' &&
+    (
+      node.key.toLowerCase().includes('tab-item') ||
+      node.key.toLowerCase().includes('sidebar-tab')
+    )
+  ) ||
+  getUXPinElementPropSources(node).some((props) => (
+    (typeof props.uxpId === 'string' && (
+      props.uxpId.toLowerCase().includes('tab-item') ||
+      props.uxpId.toLowerCase().includes('sidebar-tab')
+    )) ||
+    (typeof props.id === 'string' && (
+      props.id.toLowerCase().includes('tab-item') ||
+      props.id.toLowerCase().includes('sidebar-tab')
+    )) ||
+    (typeof props.presetElementId === 'string' && (
+      props.presetElementId.toLowerCase().includes('tab-item') ||
+      props.presetElementId.toLowerCase().includes('sidebar-tab')
+    )) ||
+    (typeof props.uxpinPresetElementId === 'string' && (
+      props.uxpinPresetElementId.toLowerCase().includes('tab-item') ||
+      props.uxpinPresetElementId.toLowerCase().includes('sidebar-tab')
+    )) ||
+    props.name === 'TabItem'
+  ))
+)
+
 export const isUXPinTabItemElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinTabItemProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as TabItemComponent)?.uxpinRole === TAB_ITEM_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'TabItem' ||
-    (node.type as { name?: string })?.name === 'TabItem' ||
-    getUXPinPropSources(node.props).some(hasTabItemShape)
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as TabItemComponent)?.uxpinRole === TAB_ITEM_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'TabItem' ||
+      (node.type as { name?: string })?.name === 'TabItem'
+    )
+  ) ||
+  hasTabItemIdentity(node) ||
+  getUXPinElementPropSources(node).some(hasTabItemShape)
 )
 
 const getTabItemChildren = (
   children: React.ReactNode
-): Array<React.ReactElement<UXPinTabItemProps>> => {
-  const items: Array<React.ReactElement<UXPinTabItemProps>> = []
+): React.ReactNode[] => {
+  const items: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child || isUXPinHiddenElement(child)) {
       return
     }
@@ -124,12 +190,10 @@ const getTabItemChildren = (
       return
     }
 
-    if (React.isValidElement(child)) {
-      const nestedChildren = resolveUXPinElementChildren(child)
+    const nestedChildren = resolveUXPinElementChildren(child)
 
-      if (nestedChildren) {
-        items.push(...getTabItemChildren(nestedChildren))
-      }
+    if (nestedChildren) {
+      items.push(...getTabItemChildren(nestedChildren))
     }
   })
 
@@ -148,12 +212,18 @@ export const tabChildrenToPanes = (
   }
 
   getTabItemChildren(children).forEach((child) => {
+    const childProps = getUXPinElementProps(child) as UXPinTabItemProps | undefined
+
+    if (!childProps) {
+      return
+    }
+
     const index = result.panes.length
-    const runtimeProps = resolveTabItemRuntimeProps(child.props)
+    const runtimeProps = resolveTabItemRuntimeProps(childProps)
     const key = resolveTabItemKey(child, index)
     const {
-      children: content,
       disabled = false,
+      children: content,
       selected = false
     } = runtimeProps
 
@@ -163,7 +233,7 @@ export const tabChildrenToPanes = (
         key={key}
         tab={resolveTabItemLabel(runtimeProps)}
       >
-        {content ?? <span />}
+        {content ?? resolveUXPinElementChildren(child) ?? <span />}
       </HexaTabs.TabPane>
     )
 

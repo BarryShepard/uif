@@ -1,4 +1,4 @@
-import React, { CSSProperties, useLayoutEffect, useMemo, useRef } from 'react'
+import React, { CSSProperties, useLayoutEffect, useRef } from 'react'
 import styled from 'styled-components'
 
 import { Submenu as HexaSubmenu } from '@src/submenu'
@@ -6,6 +6,7 @@ import { RowProps, SubmenuItemProps as HexaSubmenuItemProps } from '@src/submenu
 
 import { mergeFrameStyle } from '../../preview'
 import {
+  getUXPinChildrenArray,
   getUXPinPropSources,
   resolveUXPinChildrenFromProps,
   resolveUXPinRuntimeProps
@@ -189,7 +190,7 @@ const applySubmenuItemSettings = (
 const getDirectContentChildren = (
   children: React.ReactNode
 ): React.ReactNode[] => (
-  React.Children.toArray(children).filter((child) => (
+  getUXPinChildrenArray(children).filter((child) => (
     child &&
     !isUXPinHiddenElement(child) &&
     !isUXPinSubmenuItemElement(child)
@@ -223,18 +224,9 @@ const Submenu: SubmenuComponent = (rawProps: UXPinSubmenuProps): JSX.Element => 
   const rootRef = useSyncSubmenuFrameSize()
   const resolvedChildren = children
   const resolvedFrameHeight = withinSidebar ? '100%' : style?.height ?? DEFAULT_SUBMENU_FRAME_HEIGHT
-  const { items: resolvedItems, selectedKey } = useMemo(
-    () => resolveSubmenuItems(resolvedChildren),
-    [resolvedChildren]
-  )
-  const items = useMemo(
-    () => applySubmenuItemSettings(resolvedItems, { draggable }),
-    [resolvedItems, draggable]
-  )
-  const directContent = useMemo(
-    () => getDirectContentChildren(resolvedChildren),
-    [resolvedChildren]
-  )
+  const { items: resolvedItems, selectedKey } = resolveSubmenuItems(resolvedChildren)
+  const items = applySubmenuItemSettings(resolvedItems, { draggable })
+  const directContent = getDirectContentChildren(resolvedChildren)
 
   return (
     <SubmenuRoot ref={rootRef} style={getSubmenuFrameStyle(style, resolvedFrameHeight)}>

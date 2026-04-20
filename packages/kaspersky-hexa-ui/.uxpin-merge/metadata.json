@@ -37342,71 +37342,7 @@
                 "sidebar-footer": {
                   "name": "SidebarFooter",
                   "props": {
-                    "additionalContent": false,
-                    "children": [
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-left-items"
-                      },
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-right-items"
-                      }
-                    ]
-                  }
-                },
-                "sidebar-footer-left-items": {
-                  "name": "SidebarFooterLeftItems",
-                  "props": {
-                    "children": [
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-save"
-                      },
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-cancel"
-                      }
-                    ]
-                  }
-                },
-                "sidebar-footer-save": {
-                  "name": "Button",
-                  "props": {
-                    "mode": "primary",
-                    "size": "medium",
-                    "text": "Save",
-                    "style": {
-                      "width": "fit-content"
-                    }
-                  }
-                },
-                "sidebar-footer-cancel": {
-                  "name": "Button",
-                  "props": {
-                    "mode": "secondary",
-                    "size": "medium",
-                    "text": "Cancel",
-                    "style": {
-                      "width": "fit-content"
-                    }
-                  }
-                },
-                "sidebar-footer-right-items": {
-                  "name": "SidebarFooterRightItems",
-                  "props": {
-                    "children": [
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-delete"
-                      }
-                    ]
-                  }
-                },
-                "sidebar-footer-delete": {
-                  "name": "Button",
-                  "props": {
-                    "mode": "dangerOutlined",
-                    "size": "medium",
-                    "text": "Delete",
-                    "style": {
-                      "width": "fit-content"
-                    }
+                    "additionalContent": true
                   }
                 }
               },
@@ -37433,7 +37369,7 @@
           "name": "SidebarFooter",
           "properties": [
             {
-              "description": "Shows the right footer zone with additional destructive action.",
+              "description": "Shows the right footer zone even when the right slot is empty.",
               "isRequired": false,
               "name": "additionalContent",
               "type": {
@@ -37442,27 +37378,18 @@
               }
             },
             {
-              "description": "Left footer slot. Defaults to Save and Cancel buttons.",
+              "description": "Left footer slot.",
               "isRequired": false,
-              "name": "leftContent",
+              "name": "leftItem",
               "type": {
                 "name": "node",
                 "structure": {}
               }
             },
             {
-              "description": "Right footer slot. Defaults to Delete button.",
+              "description": "Right footer slot.",
               "isRequired": false,
-              "name": "rightContent",
-              "type": {
-                "name": "node",
-                "structure": {}
-              }
-            },
-            {
-              "description": "",
-              "isRequired": false,
-              "name": "children",
+              "name": "rightItem",
               "type": {
                 "name": "node",
                 "structure": {}
@@ -37497,71 +37424,7 @@
                 "sidebar-footer-1": {
                   "name": "SidebarFooter",
                   "props": {
-                    "additionalContent": false,
-                    "children": [
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-left-items"
-                      },
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-right-items"
-                      }
-                    ]
-                  }
-                },
-                "sidebar-footer-left-items": {
-                  "name": "SidebarFooterLeftItems",
-                  "props": {
-                    "children": [
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-save"
-                      },
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-cancel"
-                      }
-                    ]
-                  }
-                },
-                "sidebar-footer-save": {
-                  "name": "Button",
-                  "props": {
-                    "mode": "primary",
-                    "size": "medium",
-                    "text": "Save",
-                    "style": {
-                      "width": "fit-content"
-                    }
-                  }
-                },
-                "sidebar-footer-cancel": {
-                  "name": "Button",
-                  "props": {
-                    "mode": "secondary",
-                    "size": "medium",
-                    "text": "Cancel",
-                    "style": {
-                      "width": "fit-content"
-                    }
-                  }
-                },
-                "sidebar-footer-right-items": {
-                  "name": "SidebarFooterRightItems",
-                  "props": {
-                    "children": [
-                      {
-                        "uxpinPresetElementId": "sidebar-footer-delete"
-                      }
-                    ]
-                  }
-                },
-                "sidebar-footer-delete": {
-                  "name": "Button",
-                  "props": {
-                    "mode": "dangerOutlined",
-                    "size": "medium",
-                    "text": "Delete",
-                    "style": {
-                      "width": "fit-content"
-                    }
+                    "additionalContent": true
                   }
                 }
               },
@@ -52423,7 +52286,7 @@
   "name": "Kaspersky Hexa UI",
   "vcs": {
     "branchName": "master",
-    "commitHash": "efe9381d8442191981e3333faa3dae885035ffd7",
+    "commitHash": "64fa10abb3da97437a0c88378af9d7ae56ee967f",
     "paths": {
       "configPath": "/Users/dmitry/uif/packages/kaspersky-hexa-ui/uxpin.config.js",
       "projectRoot": "/Users/dmitry/uif/packages/kaspersky-hexa-ui"

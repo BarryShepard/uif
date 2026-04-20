@@ -1,33 +1,17 @@
 import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
-import { Button } from '@src/button'
-
 import { mergeFrameStyle } from '../../preview'
-import {
-  getUXPinPropSources,
-  hasUXPinChildrenProp,
-  resolveUXPinChildrenFromProps,
-  resolveUXPinRuntimeProps
-} from '../../uxpinRuntime'
+import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
-import SidebarFooterLeftItems, {
-  isUXPinSidebarFooterLeftItemsElement,
-  resolveSidebarFooterLeftItemsChildren
-} from '../SidebarFooterLeftItems/SidebarFooterLeftItems'
-import SidebarFooterRightItems, {
-  isUXPinSidebarFooterRightItemsElement,
-  resolveSidebarFooterRightItemsChildren
-} from '../SidebarFooterRightItems/SidebarFooterRightItems'
 
 export type UXPinSidebarFooterProps = {
-  /** Shows the right footer zone with additional destructive action. */
+  /** Shows the right footer zone even when the right slot is empty. */
   additionalContent?: boolean,
-  /** Left footer slot. Defaults to Save and Cancel buttons. */
-  leftContent?: React.ReactNode,
-  /** Right footer slot. Defaults to Delete button. */
-  rightContent?: React.ReactNode,
-  children?: React.ReactNode,
+  /** Left footer slot. */
+  leftItem?: React.ReactNode,
+  /** Right footer slot. */
+  rightItem?: React.ReactNode,
   overriddenCodeProps?: Partial<UXPinSidebarFooterProps>,
   style?: CSSProperties
 }
@@ -68,43 +52,11 @@ const SidebarFooterRoot = styled.div`
   }
 `
 
-const defaultRightContent = (
-  <Button mode="dangerOutlined" size="medium" text="Delete" />
-)
-
-const defaultLeftContentWithCancel = (onCancel?: () => void): React.ReactNode => (
-  <>
-    <Button mode="primary" size="medium" text="Save" />
-    <Button mode="secondary" onClick={onCancel} size="medium" text="Cancel" />
-  </>
-)
-
-const defaultSidebarFooterChildren = (
-  <>
-    <SidebarFooterLeftItems />
-    <SidebarFooterRightItems />
-  </>
-)
-
 const SIDEBAR_FOOTER_ROLE = 'hexa-uxpin-sidebar-footer'
 
 type SidebarFooterComponent = React.FC<UXPinSidebarFooterProps> & {
   uxpinRole?: string,
   defaultProps?: Partial<UXPinSidebarFooterProps>
-}
-
-const hasSidebarFooterOwnShape = (props: Record<string, unknown> = {}): boolean => (
-  'additionalContent' in props ||
-  'leftContent' in props ||
-  'rightContent' in props ||
-  React.Children.toArray(resolveUXPinChildrenFromProps(props)).some((child) => (
-    isUXPinSidebarFooterLeftItemsElement(child) ||
-    isUXPinSidebarFooterRightItemsElement(child)
-  ))
-)
-
-const hasSidebarFooterShape = (props: Record<string, unknown> = {}): boolean => {
-  return getUXPinPropSources(props).some(hasSidebarFooterOwnShape)
 }
 
 export const isUXPinSidebarFooterElement = (
@@ -114,46 +66,33 @@ export const isUXPinSidebarFooterElement = (
   (
     (node.type as SidebarFooterComponent)?.uxpinRole === SIDEBAR_FOOTER_ROLE ||
     (node.type as { displayName?: string })?.displayName === 'SidebarFooter' ||
-    (node.type as { name?: string })?.name === 'SidebarFooter' ||
-    hasSidebarFooterShape(node.props as Record<string, unknown>)
+    (node.type as { name?: string })?.name === 'SidebarFooter'
   )
 )
 
 const SidebarFooter = (rawProps: UXPinSidebarFooterProps): JSX.Element => {
-  const resolvedProps = resolveUXPinRuntimeProps(rawProps)
   const {
     additionalContent = false,
-    children,
-    leftContent,
-    rightContent,
+    leftItem,
+    rightItem,
     style
-  } = resolvedProps
-  const { onCancel } = rawProps as SidebarFooterRuntimeProps
+  } = resolveUXPinRuntimeProps(rawProps)
   const rootRef = useAutoHeightMergeFrame({
     skipIfWithinSelector: '[data-hexa-uxpin-sidebar="true"]'
   })
-  const resolvedChildren = hasUXPinChildrenProp(rawProps)
-    ? resolveUXPinChildrenFromProps(rawProps)
-    : children
-  const hasExplicitFooterChildren = React.Children.count(resolvedChildren) > 0
-  const leftItemsContent = resolveSidebarFooterLeftItemsChildren(resolvedChildren)
-  const rightItemsContent = resolveSidebarFooterRightItemsChildren(resolvedChildren)
-  const hasResolvedFooterZones = Boolean(leftItemsContent || rightItemsContent)
-  const resolvedLeftContent = leftItemsContent ?? leftContent ?? (
-    hasExplicitFooterChildren && hasResolvedFooterZones ? null : defaultLeftContentWithCancel(onCancel)
-  )
-  const resolvedRightContent = rightItemsContent ?? rightContent ?? (
-    hasExplicitFooterChildren && hasResolvedFooterZones ? null : defaultRightContent
+  const showRightItem = (
+    additionalContent ||
+    (rightItem !== undefined && rightItem !== null && rightItem !== false)
   )
 
   return (
     <SidebarFooterRoot ref={rootRef} style={mergeFrameStyle(style)}>
       <div className="sidebar-footer-left">
-        {resolvedLeftContent}
+        {leftItem}
       </div>
-      {additionalContent && (
+      {showRightItem && (
         <div className="sidebar-footer-right">
-          {resolvedRightContent}
+          {rightItem}
         </div>
       )}
     </SidebarFooterRoot>
@@ -164,8 +103,6 @@ SidebarFooter.uxpinRole = SIDEBAR_FOOTER_ROLE
 SidebarFooter.defaultProps = {
   additionalContent: false
 }
-
-export { defaultSidebarFooterChildren }
 
 SidebarFooter.displayName = 'SidebarFooter'
 

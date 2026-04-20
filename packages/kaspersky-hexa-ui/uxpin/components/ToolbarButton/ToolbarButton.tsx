@@ -7,6 +7,10 @@ import { ToolbarItems } from '@src/toolbar/types'
 import { ArrowDown1, Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import { FrameFill } from '../../preview'
+import {
+  getUXPinElementProps,
+  getUXPinElementPropSources
+} from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import { dropdownNodeToOverlay } from '../Dropdown/Dropdown'
@@ -137,22 +141,20 @@ const hasToolbarButtonShape = (props: Record<string, unknown> = {}): boolean => 
 }
 
 export const isUXPinHiddenElement = (node: React.ReactNode): boolean => {
-  if (!React.isValidElement<UXPinElementVisibilityProps>(node)) {
+  const props = getUXPinElementProps(node) as UXPinElementVisibilityProps | undefined
+
+  if (!props) {
     return false
   }
 
-  const { codeComponentProps, overriddenCodeProps, style } = node.props
+  const { codeComponentProps, overriddenCodeProps, style } = props
   const resolvedStyle = {
     ...style,
     ...codeComponentProps?.style,
+    ...overriddenCodeProps?.codeComponentProps?.style,
     ...overriddenCodeProps?.style
   }
-  const visibilitySources = [
-    node.props,
-    codeComponentProps,
-    overriddenCodeProps,
-    overriddenCodeProps?.codeComponentProps
-  ].filter(Boolean) as UXPinElementVisibilityProps[]
+  const visibilitySources = getUXPinElementPropSources(node) as UXPinElementVisibilityProps[]
 
   const hasHiddenState = visibilitySources.some((props) => (
     props.hidden === true ||

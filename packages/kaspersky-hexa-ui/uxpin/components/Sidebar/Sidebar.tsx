@@ -10,7 +10,10 @@ import { Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import { mergeFrameStyle } from '../../preview'
 import {
-  getUXPinPropSources,
+  countUXPinChildren,
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
   hasUXPinChildrenProp,
   resolveUXPinChildrenFromProps,
   resolveUXPinElementChildren,
@@ -18,16 +21,9 @@ import {
 } from '../../uxpinRuntime'
 import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
 import SidebarFooter, {
-  defaultSidebarFooterChildren,
   UXPinSidebarFooterProps,
   UXPinSidebarFooterRuntimeProps
 } from '../SidebarFooter/SidebarFooter'
-import {
-  resolveSidebarFooterLeftItemsChildren
-} from '../SidebarFooterLeftItems/SidebarFooterLeftItems'
-import {
-  resolveSidebarFooterRightItemsChildren
-} from '../SidebarFooterRightItems/SidebarFooterRightItems'
 import UXPinSubmenu, {
   defaultSubmenuItemChildren,
   UXPinSubmenuProps
@@ -277,9 +273,9 @@ const SidebarBody = styled.div`
 
 type SidebarChildResolution = {
   contentChildren: React.ReactNode[],
-  footerElement?: React.ReactElement<UXPinSidebarFooterProps>,
-  submenuElement?: React.ReactElement<UXPinSubmenuProps>,
-  tabsElement?: React.ReactElement<UXPinTabsProps>
+  footerElement?: React.ReactNode,
+  submenuElement?: React.ReactNode,
+  tabsElement?: React.ReactNode
 }
 
 const getSidebarPanelWidth = (
@@ -434,10 +430,9 @@ const hasUXPinSlotId = (
   slotId: string,
   componentName: string
 ): boolean => (
-  React.isValidElement(node) &&
   (
-    (typeof node.key === 'string' && node.key.includes(slotId)) ||
-    getUXPinPropSources(node.props).some((props) => (
+    (React.isValidElement(node) && typeof node.key === 'string' && node.key.includes(slotId)) ||
+    getUXPinElementPropSources(node).some((props) => (
       (typeof props.uxpId === 'string' && props.uxpId.includes(slotId)) ||
       (typeof props.id === 'string' && props.id.includes(slotId)) ||
       (typeof props.presetElementId === 'string' && props.presetElementId.includes(slotId)) ||
@@ -459,27 +454,25 @@ const hasSidebarSubmenuContent = (
   hasUXPinSubmenuItemChildren(resolveElementChildren(node))
 )
 
-const hasSidebarFooterContent = (
+const hasSidebarFooterSlotProps = (
   node: React.ReactNode
-): boolean => {
-  const children = resolveElementChildren(node)
-
-  return Boolean(
-    resolveSidebarFooterLeftItemsChildren(children) ||
-    resolveSidebarFooterRightItemsChildren(children)
-  )
-}
+): boolean => (
+  getUXPinElementPropSources(node).some((props) => (
+    'additionalContent' in props ||
+    'leftItem' in props ||
+    'rightItem' in props
+  ))
+)
 
 const isLikelySidebarSlotWrapper = (
   node: React.ReactNode
 ): boolean => (
-  React.isValidElement(node) &&
-  getUXPinPropSources(node.props).some((props) => props.uxpinTargetElementType === 'CodeComponent')
+  getUXPinElementPropSources(node).some((props) => props.uxpinTargetElementType === 'CodeComponent')
 )
 
 const isSidebarSubmenuSlotElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinSubmenuProps> => (
+): boolean => (
   hasUXPinSlotId(node, 'sidebar-submenu', 'Submenu') ||
   isConcreteSidebarSubmenuElement(node) ||
   (isLikelySidebarSlotWrapper(node) && hasSidebarSubmenuContent(node))
@@ -487,15 +480,15 @@ const isSidebarSubmenuSlotElement = (
 
 const isSidebarFooterSlotElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinSidebarFooterProps> => (
+): boolean => (
   hasUXPinSlotId(node, 'sidebar-footer', 'SidebarFooter') ||
   isConcreteSidebarFooterElement(node) ||
-  (isLikelySidebarSlotWrapper(node) && hasSidebarFooterContent(node))
+  (isLikelySidebarSlotWrapper(node) && hasSidebarFooterSlotProps(node))
 )
 
 const isSidebarTabsSlotElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinTabsProps> => (
+): boolean => (
   hasUXPinSlotId(node, 'sidebar-tabs', 'Tabs') ||
   isConcreteSidebarTabsElement(node) ||
   (isLikelySidebarSlotWrapper(node) && hasSidebarTabsContent(node))
@@ -512,7 +505,7 @@ const resolveSidebarChildren = (children?: React.ReactNode): SidebarChildResolut
     contentChildren: []
   }
 
-  React.Children.toArray(children).forEach((child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child || isUXPinHiddenElement(child)) {
       return
     }
@@ -556,7 +549,9 @@ const resolveSidebarChildren = (children?: React.ReactNode): SidebarChildResolut
       }
     }
 
-    result.contentChildren.push(child)
+    if (React.isValidElement(child) || typeof child === 'string' || typeof child === 'number') {
+      result.contentChildren.push(child)
+    }
   })
 
   return result
@@ -586,6 +581,25 @@ const DefaultSidebarContent = (): JSX.Element => (
   </div>
 )
 
+const DefaultSidebarFooter = ({
+  onCancel
+}: {
+  onCancel: () => void
+}): JSX.Element => (
+  <SidebarFooter
+    additionalContent
+    leftItem={(
+      <>
+        <Button mode="primary" size="medium" text="Save" style={{ width: 'fit-content' }} />
+        <Button mode="secondary" onClick={onCancel} size="medium" text="Cancel" style={{ width: 'fit-content' }} />
+      </>
+    )}
+    rightItem={(
+      <Button mode="dangerOutlined" size="medium" text="Delete" style={{ width: 'fit-content' }} />
+    )}
+  />
+)
+
 const SidebarHeaderToggle = ({
   text
 }: {
@@ -601,60 +615,62 @@ const SidebarHeaderToggle = ({
 }
 
 const renderSidebarSubmenu = (
-  submenuElement: React.ReactElement<UXPinSubmenuProps> | undefined,
+  submenuElement: React.ReactNode | undefined,
   allowDefault: boolean
 ): React.ReactNode => {
   if (!submenuElement) {
     return allowDefault ? <DefaultSidebarSubmenu /> : null
   }
 
-  const runtimeProps = resolveUXPinRuntimeProps(submenuElement.props)
-  const resolvedChildren = hasUXPinChildrenProp(submenuElement.props)
-    ? resolveUXPinChildrenFromProps(submenuElement.props)
+  const submenuProps = getUXPinElementProps(submenuElement) as UXPinSubmenuProps | undefined
+  const runtimeProps = resolveUXPinRuntimeProps(submenuProps ?? {})
+  const resolvedChildren = submenuProps && hasUXPinChildrenProp(submenuProps)
+    ? resolveUXPinChildrenFromProps(submenuProps)
     : defaultSubmenuItemChildren
+  const {
+    children: _children,
+    ...submenuRuntimeProps
+  } = runtimeProps
   const style = {
-    ...runtimeProps.style,
+    ...submenuRuntimeProps.style,
     height: '100%',
     minHeight: 0
   }
 
   return (
     <UXPinSubmenu
-      {...runtimeProps}
+      {...submenuRuntimeProps}
       style={style}
+      {...({
+        overriddenCodeProps: { children: resolvedChildren }
+      } as { overriddenCodeProps: Partial<UXPinSubmenuProps> })}
       {...({ withinSidebar: true } as { withinSidebar: boolean })}
-    >
-      {resolvedChildren}
-    </UXPinSubmenu>
+    />
   )
 }
 
 const renderSidebarFooter = (
-  footerElement: React.ReactElement<UXPinSidebarFooterProps> | undefined,
+  footerElement: React.ReactNode | undefined,
   onCancel: () => void,
   allowDefault: boolean
 ): React.ReactNode => {
   if (footerElement) {
-    const runtimeProps = resolveUXPinRuntimeProps(footerElement.props)
-    const resolvedChildren = hasUXPinChildrenProp(footerElement.props)
-      ? resolveUXPinChildrenFromProps(footerElement.props)
-      : defaultSidebarFooterChildren
+    const footerProps = getUXPinElementProps(footerElement) as UXPinSidebarFooterProps | undefined
+    const runtimeProps = resolveUXPinRuntimeProps(footerProps ?? {})
 
     return (
       <SidebarFooter
         {...runtimeProps}
         {...({ onCancel } as UXPinSidebarFooterRuntimeProps)}
-      >
-        {resolvedChildren}
-      </SidebarFooter>
+      />
     )
   }
 
-  return allowDefault ? <SidebarFooter {...({ onCancel } as UXPinSidebarFooterRuntimeProps)} /> : null
+  return allowDefault ? <DefaultSidebarFooter onCancel={onCancel} /> : null
 }
 
 const renderSidebarTabs = (
-  tabsElement: React.ReactElement<UXPinTabsProps> | undefined,
+  tabsElement: React.ReactNode | undefined,
   allowDefault: boolean
 ): React.ReactNode => {
   if (!tabsElement) {
@@ -667,23 +683,31 @@ const renderSidebarTabs = (
       : null
   }
 
-  const runtimeProps = resolveUXPinRuntimeProps(tabsElement.props)
-  const resolvedChildren = hasUXPinChildrenProp(tabsElement.props)
-    ? resolveUXPinChildrenFromProps(tabsElement.props)
+  const tabsProps = getUXPinElementProps(tabsElement) as UXPinTabsProps | undefined
+  const runtimeProps = resolveUXPinRuntimeProps(tabsProps ?? {})
+  const resolvedChildren = tabsProps && hasUXPinChildrenProp(tabsProps)
+    ? resolveUXPinChildrenFromProps(tabsProps)
     : defaultTabItemChildren
+  const {
+    children: _children,
+    overriddenCodeProps,
+    ...tabsRuntimeProps
+  } = runtimeProps
   const style = {
-    ...runtimeProps.style,
+    ...tabsRuntimeProps.style,
     width: '100%'
   }
 
   return (
     <UXPinTabs
-      {...runtimeProps}
+      {...tabsRuntimeProps}
+      overriddenCodeProps={{
+        ...(overriddenCodeProps || {}),
+        children: resolvedChildren
+      }}
       noMargin
       style={style}
-    >
-      {resolvedChildren}
-    </UXPinTabs>
+    />
   )
 }
 
@@ -717,7 +741,9 @@ const Sidebar = (rawProps: UXPinSidebarProps): JSX.Element => {
     submenuElement,
     tabsElement
   } = resolveSidebarChildren(children)
-  const hasExplicitSidebarChildren = React.Children.count(children) > 0
+  const hasRuntimeChildren = hasUXPinChildrenProp(rawProps)
+  const hasResolvedRuntimeChildren = hasRuntimeChildren && children !== undefined
+  const hasExplicitSidebarChildren = hasResolvedRuntimeChildren || countUXPinChildren(children) > 0
   const shouldShowSubmenu = submenu && canShowSubmenu(size)
 
   const handleClose = (): void => {

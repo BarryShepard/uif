@@ -3,7 +3,9 @@ import styled from 'styled-components'
 
 import { FrameFill } from '../../preview'
 import {
-  getUXPinPropSources,
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
   hasUXPinChildrenProp,
   resolveUXPinChildrenFromProps,
   resolveUXPinElementChildren,
@@ -41,11 +43,18 @@ export const DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN = (
   </>
 )
 
+const SIDEBAR_FOOTER_BUTTON_PRESET_DEFAULTS: Record<string, Partial<React.ComponentProps<typeof Button>>> = {
+  'sidebar-footer-save': { mode: 'primary', size: 'medium', text: 'Save', style: { width: 'fit-content' } },
+  'sidebar-footer-cancel': { mode: 'secondary', size: 'medium', text: 'Cancel', style: { width: 'fit-content' } },
+  'sidebar-footer-delete': { mode: 'dangerOutlined', size: 'medium', text: 'Delete', style: { width: 'fit-content' } }
+}
+
 type SidebarFooterButtonProps = React.ComponentProps<typeof Button> & {
   codeComponentId?: string,
   codeComponentPresetId?: string,
   codeComponentProps?: Partial<React.ComponentProps<typeof Button>>,
   hidden?: boolean,
+  id?: string,
   isHidden?: boolean,
   isVisible?: boolean,
   name?: string,
@@ -59,12 +68,29 @@ type SidebarFooterButtonProps = React.ComponentProps<typeof Button> & {
   visible?: boolean
 }
 
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
 const getSidebarFooterButtonIdentity = (
-  node: React.ReactElement
+  node: React.ReactNode
 ): string => {
   const identities = [
-    typeof node.key === 'string' ? node.key : undefined,
-    ...getUXPinPropSources(node.props).flatMap((props) => [
+    React.isValidElement(node) && typeof node.key === 'string' ? node.key : undefined,
+    ...getUXPinElementPropSources(node).flatMap((props) => [
       props.name,
       props.presetElementId,
       props.uxpId,
@@ -79,9 +105,41 @@ const getSidebarFooterButtonIdentity = (
     .toLowerCase()
 }
 
+const getSidebarFooterButtonKey = (
+  node: React.ReactNode,
+  index: number,
+  prefix: string
+): string => {
+  const explicitId = getFirstStringProp(node, ['id', 'uxpId'])
+
+  if (explicitId) {
+    return `${prefix}-${explicitId}`
+  }
+
+  const presetId = getFirstStringProp(node, ['presetElementId', 'uxpinPresetElementId'])
+
+  if (presetId) {
+    return `${prefix}-${presetId}-${index + 1}`
+  }
+
+  if (React.isValidElement(node) && typeof node.key === 'string' && node.key.length) {
+    return `${prefix}-${node.key}`
+  }
+
+  return `${prefix}-button-${index + 1}`
+}
+
 const getSidebarFooterButtonDefaults = (
+  node: React.ReactNode,
   identity: string
 ): Partial<React.ComponentProps<typeof Button>> => {
+  const presetId = getFirstStringProp(node, ['presetElementId', 'uxpinPresetElementId'])
+  const presetDefaults = presetId ? SIDEBAR_FOOTER_BUTTON_PRESET_DEFAULTS[presetId] : undefined
+
+  if (presetDefaults) {
+    return presetDefaults
+  }
+
   if (identity.includes('delete')) {
     return { mode: 'dangerOutlined', size: 'medium', text: 'Delete' }
   }
@@ -97,26 +155,44 @@ const getSidebarFooterButtonDefaults = (
   return { mode: 'primary', size: 'medium', text: 'Button' }
 }
 
-const isSidebarFooterButtonElement = (
+export const isUXPinSidebarFooterButtonElement = (
   node: React.ReactNode
-): node is React.ReactElement<SidebarFooterButtonProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as { displayName?: string })?.displayName === 'Button' ||
-    (node.type as { name?: string })?.name === 'Button' ||
-    getSidebarFooterButtonIdentity(node).includes('sidebar-footer-') ||
-    getSidebarFooterButtonIdentity(node).includes('button') ||
-    getUXPinPropSources(node.props).some((props) => (
-      props.uxpinTargetElementType === 'CodeComponent' &&
-      (
-        'mode' in props ||
-        'text' in props ||
-        'disabled' in props ||
-        'flex' in props
-      )
-    ))
+): boolean => {
+  const identity = getSidebarFooterButtonIdentity(node)
+  const propSources = getUXPinElementPropSources(node)
+  const isFooterSlotWrapper = (
+    identity.includes('sidebar-footer-left-items') ||
+    identity.includes('sidebar-footer-right-items')
   )
-)
+  const hasKnownFooterButtonPreset = (
+    identity.includes('sidebar-footer-save') ||
+    identity.includes('sidebar-footer-cancel') ||
+    identity.includes('sidebar-footer-delete')
+  )
+  const isConcreteButton = React.isValidElement(node) && (
+    (node.type as { displayName?: string })?.displayName === 'Button' ||
+    (node.type as { name?: string })?.name === 'Button'
+  )
+  const isCodeComponent = propSources.some((props) => (
+    props.uxpinTargetElementType === 'CodeComponent'
+  ))
+  const hasButtonProps = propSources.some((props) => (
+    'mode' in props ||
+    'text' in props ||
+    'disabled' in props ||
+    'flex' in props
+  ))
+
+  return (
+    !isFooterSlotWrapper &&
+    (
+      isConcreteButton ||
+      hasKnownFooterButtonPreset ||
+      identity.includes('button') ||
+      (isCodeComponent && hasButtonProps)
+    )
+  )
+}
 
 const renderSidebarFooterButtonChild = (
   child: React.ReactNode,
@@ -138,20 +214,29 @@ const renderSidebarFooterButtonChild = (
     )
   }
 
-  if (!isSidebarFooterButtonElement(child)) {
-    return child
+  if (!isUXPinSidebarFooterButtonElement(child)) {
+    return React.isValidElement(child) || typeof child === 'string' || typeof child === 'number'
+      ? child
+      : null
+  }
+
+  const childProps = getUXPinElementProps(child)
+
+  if (!childProps) {
+    return null
   }
 
   const identity = getSidebarFooterButtonIdentity(child)
   const runtimeProps = resolveUXPinRuntimeProps<SidebarFooterButtonProps>(
-    child.props,
-    getSidebarFooterButtonDefaults(identity)
+    childProps as SidebarFooterButtonProps,
+    getSidebarFooterButtonDefaults(child, identity)
   )
   const {
     codeComponentId: _codeComponentId,
     codeComponentPresetId: _codeComponentPresetId,
     codeComponentProps: _codeComponentProps,
     hidden: _hidden,
+    id: _id,
     isHidden: _isHidden,
     isVisible: _isVisible,
     name: _name,
@@ -168,7 +253,7 @@ const renderSidebarFooterButtonChild = (
 
   return (
     <Button
-      key={child.key ?? `${prefix}-button-${index + 1}`}
+      key={getSidebarFooterButtonKey(child, index, prefix)}
       {...buttonProps}
     />
   )
@@ -178,20 +263,28 @@ export const renderSidebarFooterButtonChildren = (
   children: React.ReactNode,
   prefix = 'sidebar-footer-button'
 ): React.ReactNode[] => (
-  React.Children.toArray(children)
+  getUXPinChildrenArray(children)
     .map((child, index) => renderSidebarFooterButtonChild(child, index, prefix))
     .filter((child): child is React.ReactNode => child !== null && child !== undefined)
 )
 
 const resolveElementChildren = (
-  element: React.ReactElement<UXPinSidebarFooterLeftItemsProps>
+  element: React.ReactNode
 ): React.ReactNode => {
-  if (!hasUXPinChildrenProp(element.props)) {
+  const props = getUXPinElementProps(element) as UXPinSidebarFooterLeftItemsProps | undefined
+
+  if (!props || !hasUXPinChildrenProp(props)) {
+    return DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN
+  }
+
+  const resolvedChildren = resolveUXPinChildrenFromProps(props)
+
+  if (resolvedChildren === undefined) {
     return DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN
   }
 
   return renderSidebarFooterButtonChildren(
-    resolveUXPinChildrenFromProps(element.props),
+    resolvedChildren,
     'sidebar-footer-left-items'
   )
 }
@@ -199,10 +292,9 @@ const resolveElementChildren = (
 const hasSidebarFooterLeftItemsSlotIdentity = (
   node: React.ReactNode
 ): boolean => (
-  React.isValidElement(node) &&
   (
-    (typeof node.key === 'string' && node.key.includes(SIDEBAR_FOOTER_LEFT_ITEMS_SLOT_ID)) ||
-    getUXPinPropSources(node.props).some((props) => (
+    (React.isValidElement(node) && typeof node.key === 'string' && node.key.includes(SIDEBAR_FOOTER_LEFT_ITEMS_SLOT_ID)) ||
+    getUXPinElementPropSources(node).some((props) => (
       (typeof props.uxpId === 'string' && props.uxpId.includes(SIDEBAR_FOOTER_LEFT_ITEMS_SLOT_ID)) ||
       (typeof props.id === 'string' && props.id.includes(SIDEBAR_FOOTER_LEFT_ITEMS_SLOT_ID)) ||
       (typeof props.presetElementId === 'string' && props.presetElementId.includes(SIDEBAR_FOOTER_LEFT_ITEMS_SLOT_ID)) ||
@@ -214,44 +306,44 @@ const hasSidebarFooterLeftItemsSlotIdentity = (
 
 export const isUXPinSidebarFooterLeftItemsElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinSidebarFooterLeftItemsProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as SidebarFooterLeftItemsComponent)?.uxpinRole === SIDEBAR_FOOTER_LEFT_ITEMS_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'SidebarFooterLeftItems' ||
-    (node.type as { name?: string })?.name === 'SidebarFooterLeftItems' ||
-    hasSidebarFooterLeftItemsSlotIdentity(node)
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as SidebarFooterLeftItemsComponent)?.uxpinRole === SIDEBAR_FOOTER_LEFT_ITEMS_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'SidebarFooterLeftItems' ||
+      (node.type as { name?: string })?.name === 'SidebarFooterLeftItems'
+    )
+  ) ||
+  hasSidebarFooterLeftItemsSlotIdentity(node)
 )
 
 export const resolveSidebarFooterLeftItemsChildren = (
   children: React.ReactNode
 ): React.ReactNode | undefined => {
-  const elements: Array<React.ReactElement<UXPinSidebarFooterLeftItemsProps>> = []
+  const elements: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child || isUXPinHiddenElement(child)) {
       return
     }
 
     if (isUXPinSidebarFooterLeftItemsElement(child)) {
-      elements.push(child)
+      elements.push(resolveElementChildren(child))
       return
     }
 
-    if (React.isValidElement(child)) {
-      const nestedChildren = resolveUXPinElementChildren(child)
-      const nested = nestedChildren
-        ? resolveSidebarFooterLeftItemsChildren(nestedChildren)
-        : undefined
+    const nestedChildren = resolveUXPinElementChildren(child)
+    const nested = nestedChildren
+      ? resolveSidebarFooterLeftItemsChildren(nestedChildren)
+      : undefined
 
-      if (nested) {
-        elements.push(
-          <SidebarFooterLeftItems key={`sidebar-footer-left-items-nested-${elements.length + 1}`}>
-            {nested}
-          </SidebarFooterLeftItems>
-        )
-      }
+    if (nested) {
+      elements.push(
+        <React.Fragment key={`sidebar-footer-left-items-nested-${elements.length + 1}`}>
+          {nested}
+        </React.Fragment>
+      )
     }
   })
 
@@ -262,8 +354,8 @@ export const resolveSidebarFooterLeftItemsChildren = (
   return (
     <>
       {elements.map((element, index) => (
-        <React.Fragment key={element.key ?? `sidebar-footer-left-items-${index + 1}`}>
-          {resolveElementChildren(element)}
+        <React.Fragment key={`sidebar-footer-left-items-${index + 1}`}>
+          {element}
         </React.Fragment>
       ))}
     </>
@@ -273,9 +365,10 @@ export const resolveSidebarFooterLeftItemsChildren = (
 const SidebarFooterLeftItems: SidebarFooterLeftItemsComponent = (
   rawProps: UXPinSidebarFooterLeftItemsProps
 ): JSX.Element => {
-  const resolvedChildren = hasUXPinChildrenProp(rawProps)
+  const runtimeChildren = resolveUXPinChildrenFromProps(rawProps)
+  const resolvedChildren = hasUXPinChildrenProp(rawProps) && runtimeChildren !== undefined
     ? renderSidebarFooterButtonChildren(
-      resolveUXPinChildrenFromProps(rawProps),
+      runtimeChildren,
       'sidebar-footer-left-items-preview'
     )
     : DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN

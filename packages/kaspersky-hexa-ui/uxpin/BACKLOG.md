@@ -2,14 +2,21 @@
 
 ## Sidebar footer button layer updates
 
-Status: verify in UXPin
+Status: deferred
 
 Context:
 - `SidebarFooter` is visible in the sidebar, but editable `SidebarFooterLeftItems` and `SidebarFooterRightItems` must reflect layer changes immediately.
 - Adding, deleting, hiding, or reordering buttons inside the left/right footer zones should update the canvas and prototype without requiring prop toggles or component reinsertion.
 - The likely recurring cause is UXPin target placeholders inside `overriddenCodeProps.children`; they must be converted into real button components instead of rendered as inert placeholders.
+- The nested `SidebarFooterLeftItems` / `SidebarFooterRightItems` model is paused for now. The current fallback is a plain `SidebarFooter` with `leftItem` and `rightItem` slots; buttons should be authored through those slots instead of as footer children.
 
-Validation checklist:
+Current fallback:
+1. Keep `SidebarFooter` free of editable nested footer item components.
+2. Use `leftItem` for Save/Cancel or other left-side actions.
+3. Use `rightItem` for Delete or other right-side actions.
+4. Keep standalone `SidebarFooterLeftItems` and `SidebarFooterRightItems` available separately, but do not route them through `SidebarFooter` until the nested runtime contract is redesigned.
+
+Later validation checklist:
 1. Add a new button to `SidebarFooterLeftItems`; it appears in the footer left zone.
 2. Hide and delete a left-zone button; it disappears from the canvas.
 3. Enable `additionalContent`, add a button to `SidebarFooterRightItems`; it appears in the right zone.
@@ -31,6 +38,21 @@ Recommended future improvements:
 3. Add clearer feedback when dragging over an invalid target or a different nesting level.
 4. Decide whether UXPin layer order should remain independent from runtime order, or whether we need a documented authoring pattern for persistent layer-level ordering.
 5. Re-test nested submenu drag behavior after tree nesting authoring is finalized.
+
+## Nested item interactions audit
+
+Status: pending
+
+Context:
+- UXPin currently allows interactions on the `Tabs`/tab bar layer, but may not expose interactions on individual `TabItem` layers inside the tab bar.
+- This can become a prototyping blocker when authors need different click actions per tab, especially for page switching or stateful flows.
+- The same risk should be checked for other nested authoring models: menu items, submenu items, toolbar buttons, footer slot buttons, table placeholder buttons, dropdown items, and similar child layers.
+
+Recommended future work:
+1. Verify whether interactions can be attached to individual `TabItem` layers inside `Tabs` and inside `Sidebar`.
+2. Check the same interaction behavior for `MenuItem`, `SubmenuItem`, `ToolbarButton`, `DropdownItem`, and buttons passed through component slots.
+3. Decide whether nested items need explicit action props, event forwarding, or a documented UXPin authoring pattern.
+4. Add a small prototype validation page that covers per-child interactions before relying on these components in complex prototypes.
 
 ## Table + Toolbar integration
 
