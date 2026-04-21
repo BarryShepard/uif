@@ -1,26 +1,36 @@
 import React from 'react'
+import styled from 'styled-components'
 
-import { Field as HexaField } from '@src/field'
-import { CheckboxGroup } from '@src/checkbox'
-import { RangePicker } from '@src/datepicker'
-import { Textbox } from '@src/input'
 import { FieldProps } from '@src/field/types'
-import { Select } from '@src/select'
-import { Space } from '@src/space'
-import { Status } from '@src/status'
+import { HelpMessage } from '@src/help-message'
+import { Markdown } from '@src/markdown'
 import { Tag } from '@src/tag'
-import { RangeTimeInput } from '@src/time-input'
 import { ToggleButtonGroup } from '@src/toggle-button/ToggleButtonGroup'
 import { ToggleButtonSize } from '@src/toggle-button/types'
 
 import Button from '../Button/Button'
+import CheckboxGroupPreview from '../CheckboxGroup/CheckboxGroup'
 import CodeViewer from '../CodeViewer/CodeViewer'
 import DatePicker from '../DatePicker/DatePicker'
+import DatePickerRange from '../DatePickerRange/DatePickerRange'
+import DateTimePicker from '../DateTimePicker/DateTimePicker'
+import DateTimePickerRange from '../DateTimePickerRange/DateTimePickerRange'
+import ElementsStack from '../ElementsStack/ElementsStack'
 import Expand from '../Expand/Expand'
+import FieldLabel, {
+  isUXPinFieldLabelElement,
+  UXPinFieldLabelProps
+} from '../FieldLabel/FieldLabel'
 import Link from '../Link/Link'
-import Radio from '../Radio/Radio'
+import MultiSelect from '../MultiSelect/MultiSelect'
+import RadioGroup from '../RadioGroup/RadioGroup'
 import SegmentedButton from '../SegmentedButton/SegmentedButton'
+import SegmentedButtonItem from '../SegmentedButtonItem/SegmentedButtonItem'
+import Select from '../Select/Select'
+import StatusGroup from '../StatusGroup/StatusGroup'
+import Textbox from '../Textbox/Textbox'
 import TimeInput from '../TimeInput/TimeInput'
+import TimePickerRange from '../TimePickerRange/TimePickerRange'
 import Toggle from '../Toggle/Toggle'
 import TreeList from '../TreeList/TreeList'
 import Typography from '../Typography/Typography'
@@ -28,10 +38,17 @@ import Uploader from '../Uploader/Uploader'
 
 import {
   FrameFill,
-  noop,
-  previewRadioOptions,
-  previewSegmentedButtonItems
+  mergeFrameStyle,
+  noop
 } from '../../preview'
+import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
+import {
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  hasUXPinChildrenProp,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
+import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
 
 type UXPinFieldVariant =
   | 'button'
@@ -39,8 +56,11 @@ type UXPinFieldVariant =
   | 'elementsStack'
   | 'expand'
   | 'inputCodeViever'
+  | 'inputCodeViewer'
   | 'inputDatePicker'
   | 'inputDatePickerRange'
+  | 'inputDateTimePicker'
+  | 'inputDateTimePickerRange'
   | 'inputMultiSelect'
   | 'inputNumber'
   | 'inputPassword'
@@ -64,36 +84,52 @@ type UXPinFieldVariant =
   | 'treeList'
   | 'uploader'
 
-type UXPinFieldProps = Omit<FieldProps, 'label' | 'labelPosition'> & {
-  /** Preset control shown inside the field */
+type UXPinFieldProps = Omit<FieldProps, 'control' | 'label' | 'labelPosition' | 'required' | 'style' | 'tooltip'> & {
+  /** Preset control shown inside the field body when the body has no edited children. */
   variant?: UXPinFieldVariant,
-  /** Show or hide the field label */
+  /** Show or hide the field label. */
   label?: boolean,
-  /** Label text used when label is enabled */
+  /** Backward-compatible label text prop. Use text for new prototypes. */
   labelText?: string,
-  /** Position of the field label */
-  labelPosition?: Extract<FieldProps['labelPosition'], 'before' | 'top'>
+  /** Label text. */
+  text?: string,
+  /** Field body control override. */
+  control?: React.ReactElement,
+  /** Field label/body layers. */
+  children?: React.ReactNode,
+  /** Makes the label and body disabled. */
+  disabled?: boolean,
+  /** Makes the label and body readonly. */
+  readonly?: boolean,
+  /** Shows the required asterisk on the label. */
+  required?: boolean,
+  /** Shows the info button on the label. */
+  buttonInfo?: boolean,
+  /** Info popover text. */
+  buttonInfoText?: string,
+  /** Shows editable tags after the label. */
+  tagsAfter?: boolean,
+  /** Placeholder for generated or nested body controls. */
+  placeholderText?: string,
+  /** Vertical distance between the label and the body in pixels. */
+  labelPositionRange?: number,
+  /** UXPin frame style. */
+  style?: React.CSSProperties,
+  /** Backward-compatible tooltip content. */
+  tooltip?: React.ReactNode,
+  codeComponentProps?: Partial<UXPinFieldProps>,
+  overriddenCodeProps?: Partial<UXPinFieldProps>
 }
 
-const previewCheckboxOptions = [
-  { label: 'Option 1', value: 'option-1' },
-  { label: 'Option 2', value: 'option-2' }
-]
-
-const previewSelectOptions = [
-  { label: 'Ready', value: 'ready' },
-  { label: 'In progress', value: 'in-progress' },
-  { label: 'Paused', value: 'paused' }
-]
+type ControlState = {
+  disabled?: boolean,
+  readonly?: boolean,
+  placeholderText?: string
+}
 
 const previewTagItems = [
   { label: 'Tag 1' },
   { label: 'Tag 2' }
-]
-
-const previewStatusItems = [
-  { label: 'Ready', mode: 'positive' as const },
-  { label: 'Pending', mode: 'info' as const }
 ]
 
 const previewToggleButtonItems = [
@@ -101,6 +137,41 @@ const previewToggleButtonItems = [
   { text: 'Two', value: 'two', mode: 'red' as const },
   { text: 'Three', value: 'three', mode: 'orange' as const }
 ]
+
+const FieldFrame = styled.div`
+  width: 100%;
+  height: fit-content;
+
+  .hexa-uxpin-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--hexa-uxpin-field-label-gap, 4px);
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .hexa-uxpin-field-control-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hexa-uxpin-field-controls {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hexa-uxpin-field-controls > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+`
 
 type PreviewToggleButtonGroupProps = {
   size: ToggleButtonSize
@@ -123,115 +194,184 @@ const PreviewToggleButtonGroup = ({
   )
 }
 
-const resolveControl = (variant: UXPinFieldVariant): FieldProps['control'] => {
+const getPlaceholder = (
+  placeholderText: string | undefined,
+  fallback: string
+): string => placeholderText ?? fallback
+
+const resolveControl = (
+  variant: UXPinFieldVariant,
+  state: ControlState
+): React.ReactElement | undefined => {
+  const { disabled = false, placeholderText, readonly = false } = state
+
   switch (variant) {
     case 'button':
-      return <Button text="Button" />
+      return <Button text="Button" disabled={disabled} />
     case 'checkboxGroup':
-      return (
-        <CheckboxGroup
-          options={previewCheckboxOptions}
-          defaultValue={['option-1']}
-          direction="vertical"
-        />
-      )
+      return <CheckboxGroupPreview orientation="vertical" disabled={disabled} readonly={readonly} />
     case 'elementsStack':
-      return (
-        <Space direction="vertical" align="flex-start" gap="dependent">
-          <Typography type="BTM3">Primary element</Typography>
-          <Typography color="secondary" type="BTR4">Supporting text</Typography>
-          <Link href="#" text="Open details" />
-        </Space>
-      )
+      return <ElementsStack />
     case 'expand':
       return <Expand />
     case 'inputCodeViever':
-      return <CodeViewer language="javascript" />
+    case 'inputCodeViewer':
+      return <CodeViewer defaultHeight={240} language="javascript" />
     case 'inputDatePicker':
-      return <DatePicker />
+      return (
+        <DatePicker
+          disabled={disabled}
+          placeholder
+          readonly={readonly}
+        />
+      )
     case 'inputDatePickerRange':
       return (
-        <FrameFill>
-          <RangePicker
-            placeholder={['Start date', 'End date']}
-            style={{ width: '100%' }}
-          />
-        </FrameFill>
+        <DatePickerRange
+          disabled={disabled}
+          placeholder
+          readonly={readonly}
+        />
+      )
+    case 'inputDateTimePicker':
+      return (
+        <DateTimePicker
+          disabled={disabled}
+          placeholder
+          readonly={readonly}
+        />
+      )
+    case 'inputDateTimePickerRange':
+      return (
+        <DateTimePickerRange
+          disabled={disabled}
+          placeholder
+          readonly={readonly}
+        />
       )
     case 'inputMultiSelect':
       return (
-        <Select
-          mode="multiple"
-          options={previewSelectOptions}
-          defaultValue={['ready', 'in-progress']}
-          style={{ width: '100%' }}
+        <MultiSelect
+          disabled={disabled}
+          placeholder
+          placeholderText={getPlaceholder(placeholderText, 'Select values')}
+          readOnly={readonly}
         />
       )
     case 'inputNumber':
-      return <Textbox.Number placeholder="42" style={{ width: '100%' }} />
+      return (
+        <Textbox
+          disabled={disabled}
+          placeholder
+          placeholderText={getPlaceholder(placeholderText, '42')}
+          readOnly={readonly}
+          variant="number"
+        />
+      )
     case 'inputPassword':
-      return <Textbox.Password placeholder="Enter password" />
+      return (
+        <Textbox
+          disabled={disabled}
+          placeholder
+          placeholderText={getPlaceholder(placeholderText, 'Enter password')}
+          readOnly={readonly}
+          variant="password"
+        />
+      )
     case 'inputSelect':
       return (
         <Select
-          options={previewSelectOptions}
-          defaultValue="ready"
-          style={{ width: '100%' }}
+          disabled={disabled}
+          placeholder
+          placeholderText={getPlaceholder(placeholderText, 'Select value')}
+          readOnly={readonly}
         />
       )
     case 'inputText':
-      return <Textbox placeholder="Value" />
+      return (
+        <Textbox
+          disabled={disabled}
+          placeholder
+          placeholderText={getPlaceholder(placeholderText, 'Value')}
+          readOnly={readonly}
+          variant="text"
+        />
+      )
     case 'inputTextArea':
-      return <Textbox.Textarea placeholder="Value" rows={4} />
+      return (
+        <Textbox
+          counter
+          defaultHeight={104}
+          disabled={disabled}
+          placeholder
+          placeholderText={getPlaceholder(placeholderText, 'Value')}
+          readOnly={readonly}
+          variant="textarea"
+        />
+      )
     case 'inputTimePicker':
-      return <TimeInput placeholder="HH:mm" />
+      return (
+        <TimeInput
+          disabled={disabled}
+          placeholder
+          readOnly={readonly}
+        />
+      )
     case 'inputTimePickerRange':
       return (
-        <FrameFill>
-          <RangeTimeInput placeholder="HH:mm" />
-        </FrameFill>
+        <TimePickerRange
+          disabled={disabled}
+          placeholder
+          readOnly={readonly}
+        />
       )
     case 'link':
       return <Link href="#" text="Open documentation" />
     case 'multiInput':
       return (
         <FrameFill>
-          <Space align="stretch" gap="related" wrap="nowrap" width="100%">
-            <Textbox placeholder="First value" style={{ flex: 1 }} />
-            <Textbox placeholder="Second value" style={{ flex: 1 }} />
-          </Space>
+          <div className="hexa-uxpin-field-controls">
+            <Textbox placeholder placeholderText="First value" style={{ width: '100%' }} />
+            <Textbox placeholder placeholderText="Second value" style={{ width: '100%' }} />
+          </div>
         </FrameFill>
       )
     case 'radioGroup':
-      return <Radio options={previewRadioOptions} />
+      return <RadioGroup disabled={disabled} readonly={readonly} />
     case 'segmentedButtonMedium':
       return (
         <SegmentedButton
-          items={previewSegmentedButtonItems}
-          value={[previewSegmentedButtonItems[0].value]}
+          disabled={disabled}
           onChange={noop}
           size="large"
-        />
+        >
+          <SegmentedButtonItem text="Overview" value="overview" selected />
+          <SegmentedButtonItem text="Details" value="details" />
+          <SegmentedButtonItem text="Activity" value="activity" />
+        </SegmentedButton>
       )
     case 'segmentedButtonSmall':
       return (
         <SegmentedButton
-          items={previewSegmentedButtonItems}
-          value={[previewSegmentedButtonItems[0].value]}
+          disabled={disabled}
           onChange={noop}
           size="medium"
-        />
+        >
+          <SegmentedButtonItem text="Overview" value="overview" selected />
+          <SegmentedButtonItem text="Details" value="details" />
+          <SegmentedButtonItem text="Activity" value="activity" />
+        </SegmentedButton>
       )
     case 'space':
       return undefined
     case 'statusGroup':
-      return <Status.Group items={previewStatusItems} />
+      return <StatusGroup />
     case 'tagGroup':
-      return <Tag.Group items={previewTagItems} />
+      return <Tag.Group items={previewTagItems.map(item => ({ ...item, disabled, readOnly: readonly }))} />
     case 'text':
       return <Typography type="BTR4">Text preview</Typography>
     case 'toggle':
-      return <Toggle />
+      return <Toggle disabled={disabled} />
     case 'toggleButtonGroupMedium':
       return <PreviewToggleButtonGroup size="medium" />
     case 'toggleButtonGroupSmall':
@@ -239,26 +379,152 @@ const resolveControl = (variant: UXPinFieldVariant): FieldProps['control'] => {
     case 'treeList':
       return <TreeList />
     case 'uploader':
-      return <Uploader />
+      return <Uploader disabled={disabled} />
     default:
-      return <Textbox placeholder="Value" />
+      return (
+        <Textbox
+          disabled={disabled}
+          placeholder
+          placeholderText={getPlaceholder(placeholderText, 'Value')}
+          readOnly={readonly}
+          variant="text"
+        />
+      )
   }
 }
 
-const Field = ({
-  control,
-  variant = 'inputText',
-  label = true,
-  labelText = 'Label',
-  labelPosition = 'top',
-  ...props
-}: UXPinFieldProps): JSX.Element => (
-  <HexaField
-    control={control ?? resolveControl(variant)}
-    label={label ? labelText : undefined}
-    labelPosition={labelPosition}
-    {...props}
-  />
-)
+const getFirstFieldLayer = <T extends React.ReactElement>(
+  children: React.ReactNode[],
+  predicate: (node: React.ReactNode) => node is T
+): T | undefined => children.find(predicate) as T | undefined
+
+const applyFieldControlState = (
+  child: React.ReactNode,
+  disabled?: boolean,
+  readonly?: boolean,
+  placeholderText?: string
+): React.ReactNode => {
+  if (!React.isValidElement<Record<string, unknown>>(child)) {
+    return child
+  }
+
+  if (child.type === React.Fragment) {
+    return React.cloneElement(child, undefined, React.Children.map(child.props.children, nestedChild => (
+      applyFieldControlState(nestedChild, disabled, readonly, placeholderText)
+    )))
+  }
+
+  const nextProps: Record<string, unknown> = {}
+
+  if (disabled !== undefined) {
+    nextProps.disabled = child.props.disabled ?? disabled
+  }
+
+  if (readonly !== undefined) {
+    nextProps.readonly = child.props.readonly ?? readonly
+    nextProps.readOnly = child.props.readOnly ?? readonly
+  }
+
+  if (placeholderText) {
+    nextProps.placeholderText = child.props.placeholderText ?? placeholderText
+  }
+
+  return React.cloneElement(child, nextProps)
+}
+
+const Field = (rawProps: UXPinFieldProps): JSX.Element => {
+  const rootRef = useAutoHeightMergeFrame()
+  const runtimeProps = resolveUXPinRuntimeProps(rawProps)
+  const {
+    additionalComponent,
+    buttonInfo = false,
+    buttonInfoText = 'Additional information',
+    children,
+    className,
+    codeComponentProps: _codeComponentProps,
+    control,
+    description,
+    disabled = false,
+    label = true,
+    labelPositionRange = 4,
+    labelText,
+    message,
+    messageMode = 'error',
+    overriddenCodeProps: _overriddenCodeProps,
+    placeholderText,
+    readonly = false,
+    required = false,
+    style,
+    tagsAfter = false,
+    text,
+    tooltip,
+    variant = 'inputText'
+  } = runtimeProps
+  const visibleChildren = getUXPinChildrenArray(children).filter((child) => !isUXPinHiddenElement(child))
+  const labelElement = getFirstFieldLayer(visibleChildren, isUXPinFieldLabelElement)
+  const looseBodyChildren = visibleChildren.filter((child) => (
+    child !== labelElement
+  ))
+  const useCustomBody = Boolean(control) || looseBodyChildren.length > 0
+  const fieldLabelProps = labelElement
+    ? resolveUXPinRuntimeProps<UXPinFieldLabelProps>(labelElement.props)
+    : {}
+  const labelElementProps = getUXPinElementProps(labelElement)
+  const hasExplicitLabelChildren = labelElement ? hasUXPinChildrenProp(labelElementProps) : false
+  const labelChildren = hasExplicitLabelChildren && labelElement
+    ? fieldLabelProps.children
+    : undefined
+  const labelProps: UXPinFieldLabelProps = {
+    buttonInfo: buttonInfo ?? fieldLabelProps.buttonInfo,
+    buttonInfoText: buttonInfoText ?? fieldLabelProps.buttonInfoText,
+    disabled: disabled || fieldLabelProps.disabled,
+    readonly: readonly || fieldLabelProps.readonly,
+    required: required ?? fieldLabelProps.required,
+    tagsAfter: tagsAfter ?? fieldLabelProps.tagsAfter,
+    text: text ?? labelText ?? fieldLabelProps.text ?? 'Label'
+  }
+  const resolvedLabel = label
+    ? labelElement
+      ? (
+        hasExplicitLabelChildren
+          ? React.cloneElement(labelElement, labelProps, labelChildren)
+          : React.cloneElement(labelElement, labelProps)
+      )
+      : <FieldLabel {...labelProps} />
+    : null
+  const resolvedControl = control ?? (
+    useCustomBody
+      ? looseBodyChildren.map((child) => applyFieldControlState(child, disabled, readonly, placeholderText))
+      : resolveControl(variant, {
+        disabled,
+        readonly,
+        placeholderText
+      })
+  )
+  const rootStyle = {
+    ...mergeFrameStyle(style),
+    height: 'fit-content',
+    '--hexa-uxpin-field-label-gap': `${labelPositionRange}px`
+  } as React.CSSProperties
+
+  return (
+    <FieldFrame ref={rootRef} style={rootStyle}>
+      <div className={['hexa-uxpin-field', className].filter(Boolean).join(' ')}>
+        {resolvedLabel}
+        <div className="hexa-uxpin-field-control-wrapper">
+          <div className="hexa-uxpin-field-controls">
+            {resolvedControl}
+          </div>
+          {description && <HelpMessage text={<Markdown value={description} withoutTextStyle={true} />} />}
+          {message && <HelpMessage mode={messageMode} text={message} />}
+          {additionalComponent}
+          {!label && (buttonInfo || tooltip) && (
+            <HelpMessage text={<Markdown value={String(buttonInfo ? buttonInfoText : tooltip)} withoutTextStyle={true} />} />
+          )}
+        </div>
+      </div>
+    </FieldFrame>
+  )
+}
 
 export default Field

@@ -5,7 +5,7 @@ import DropdownItem from '../DropdownItem';
 export default (
   <DropdownItem
     uxpId="dropdown-item-1"
-    variant="default"
+    variant="text"
     disabled={false}
     selected={false}
     elementBefore={false}

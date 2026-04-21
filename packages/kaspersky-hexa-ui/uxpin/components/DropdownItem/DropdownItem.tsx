@@ -6,14 +6,30 @@ import {
   DropdownItemProps as HexaDropdownItemProps
 } from '@src/dropdown/types'
 
-import { Placeholder } from '@kaspersky/hexa-ui-icons/16'
+import Icons16Pack, { Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import { FrameFill } from '../../preview'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import Button from '../Button/Button'
+import Link from '../Link/Link'
+import Textbox from '../Textbox/Textbox'
 
-export type UXPinDropdownItemVariant = 'default' | 'buttons' | 'submenu'
+export type UXPinDropdownItemVariant =
+  | 'buttons'
+  | 'divider'
+  | 'error'
+  | 'headline'
+  | 'input'
+  | 'link'
+  | 'loading'
+  | 'slot'
+  | 'stickyfooter'
+  | 'stickyheader'
+  | 'submenu'
+  | 'text'
+
+export type DropdownItemIconName = Exclude<keyof typeof Icons16Pack, 'default'>
 
 export type UXPinDropdownItemProps = {
   /** Item presentation. Use buttons for a horizontal action row. */
@@ -25,7 +41,7 @@ export type UXPinDropdownItemProps = {
   /** Shows leading content. */
   elementBefore?: boolean,
   /** Slot for leading content. */
-  elementBeforeSlot?: React.ReactNode,
+  elementBeforeSlot?: DropdownItemIconName | React.ReactNode,
   /** Main item text. */
   text?: string,
   /** Shows secondary description. */
@@ -35,11 +51,11 @@ export type UXPinDropdownItemProps = {
   /** Shows trailing content. */
   elementAfter?: boolean,
   /** Slot for trailing content. */
-  elementAfterSlot?: React.ReactNode,
+  elementAfterSlot?: DropdownItemIconName | React.ReactNode,
   /** Shows second trailing content slot. */
   elementAfter2?: boolean,
   /** Second trailing content slot. */
-  elementAfterSlot2?: React.ReactNode,
+  elementAfterSlot2?: DropdownItemIconName | React.ReactNode,
   /** Nested DropdownItem nodes or action buttons. */
   children?: React.ReactNode,
   /** UXPin interaction hook for item click. */
@@ -67,7 +83,7 @@ export const DEFAULT_DROPDOWN_ACTION_CHILDREN = (
 )
 
 const DROPDOWN_ITEM_DEFAULT_PROPS: Partial<UXPinDropdownItemProps> = {
-  variant: 'default',
+  variant: 'text',
   disabled: false,
   selected: false,
   elementBefore: false,
@@ -88,7 +104,7 @@ const hasDropdownItemShape = (props: Record<string, unknown> = {}): boolean => (
   'selected' in props
 )
 
-const resolveDropdownItemRuntimeProps = (
+export const resolveDropdownItemRuntimeProps = (
   rawProps: UXPinDropdownItemProps = {}
 ): UXPinDropdownItemProps => ({
   ...DROPDOWN_ITEM_DEFAULT_PROPS,
@@ -96,11 +112,29 @@ const resolveDropdownItemRuntimeProps = (
   ...(rawProps.overriddenCodeProps || {})
 })
 
+const resolveNamedIcon = (iconName?: DropdownItemIconName | React.ReactNode): React.ReactNode => {
+  if (!iconName) {
+    return null
+  }
+
+  if (React.isValidElement(iconName)) {
+    return iconName
+  }
+
+  if (typeof iconName !== 'string') {
+    return iconName
+  }
+
+  const IconComponent = Icons16Pack[iconName as DropdownItemIconName]
+
+  return IconComponent ? <IconComponent /> : null
+}
+
 const resolveSlot = (
   enabled: boolean | undefined,
-  slot: React.ReactNode
+  slot: DropdownItemIconName | React.ReactNode
 ): React.ReactNode | undefined => (
-  enabled ? slot ?? <Placeholder /> : undefined
+  enabled ? resolveNamedIcon(slot) ?? <Placeholder /> : undefined
 )
 
 const resolveDropdownItemKey = (
@@ -189,15 +223,41 @@ export const dropdownItemElementToOverlay = (
     }
   }
 
+  if (variant === 'divider') {
+    return {
+      items: [{
+        type: 'divider',
+        key,
+        children: ''
+      }],
+      selectedKeys: []
+    }
+  }
+
   const hasSubitems = nested.items.length > 0
+  const itemChildren = variant === 'input'
+    ? <Textbox placeholder placeholderText="Input value" />
+    : variant === 'link'
+      ? <Link text={text} />
+      : variant === 'slot'
+        ? children ?? text
+        : variant === 'loading'
+          ? 'Loading...'
+          : text
 
   return {
     items: [{
       key,
       type: variant === 'submenu' || hasSubitems ? 'submenu' : undefined,
       title: text,
-      children: hasSubitems ? nested.items : text,
-      disabled,
+      children: hasSubitems ? nested.items : itemChildren,
+      disabled: disabled || variant === 'loading' || variant === 'headline',
+      className: [
+        variant === 'error' ? 'hexa-uxpin-dropdown-item-error' : '',
+        variant === 'headline' ? 'hexa-uxpin-dropdown-item-headline' : '',
+        variant === 'stickyheader' ? 'hexa-uxpin-dropdown-item-sticky-header' : '',
+        variant === 'stickyfooter' ? 'hexa-uxpin-dropdown-item-sticky-footer' : ''
+      ].filter(Boolean).join(' ') || undefined,
       description: description ? descriptionText : undefined,
       componentsBefore: componentsBefore ? [componentsBefore] : undefined,
       componentsAfter,
@@ -277,15 +337,31 @@ const DropdownItem = (props: UXPinDropdownItemProps): JSX.Element => {
                   </DropdownItemActions>
                 </HexaDropdown.InnerActions>
               )
+            : variant === 'divider'
+              ? <HexaDropdown.MenuDivider />
             : (
                 <HexaDropdown.MenuItem
                   key="preview"
-                  disabled={disabled}
+                  disabled={disabled || variant === 'loading' || variant === 'headline'}
+                  className={[
+                    variant === 'error' ? 'hexa-uxpin-dropdown-item-error' : '',
+                    variant === 'headline' ? 'hexa-uxpin-dropdown-item-headline' : '',
+                    variant === 'stickyheader' ? 'hexa-uxpin-dropdown-item-sticky-header' : '',
+                    variant === 'stickyfooter' ? 'hexa-uxpin-dropdown-item-sticky-footer' : ''
+                  ].filter(Boolean).join(' ') || undefined}
                   componentsBefore={componentsBefore ? [componentsBefore] : undefined}
                   componentsAfter={componentsAfter}
                   description={description ? descriptionText : undefined}
                 >
-                  {text}
+                  {variant === 'input'
+                    ? <Textbox placeholder placeholderText="Input value" />
+                    : variant === 'link'
+                      ? <Link text={text} />
+                      : variant === 'slot'
+                        ? runtimeProps.children ?? text
+                        : variant === 'loading'
+                          ? 'Loading...'
+                          : text}
                 </HexaDropdown.MenuItem>
               )}
         </HexaDropdown.Menu>

@@ -1,5 +1,48 @@
 # UXPin Backlog
 
+## Field, button, and tag prop audit
+
+Status: pending
+
+Context:
+- UXPin `Field`, `ActionButton`, and `Tag` now have prototype-oriented prop layers, but the final prop set should be audited against production public APIs, Storybook controls, and recurring prototype authoring needs.
+- The audit should decide which props stay as first-class UXPin controls, which props remain advanced/hidden, and which naming aliases should be preserved for designer ergonomics.
+
+Recommended future work:
+1. Review `Field` props for label, validation, placeholder propagation, nested controls, sizing, and help/error states.
+2. Review `ActionButton` props for mode naming, icon slots, text/icon variants, and action/prototype event behavior.
+3. Review `Tag` props for sizing, mode list, closable behavior, readonly/disabled propagation, and frame hugging.
+4. Align prop names with `helpers/propsDictionary.ts` after the final UXPin component set is stable.
+
+## Field validation trigger model
+
+Status: pending
+
+Context:
+- `Field` needs validation states, but prototype authors need a clear way to trigger validation at the right moment: immediately, on blur, on submit, after interaction, or through UXPin interactions.
+- Production validation is usually state-driven by form logic, while UXPin prototypes need an authoring model that can be configured without writing application state.
+
+Recommended future work:
+1. Decide whether validation is controlled by explicit props, UXPin interactions, form wrapper state, or a small validation trigger component.
+2. Define states for neutral, error, warning, success, disabled, and readonly.
+3. Decide how nested controls receive validation state from `Field`.
+4. Validate common flows: empty required field on submit, invalid mask after blur, and server-side error after action.
+
+## Checkbox and radio label component reuse
+
+Status: pending
+
+Context:
+- UXPin `Field` now has an editable `FieldLabel` layer for label text, required state, info button, and editable tags.
+- Checkbox and radio labels still use their built-in string label paths.
+- To keep nested label editing consistent, standalone `Checkbox` and `Radio`/radio option authoring should reuse the same label component model instead of duplicating label behavior.
+
+Recommended future work:
+1. Replace checkbox string-label rendering in UXPin with an editable label layer based on the field label component.
+2. Add the same label-layer model for radio buttons/options.
+3. Preserve existing simple text props as shortcuts for fast authoring.
+4. Validate disabled, readonly, required, tooltip/info button, and tag behavior inside checkbox/radio groups.
+
 ## Sidebar open trigger model
 
 Status: pending
