@@ -11,15 +11,18 @@ import {
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
-import SidebarFooterLeftItems, {
+import {
   DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN,
+  isUXPinSidebarFooterLeftItemsElement,
   renderSidebarFooterButtonChildren,
   resolveSidebarFooterLeftItemsChildren
 } from '../SidebarFooterLeftItems/SidebarFooterLeftItems'
-import SidebarFooterRightItems, {
+import {
   DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN,
+  isUXPinSidebarFooterRightItemsElement,
   resolveSidebarFooterRightItemsChildren
 } from '../SidebarFooterRightItems/SidebarFooterRightItems'
+import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinSidebarFooterProps = {
   /** Shows the right footer zone even when the right slot is empty. */
@@ -84,13 +87,71 @@ const isEmptyChildrenList = (
   children: React.ReactNode
 ): boolean => getUXPinChildrenArray(children).length === 0
 
+const isUXPinUndefinedSlot = (
+  slotItem: React.ReactNode
+): boolean => slotItem === '__UXPIN_UNDEFINED__'
+
+const normalizeSlotItem = (
+  slotItem: React.ReactNode
+): React.ReactNode | undefined => (
+  isUXPinUndefinedSlot(slotItem) ? undefined : slotItem
+)
+
 const hasSlotContent = (
   slotItem: React.ReactNode
 ): boolean => (
   slotItem !== undefined &&
   slotItem !== null &&
-  slotItem !== false
+  slotItem !== false &&
+  !isUXPinUndefinedSlot(slotItem)
 )
+
+const combineFooterItems = (
+  ...items: React.ReactNode[]
+): React.ReactNode | undefined => {
+  const resolvedItems = items.filter((item) => (
+    item !== undefined &&
+    item !== null &&
+    item !== false &&
+    !(Array.isArray(item) && item.length === 0)
+  ))
+
+  if (!resolvedItems.length) {
+    return undefined
+  }
+
+  return (
+    <>
+      {resolvedItems.map((item, index) => (
+        <React.Fragment key={`sidebar-footer-combined-${index + 1}`}>
+          {item}
+        </React.Fragment>
+      ))}
+    </>
+  )
+}
+
+const resolveDirectFooterChildren = (
+  children: React.ReactNode
+): React.ReactNode | undefined => {
+  const directChildren = getUXPinChildrenArray(children).filter((child) => (
+    child &&
+    !isUXPinHiddenElement(child) &&
+    !isUXPinSidebarFooterLeftItemsElement(child) &&
+    !isUXPinSidebarFooterRightItemsElement(child)
+  ))
+
+  if (!directChildren.length) {
+    return undefined
+  }
+
+  const renderedChildren = renderSidebarFooterButtonChildren(
+    directChildren,
+    'sidebar-footer-left-direct'
+  )
+
+  return renderedChildren.length ? renderedChildren : undefined
+}
 
 const resolveFooterSlotItem = (
   slotItem: React.ReactNode,
@@ -149,22 +210,27 @@ const SidebarFooter = (rawProps: UXPinSidebarFooterProps): JSX.Element => {
   const {
     additionalContent = false,
     children,
-    leftItem,
-    rightItem,
+    leftItem: rawLeftItem,
+    rightItem: rawRightItem,
     style
   } = resolveUXPinRuntimeProps(rawProps)
+  const leftItem = normalizeSlotItem(rawLeftItem)
+  const rightItem = normalizeSlotItem(rawRightItem)
   const runtimeChildren = resolveUXPinChildrenFromProps(rawProps)
   const resolvedChildren = runtimeChildren === undefined ? children : runtimeChildren
   const hasLeftSlotContent = hasSlotContent(leftItem)
   const hasRightSlotContent = hasSlotContent(rightItem)
   const hasAnySlotContent = hasLeftSlotContent || hasRightSlotContent
   const shouldUseDefaultChildren = (
-    resolvedChildren === undefined ||
-    (!hasAnySlotContent && resolvedChildren !== null && isEmptyChildrenList(resolvedChildren))
+    !hasAnySlotContent &&
+    resolvedChildren === undefined
   )
   const footerChildren = shouldUseDefaultChildren ? null : resolvedChildren
   const nestedLeftItem = resolveSidebarFooterLeftItemsChildren(footerChildren)
   const nestedRightItem = resolveSidebarFooterRightItemsChildren(footerChildren)
+  const directLeftItem = isEmptyChildrenList(footerChildren)
+    ? undefined
+    : resolveDirectFooterChildren(footerChildren)
   const defaultLeftItem = shouldUseDefaultChildren
     ? renderSidebarFooterButtonChildren(DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN, 'sidebar-footer-left-default')
     : undefined
@@ -173,7 +239,7 @@ const SidebarFooter = (rawProps: UXPinSidebarFooterProps): JSX.Element => {
     : undefined
   const resolvedLeftItem = hasLeftSlotContent
     ? resolveFooterSlotItem(leftItem, 'left')
-    : nestedLeftItem ?? defaultLeftItem
+    : combineFooterItems(nestedLeftItem, directLeftItem) ?? defaultLeftItem
   const resolvedRightItem = hasRightSlotContent
     ? resolveFooterSlotItem(rightItem, 'right')
     : nestedRightItem ?? defaultRightItem

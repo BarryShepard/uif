@@ -66,7 +66,7 @@ describe('UXPin SidebarFooter nested item runtime', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 
-  it('renders default nested footer items when UXPin starts with empty footer children', () => {
+  it('does not restore default footer items when UXPin sends explicit empty footer children', () => {
     render(
       <SidebarFooterRuntime
         codeComponentProps={{
@@ -75,9 +75,9 @@ describe('UXPin SidebarFooter nested item runtime', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
   it('renders leftItem and rightItem slots directly', () => {
@@ -164,6 +164,37 @@ describe('UXPin SidebarFooter nested item runtime', () => {
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
+  it('renders direct UXPin child descriptors in the left footer zone and reflects removal', () => {
+    const { rerender } = render(
+      <SidebarFooterRuntime
+        codeComponentProps={{
+          children: [
+            footerButtonDescriptor('sidebar-footer-apply', {
+              mode: 'primary',
+              size: 'medium',
+              text: 'Apply'
+            })
+          ]
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+
+    rerender(
+      <SidebarFooterRuntime
+        codeComponentProps={{
+          children: []
+        }}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+  })
+
   it('renders nested left and right item children directly', () => {
     render(
       <SidebarFooterRuntime additionalContent>
@@ -217,6 +248,20 @@ describe('UXPin SidebarFooter nested item runtime', () => {
 
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeInTheDocument()
+
+    rerender(
+      <SidebarFooterRuntime
+        codeComponentProps={{
+          children: [
+            footerItemsDescriptor('sidebar-footer-left-items', [])
+          ]
+        }}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
   })
 
   it('routes Sidebar footer descriptors through nested left and right items', () => {
@@ -250,6 +295,30 @@ describe('UXPin SidebarFooter nested item runtime', () => {
 
     expect(screen.getByRole('button', { name: 'Left nested action' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Right nested action' })).toBeInTheDocument()
+  })
+
+  it('routes direct Sidebar footer children when UXPin clears legacy slot props', () => {
+    render(
+      <SidebarRuntime
+        codeComponentProps={{
+          children: [
+            footerDescriptor({
+              additionalContent: true,
+              leftItem: '__UXPIN_UNDEFINED__',
+              rightItem: '__UXPIN_UNDEFINED__',
+              children: footerButtonDescriptor('sidebar-footer-direct', {
+                mode: 'primary',
+                size: 'medium',
+                text: 'Direct footer action'
+              })
+            })
+          ]
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Direct footer action' })).toBeInTheDocument()
+    expect(screen.queryByText('__UXPIN_UNDEFINED__')).not.toBeInTheDocument()
   })
 
   it('does not restore default footer buttons for an explicit empty Sidebar footer', () => {

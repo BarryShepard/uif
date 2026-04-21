@@ -657,10 +657,26 @@ const renderSidebarFooter = (
   if (footerElement) {
     const footerProps = getUXPinElementProps(footerElement) as UXPinSidebarFooterProps | undefined
     const runtimeProps = resolveUXPinRuntimeProps(footerProps ?? {})
+    const hasFooterChildren = footerProps && hasUXPinChildrenProp(footerProps)
+    const resolvedChildren = hasFooterChildren
+      ? resolveUXPinChildrenFromProps(footerProps)
+      : undefined
+    const {
+      children: _children,
+      overriddenCodeProps,
+      ...footerRuntimeProps
+    } = runtimeProps
+    const footerOverrideProps = hasFooterChildren
+      ? {
+        ...(overriddenCodeProps || {}),
+        children: resolvedChildren
+      }
+      : overriddenCodeProps
 
     return (
       <SidebarFooter
-        {...runtimeProps}
+        {...footerRuntimeProps}
+        overriddenCodeProps={footerOverrideProps}
         {...({ onCancel } as UXPinSidebarFooterRuntimeProps)}
       />
     )
