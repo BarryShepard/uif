@@ -63,8 +63,8 @@ describe('UXPin SidebarFooter nested item runtime', () => {
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
-    expect(container.querySelector('.sidebar-footer-right')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    expect(container.querySelector('.sidebar-footer-right')).toBeInTheDocument()
   })
 
   it('does not restore default footer items when UXPin sends explicit empty footer children', () => {

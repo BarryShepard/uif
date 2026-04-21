@@ -18,6 +18,7 @@ import {
   resolveSidebarFooterLeftItemsChildren
 } from '../SidebarFooterLeftItems/SidebarFooterLeftItems'
 import {
+  DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN,
   isUXPinSidebarFooterRightItemsElement,
   resolveSidebarFooterRightItemsChildren
 } from '../SidebarFooterRightItems/SidebarFooterRightItems'
@@ -62,14 +63,16 @@ const SidebarFooterRoot = styled.div`
   }
 
   .sidebar-footer-left {
-    flex: 1 1 auto;
-    width: 100%;
+    flex: 1 1 0;
+    width: auto;
   }
 
   .sidebar-footer-right {
     flex: 0 0 auto;
+    flex-wrap: nowrap;
     justify-content: flex-end;
     margin-left: auto;
+    width: max-content;
   }
 `
 
@@ -234,12 +237,15 @@ const SidebarFooter = (rawProps: UXPinSidebarFooterProps): JSX.Element => {
   const defaultLeftItem = shouldUseDefaultChildren
     ? renderSidebarFooterButtonChildren(DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN, 'sidebar-footer-left-default')
     : undefined
+  const defaultRightItem = shouldUseDefaultChildren
+    ? renderSidebarFooterButtonChildren(DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN, 'sidebar-footer-right-default')
+    : undefined
   const resolvedLeftItem = hasLeftSlotContent
     ? resolveFooterSlotItem(leftItem, 'left')
     : combineFooterItems(nestedLeftItem, directLeftItem) ?? defaultLeftItem
   const resolvedRightItem = hasRightSlotContent
     ? resolveFooterSlotItem(rightItem, 'right')
-    : nestedRightItem
+    : nestedRightItem ?? defaultRightItem
   const rootRef = useAutoHeightMergeFrame({
     skipIfWithinSelector: '[data-hexa-uxpin-sidebar="true"]'
   })

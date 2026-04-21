@@ -26,9 +26,14 @@ export default (
         style={{ width: 'fit-content' }}
       />
     </SidebarFooterLeftItems>
-    <SidebarFooterRightItems
-      uxpId="sidebar-footer-right-items"
-      children={[]}
-    />
+    <SidebarFooterRightItems uxpId="sidebar-footer-right-items">
+      <Button
+        uxpId="sidebar-footer-delete"
+        mode="dangerOutlined"
+        size="medium"
+        text="Delete"
+        style={{ width: 'fit-content' }}
+      />
+    </SidebarFooterRightItems>
   </SidebarFooter>
 );

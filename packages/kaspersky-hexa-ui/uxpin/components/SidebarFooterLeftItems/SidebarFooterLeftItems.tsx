@@ -33,8 +33,10 @@ const SIDEBAR_FOOTER_LEFT_ITEMS_SLOT_ID = 'sidebar-footer-left-items'
 const PreviewRoot = styled.div`
   display: inline-flex;
   align-items: center;
-  width: fit-content;
+  flex: 1 1 auto;
+  width: 100%;
   gap: var(--spacing--gap_related, 8px);
+  min-width: 0;
 `
 
 export const DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN = (
@@ -382,11 +384,11 @@ const SidebarFooterLeftItems: SidebarFooterLeftItemsComponent = (
     : DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN
 
   return (
-    <div ref={rootRef} style={{ width: 'fit-content', minWidth: 0, maxWidth: '100%' }}>
+    <div ref={rootRef} style={{ width: '100%', minWidth: 0, maxWidth: '100%' }}>
       <FrameFill
         style={{
           height: 'fit-content',
-          width: 'fit-content',
+          width: '100%',
           minWidth: 0,
           maxWidth: '100%'
         }}

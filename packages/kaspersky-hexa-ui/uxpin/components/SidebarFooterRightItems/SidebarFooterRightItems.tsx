@@ -36,7 +36,8 @@ const PreviewRoot = styled.div`
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  width: fit-content;
+  flex-wrap: nowrap;
+  width: max-content;
   gap: var(--spacing--gap_related, 8px);
 `
 
@@ -147,7 +148,10 @@ export const resolveSidebarFooterRightItemsChildren = (
 const SidebarFooterRightItems: SidebarFooterRightItemsComponent = (
   rawProps: UXPinSidebarFooterRightItemsProps
 ): JSX.Element => {
-  const rootRef = useAutoHeightMergeFrame()
+  const rootRef = useAutoHeightMergeFrame({
+    width: 'max-content',
+    minWidth: 'max-content'
+  })
   const runtimeChildren = resolveUXPinChildrenFromProps(rawProps)
   const resolvedChildren = hasUXPinChildrenProp(rawProps) && runtimeChildren !== undefined
     ? renderSidebarFooterButtonChildren(
@@ -157,13 +161,12 @@ const SidebarFooterRightItems: SidebarFooterRightItemsComponent = (
     : DEFAULT_SIDEBAR_FOOTER_RIGHT_ITEMS_CHILDREN
 
   return (
-    <div ref={rootRef} style={{ width: 'fit-content', minWidth: 0, maxWidth: '100%' }}>
+    <div ref={rootRef} style={{ width: 'max-content', minWidth: 'max-content' }}>
       <FrameFill
         style={{
           height: 'fit-content',
-          width: 'fit-content',
-          minWidth: 0,
-          maxWidth: '100%'
+          width: 'max-content',
+          minWidth: 'max-content'
         }}
       >
         <PreviewRoot>

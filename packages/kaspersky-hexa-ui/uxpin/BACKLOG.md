@@ -1,5 +1,23 @@
 # UXPin Backlog
 
+## Sidebar open trigger model
+
+Status: pending
+
+Reference:
+- https://chatgpt.com/share/69e76469-0830-83eb-a9ce-c96d8f7e214f
+
+Context:
+- UXPin `Sidebar` currently focuses on the opened panel state, but product prototypes need a reliable authoring model for opening sidebars from buttons, table rows, toolbar actions, and other page controls.
+- The model should work in both editor and prototype mode without authors having to manually duplicate open/closed sidebar states for every flow.
+- Opening behavior must stay compatible with nested editable sidebar sections: submenu, tabs, footer, and content areas.
+
+Recommended future work:
+1. Define the preferred UXPin authoring pattern for sidebar triggers.
+2. Decide whether `Sidebar` needs an explicit trigger/action prop, an external controller component, or documented UXPin interactions.
+3. Validate opening multiple sidebar variants from a single page, including table row/entity flows.
+4. Check close behavior, overlay clicks, and state reset after reopening.
+
 ## Sidebar footer button layer updates
 
 Status: implemented
