@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/react'
 import React from 'react'
 
 import Sidebar from '../uxpin/components/Sidebar/Sidebar'
+import Button from '../uxpin/components/Button/Button'
 import SidebarFooter from '../uxpin/components/SidebarFooter/SidebarFooter'
+import SidebarFooterLeftItems from '../uxpin/components/SidebarFooterLeftItems/SidebarFooterLeftItems'
+import SidebarFooterRightItems from '../uxpin/components/SidebarFooterRightItems/SidebarFooterRightItems'
 
 const SidebarRuntime = Sidebar as React.ComponentType<Record<string, unknown>>
 const SidebarFooterRuntime = SidebarFooter as React.ComponentType<Record<string, unknown>>
@@ -15,7 +18,68 @@ const footerDescriptor = (
   uxpinTargetElementType: 'CodeComponent'
 } as unknown as React.ReactNode)
 
-describe('UXPin SidebarFooter slot runtime', () => {
+const footerItemsDescriptor = (
+  presetElementId: string,
+  children?: React.ReactNode,
+  overriddenCodeProps: Record<string, unknown> = {}
+): React.ReactNode => ({
+  overriddenCodeProps: {
+    ...overriddenCodeProps,
+    ...(children === undefined ? {} : { children })
+  },
+  presetElementId,
+  uxpinTargetElementType: 'CodeComponent'
+} as unknown as React.ReactNode)
+
+const footerButtonDescriptor = (
+  uxpId: string,
+  overriddenCodeProps: Record<string, unknown> = {}
+): React.ReactNode => ({
+  name: 'Button',
+  overriddenCodeProps,
+  uxpId,
+  uxpinTargetElementType: 'CodeComponent'
+} as unknown as React.ReactNode)
+
+const footerButtonCodeComponentDescriptor = (
+  id: string,
+  codeComponentProps: Record<string, unknown> = {}
+): React.ReactNode => ({
+  codeComponentProps,
+  id,
+  uxpinTargetElementType: 'CodeComponent'
+} as unknown as React.ReactNode)
+
+const footerSlotContainerDescriptor = (
+  children?: React.ReactNode
+): React.ReactNode => ({
+  codeComponentProps: children === undefined ? {} : { children },
+  uxpinTargetElementType: 'CodeComponent'
+} as unknown as React.ReactNode)
+
+describe('UXPin SidebarFooter nested item runtime', () => {
+  it('renders default nested footer items when no children are provided', () => {
+    render(<SidebarFooterRuntime />)
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('renders default nested footer items when UXPin starts with empty footer children', () => {
+    render(
+      <SidebarFooterRuntime
+        codeComponentProps={{
+          children: []
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+  })
+
   it('renders leftItem and rightItem slots directly', () => {
     render(
       <SidebarFooterRuntime
@@ -38,6 +102,7 @@ describe('UXPin SidebarFooter slot runtime', () => {
     )
 
     expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
 
     rerender(
       <SidebarFooterRuntime
@@ -49,14 +114,48 @@ describe('UXPin SidebarFooter slot runtime', () => {
 
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
-  it('does not restore internal defaults when slots are cleared', () => {
+  it('converts UXPin leftItem slot descriptors and reflects child edits', () => {
+    const { rerender } = render(
+      <SidebarFooterRuntime
+        codeComponentProps={{
+          children: [],
+          leftItem: footerSlotContainerDescriptor([
+            footerButtonCodeComponentDescriptor('sidebar-footer-apply', {
+              mode: 'primary',
+              size: 'medium',
+              text: 'Apply'
+            })
+          ])
+        }}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+
+    rerender(
+      <SidebarFooterRuntime
+        codeComponentProps={{
+          children: [],
+          leftItem: footerSlotContainerDescriptor([])
+        }}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+  })
+
+  it('does not restore internal defaults when slot descriptor children are cleared', () => {
     render(
       <SidebarFooterRuntime
         additionalContent
-        leftItem={null}
-        rightItem={null}
+        leftItem={footerSlotContainerDescriptor([])}
+        rightItem={footerSlotContainerDescriptor([])}
       />
     )
 
@@ -65,46 +164,99 @@ describe('UXPin SidebarFooter slot runtime', () => {
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
-  it('ignores legacy footer children and content props', () => {
+  it('renders nested left and right item children directly', () => {
     render(
+      <SidebarFooterRuntime additionalContent>
+        <SidebarFooterLeftItems>
+          <Button mode="primary" size="medium" text="Apply" />
+        </SidebarFooterLeftItems>
+        <SidebarFooterRightItems>
+          <Button mode="dangerOutlined" size="medium" text="Delete selected" />
+        </SidebarFooterRightItems>
+      </SidebarFooterRuntime>
+    )
+
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete selected' })).toBeInTheDocument()
+  })
+
+  it('updates nested UXPin child descriptors on rerender', () => {
+    const { rerender } = render(
       <SidebarFooterRuntime
-        additionalContent
-        leftContent={<button type="button">Legacy left</button>}
-        rightContent={<button type="button">Legacy right</button>}
         codeComponentProps={{
-          children: <button type="button">Nested child</button>
+          children: [
+            footerItemsDescriptor('sidebar-footer-left-items', [
+              footerButtonDescriptor('sidebar-footer-apply', {
+                mode: 'primary',
+                size: 'medium',
+                text: 'Apply'
+              })
+            ])
+          ]
         }}
       />
     )
 
-    expect(screen.queryByRole('button', { name: 'Legacy left' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Legacy right' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Nested child' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
+
+    rerender(
+      <SidebarFooterRuntime
+        codeComponentProps={{
+          children: [
+            footerItemsDescriptor('sidebar-footer-left-items', [
+              footerButtonDescriptor('sidebar-footer-confirm', {
+                mode: 'primary',
+                size: 'medium',
+                text: 'Confirm'
+              })
+            ])
+          ]
+        }}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeInTheDocument()
   })
 
-  it('routes Sidebar footer descriptors through leftItem and rightItem only', () => {
+  it('routes Sidebar footer descriptors through nested left and right items', () => {
     render(
       <SidebarRuntime
         codeComponentProps={{
           children: [
             footerDescriptor({
-              leftItem: <button type="button">Left slot action</button>,
-              rightItem: <button type="button">Right slot action</button>
+              additionalContent: true,
+              children: [
+                footerItemsDescriptor('sidebar-footer-left-items', [
+                  footerButtonDescriptor('sidebar-footer-apply', {
+                    mode: 'primary',
+                    size: 'medium',
+                    text: 'Left nested action'
+                  })
+                ]),
+                footerItemsDescriptor('sidebar-footer-right-items', [
+                  footerButtonDescriptor('sidebar-footer-remove', {
+                    mode: 'dangerOutlined',
+                    size: 'medium',
+                    text: 'Right nested action'
+                  })
+                ])
+              ]
             })
           ]
         }}
       />
     )
 
-    expect(screen.getByRole('button', { name: 'Left slot action' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Right slot action' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Left nested action' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Right nested action' })).toBeInTheDocument()
   })
 
   it('does not restore default footer buttons for an explicit empty Sidebar footer', () => {
     render(
       <SidebarRuntime
         codeComponentProps={{
-          children: [footerDescriptor()]
+          children: [footerDescriptor({ children: null })]
         }}
       />
     )

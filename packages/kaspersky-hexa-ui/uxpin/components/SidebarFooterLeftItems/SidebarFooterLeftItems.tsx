@@ -11,6 +11,7 @@ import {
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
+import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import Button from '../Button/Button'
 import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
 
@@ -365,6 +366,7 @@ export const resolveSidebarFooterLeftItemsChildren = (
 const SidebarFooterLeftItems: SidebarFooterLeftItemsComponent = (
   rawProps: UXPinSidebarFooterLeftItemsProps
 ): JSX.Element => {
+  const rootRef = useAutoHeightMergeFrame()
   const runtimeChildren = resolveUXPinChildrenFromProps(rawProps)
   const resolvedChildren = hasUXPinChildrenProp(rawProps) && runtimeChildren !== undefined
     ? renderSidebarFooterButtonChildren(
@@ -374,11 +376,20 @@ const SidebarFooterLeftItems: SidebarFooterLeftItemsComponent = (
     : DEFAULT_SIDEBAR_FOOTER_LEFT_ITEMS_CHILDREN
 
   return (
-    <FrameFill style={{ height: 'fit-content', width: 'fit-content' }}>
-      <PreviewRoot>
-        {resolvedChildren}
-      </PreviewRoot>
-    </FrameFill>
+    <div ref={rootRef} style={{ width: 'fit-content', minWidth: 0, maxWidth: '100%' }}>
+      <FrameFill
+        style={{
+          height: 'fit-content',
+          width: 'fit-content',
+          minWidth: 0,
+          maxWidth: '100%'
+        }}
+      >
+        <PreviewRoot>
+          {resolvedChildren}
+        </PreviewRoot>
+      </FrameFill>
+    </div>
   )
 }
 

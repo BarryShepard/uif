@@ -2,10 +2,13 @@ import React from 'react';
 
 import Sidebar from '../Sidebar';
 import SidebarFooter from '../../SidebarFooter/SidebarFooter';
+import SidebarFooterLeftItems from '../../SidebarFooterLeftItems/SidebarFooterLeftItems';
+import SidebarFooterRightItems from '../../SidebarFooterRightItems/SidebarFooterRightItems';
 import Submenu from '../../Submenu/Submenu';
 import SubmenuItem from '../../SubmenuItem/SubmenuItem';
 import Tabs from '../../Tabs/Tabs';
 import TabItem from '../../TabItem/TabItem';
+import Button from '../../Button/Button';
 
 export default (
   <Sidebar
@@ -46,6 +49,35 @@ export default (
     <SidebarFooter
       uxpId="sidebar-footer"
       additionalContent={true}
+      leftItem={(
+        <SidebarFooterLeftItems uxpId="sidebar-footer-left-items">
+          <Button
+            uxpId="sidebar-footer-save"
+            mode="primary"
+            size="medium"
+            text="Save"
+            style={{ width: 'fit-content' }}
+          />
+          <Button
+            uxpId="sidebar-footer-cancel"
+            mode="secondary"
+            size="medium"
+            text="Cancel"
+            style={{ width: 'fit-content' }}
+          />
+        </SidebarFooterLeftItems>
+      )}
+      rightItem={(
+        <SidebarFooterRightItems uxpId="sidebar-footer-right-items">
+          <Button
+            uxpId="sidebar-footer-delete"
+            mode="dangerOutlined"
+            size="medium"
+            text="Delete"
+            style={{ width: 'fit-content' }}
+          />
+        </SidebarFooterRightItems>
+      )}
     />
   </Sidebar>
 );

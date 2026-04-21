@@ -2,21 +2,15 @@
 
 ## Sidebar footer button layer updates
 
-Status: deferred
+Status: implemented
 
 Context:
 - `SidebarFooter` is visible in the sidebar, but editable `SidebarFooterLeftItems` and `SidebarFooterRightItems` must reflect layer changes immediately.
 - Adding, deleting, hiding, or reordering buttons inside the left/right footer zones should update the canvas and prototype without requiring prop toggles or component reinsertion.
 - The likely recurring cause is UXPin target placeholders inside `overriddenCodeProps.children`; they must be converted into real button components instead of rendered as inert placeholders.
-- The nested `SidebarFooterLeftItems` / `SidebarFooterRightItems` model is paused for now. The current fallback is a plain `SidebarFooter` with `leftItem` and `rightItem` slots; buttons should be authored through those slots instead of as footer children.
+- `SidebarFooter` now routes nested `SidebarFooterLeftItems` and `SidebarFooterRightItems` through footer zones, while keeping legacy `leftItem` / `rightItem` slots compatible.
 
-Current fallback:
-1. Keep `SidebarFooter` free of editable nested footer item components.
-2. Use `leftItem` for Save/Cancel or other left-side actions.
-3. Use `rightItem` for Delete or other right-side actions.
-4. Keep standalone `SidebarFooterLeftItems` and `SidebarFooterRightItems` available separately, but do not route them through `SidebarFooter` until the nested runtime contract is redesigned.
-
-Later validation checklist:
+Validation checklist:
 1. Add a new button to `SidebarFooterLeftItems`; it appears in the footer left zone.
 2. Hide and delete a left-zone button; it disappears from the canvas.
 3. Enable `additionalContent`, add a button to `SidebarFooterRightItems`; it appears in the right zone.
