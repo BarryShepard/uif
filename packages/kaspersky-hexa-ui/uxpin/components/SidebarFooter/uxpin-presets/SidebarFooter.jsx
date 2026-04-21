@@ -8,7 +8,7 @@ import Button from '../../Button/Button';
 export default (
   <SidebarFooter
     uxpId="sidebar-footer-1"
-    additionalContent={true}
+    additionalContent={false}
   >
     <SidebarFooterLeftItems uxpId="sidebar-footer-left-items">
       <Button
@@ -26,14 +26,9 @@ export default (
         style={{ width: 'fit-content' }}
       />
     </SidebarFooterLeftItems>
-    <SidebarFooterRightItems uxpId="sidebar-footer-right-items">
-      <Button
-        uxpId="sidebar-footer-delete"
-        mode="dangerOutlined"
-        size="medium"
-        text="Delete"
-        style={{ width: 'fit-content' }}
-      />
-    </SidebarFooterRightItems>
+    <SidebarFooterRightItems
+      uxpId="sidebar-footer-right-items"
+      children={[]}
+    />
   </SidebarFooter>
 );

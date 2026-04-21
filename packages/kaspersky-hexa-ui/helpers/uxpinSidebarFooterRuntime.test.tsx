@@ -59,11 +59,12 @@ const footerSlotContainerDescriptor = (
 
 describe('UXPin SidebarFooter nested item runtime', () => {
   it('renders default nested footer items when no children are provided', () => {
-    render(<SidebarFooterRuntime />)
+    const { container } = render(<SidebarFooterRuntime />)
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    expect(container.querySelector('.sidebar-footer-right')).not.toBeInTheDocument()
   })
 
   it('does not restore default footer items when UXPin sends explicit empty footer children', () => {
@@ -209,6 +210,23 @@ describe('UXPin SidebarFooter nested item runtime', () => {
 
     expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete selected' })).toBeInTheDocument()
+  })
+
+  it('keeps an empty nested right item container hidden by default', () => {
+    const { container } = render(
+      <SidebarFooterRuntime>
+        <SidebarFooterLeftItems>
+          <Button mode="primary" size="medium" text="Apply" />
+        </SidebarFooterLeftItems>
+        <SidebarFooterRightItems>
+          {[]}
+        </SidebarFooterRightItems>
+      </SidebarFooterRuntime>
+    )
+
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+    expect(container.querySelector('.sidebar-footer-right')).not.toBeInTheDocument()
   })
 
   it('updates nested UXPin child descriptors on rerender', () => {

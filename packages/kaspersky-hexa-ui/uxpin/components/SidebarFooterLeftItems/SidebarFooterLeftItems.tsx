@@ -330,7 +330,13 @@ export const resolveSidebarFooterLeftItemsChildren = (
     }
 
     if (isUXPinSidebarFooterLeftItemsElement(child)) {
-      elements.push(resolveElementChildren(child))
+      const resolvedChildren = resolveElementChildren(child)
+
+      if (!getUXPinChildrenArray(resolvedChildren).length) {
+        return
+      }
+
+      elements.push(resolvedChildren)
       return
     }
 
