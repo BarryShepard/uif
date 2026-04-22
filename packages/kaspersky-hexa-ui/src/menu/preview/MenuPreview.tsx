@@ -36,6 +36,7 @@ export type MenuPreviewShellProps = Omit<MenuProps, 'collapsed' | 'children'> & 
   headerLogo?: ReactNode,
   headerTitle?: ReactNode,
   headerDescription?: ReactNode,
+  onMinimizedChange?: (minimized: boolean) => void,
   onNotificationClick?: VoidFunction,
   onThemeClick?: VoidFunction,
   onHelpClick?: VoidFunction
@@ -155,6 +156,7 @@ export const MenuPreviewShell = ({
   headerDescription = DEFAULT_MENU_PREVIEW_DESCRIPTION,
   headerLogo = <DefaultMenuPreviewLogo />,
   headerTitle = DEFAULT_MENU_PREVIEW_TITLE,
+  onMinimizedChange,
   onNotificationClick = noop,
   onThemeClick = noop,
   onHelpClick = noop,
@@ -165,6 +167,13 @@ export const MenuPreviewShell = ({
   useEffect(() => {
     setCollapsed(minimized)
   }, [minimized])
+
+  const toggleCollapsed = (): void => {
+    const nextState = !collapsed
+
+    setCollapsed(nextState)
+    onMinimizedChange?.(nextState)
+  }
 
   return (
     <StyledMenuPreview
@@ -180,7 +189,7 @@ export const MenuPreviewShell = ({
             role="button"
             name="hamburger"
             collapsed={collapsed}
-            onClick={() => setCollapsed((previousState) => !previousState)}
+            onClick={toggleCollapsed}
           />
           <MenuPreviewNotificationButton hasNotifications={notificationsActive} onClick={onNotificationClick} />
           <Moon className="item" role="button" onClick={onThemeClick} />

@@ -26,7 +26,7 @@ const DEFAULT_ELEMENTS_STACK_CHILDREN = (
     <Icon name="Placeholder" size="small" />
     <Status text="Active" mode="positive" />
     <Tag label="Tag" />
-    <Typography type="BTR4">Text</Typography>
+    <Typography type="body text/P4 (12, 16)/Regular">Text</Typography>
   </>
 )
 

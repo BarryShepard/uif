@@ -79,6 +79,26 @@ describe('Menu', () => {
     expect(container.querySelector('[data-testid="test-id"]')).toBeInTheDocument()
   })
 
+  test('should use default expanded and collapsed widths', () => {
+    const { rerender } = render(<MenuComponent />)
+
+    expect(getMenu()).toHaveStyle({
+      flex: '0 0 280px',
+      maxWidth: '280px',
+      minWidth: '280px',
+      width: '280px'
+    })
+
+    rerender(<MenuComponent collapsed />)
+
+    expect(getMenu()).toHaveStyle({
+      flex: '0 0 64px',
+      maxWidth: '64px',
+      minWidth: '64px',
+      width: '64px'
+    })
+  })
+
   it('should render menu item', () => {
     render(<MenuComponent />)
     expect(getItem('navigation.main.usersAndRoles')).toBeInTheDocument()

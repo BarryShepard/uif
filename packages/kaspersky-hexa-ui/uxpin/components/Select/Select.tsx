@@ -20,6 +20,8 @@ export type UXPinSelectProps = Omit<SelectProps, 'options' | 'placeholder' | 'sh
   iconBefore?: SelectOptionIconName,
   /** Shows the trailing select arrow. */
   elementAfter?: boolean,
+  /** Disables dropdown opening animation for instant UXPin feedback. */
+  instantDropdown?: boolean,
   /** Shows placeholder text. */
   placeholder?: boolean,
   /** Placeholder content. */
@@ -44,6 +46,7 @@ const Select = (rawProps: UXPinSelectProps): JSX.Element => {
     componentBefore = false,
     elementAfter = true,
     iconBefore = 'Placeholder',
+    instantDropdown = true,
     optionsText,
     overriddenCodeProps: _overriddenCodeProps,
     placeholder = true,
@@ -52,6 +55,7 @@ const Select = (rawProps: UXPinSelectProps): JSX.Element => {
     withSearch = false,
     ...props
   } = resolveUXPinRuntimeProps(rawProps)
+  const dropdownPerformanceProps = instantDropdown ? { transitionName: '' } : {}
   const options = buildSelectOptions({
     children,
     componentBefore,
@@ -62,6 +66,7 @@ const Select = (rawProps: UXPinSelectProps): JSX.Element => {
   return (
     <FrameFill>
       <HexaSelect
+        {...dropdownPerformanceProps}
         optionFilterProp="label"
         options={options}
         placeholder={placeholder ? placeholderText : undefined}

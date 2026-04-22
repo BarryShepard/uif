@@ -3,7 +3,10 @@ import React from 'react'
 import { CheckboxGroupProps } from '@src/checkbox/types'
 import { Checkbox as HexaCheckbox } from '@src/checkbox'
 
-import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+import {
+  resolveUXPinMergedChildrenFromProps,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import Checkbox, {
   checkboxChildrenToOptions
@@ -20,11 +23,11 @@ export type UXPinCheckboxGroupProps = Omit<CheckboxGroupProps, 'direction' | 'op
 
 const DEFAULT_CHECKBOX_GROUP_CHILDREN = (
   <>
-    <Checkbox text="Option 1" value="option-1" checked />
-    <Checkbox text="Option 2" value="option-2" />
-    <Checkbox text="Option 3" value="option-3" />
-    <Checkbox text="Option 4" value="option-4" />
-    <Checkbox text="Option 5" value="option-5" />
+    <Checkbox uxpId="checkbox-group-item-1" text="Option 1" value="option-1" checked />
+    <Checkbox uxpId="checkbox-group-item-2" text="Option 2" value="option-2" />
+    <Checkbox uxpId="checkbox-group-item-3" text="Option 3" value="option-3" />
+    <Checkbox uxpId="checkbox-group-item-4" text="Option 4" value="option-4" />
+    <Checkbox uxpId="checkbox-group-item-5" text="Option 5" value="option-5" />
   </>
 )
 
@@ -35,13 +38,15 @@ const CheckboxGroup = (rawProps: UXPinCheckboxGroupProps): JSX.Element => {
     codeComponentProps: _codeComponentProps,
     defaultValue,
     disabled = false,
+    onChange,
     orientation = 'vertical',
     overriddenCodeProps: _overriddenCodeProps,
     readonly = false,
     value,
     ...props
   } = resolveUXPinRuntimeProps(rawProps)
-  const { options, checkedValues } = checkboxChildrenToOptions(children, {
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(rawProps, DEFAULT_CHECKBOX_GROUP_CHILDREN)
+  const { options, checkedValues } = checkboxChildrenToOptions(resolvedChildren, {
     disabled,
     readonly
   })
@@ -49,7 +54,23 @@ const CheckboxGroup = (rawProps: UXPinCheckboxGroupProps): JSX.Element => {
     disabled,
     readonly
   }).options
-  const resolvedDefaultValue = defaultValue ?? checkedValues
+  const controlledValue = Array.isArray(value) && value.length ? value : undefined
+  const defaultCheckedValue = Array.isArray(defaultValue) && defaultValue.length ? defaultValue : undefined
+  const inferredValue = defaultCheckedValue ?? checkedValues
+  const [previewValue, setPreviewValue] = React.useState(controlledValue ?? inferredValue)
+  const inferredValueSignature = inferredValue.join('|')
+
+  React.useEffect(() => {
+    if (controlledValue !== undefined) {
+      setPreviewValue(controlledValue)
+    }
+  }, [controlledValue])
+
+  React.useEffect(() => {
+    if (controlledValue === undefined) {
+      setPreviewValue(inferredValue)
+    }
+  }, [controlledValue, inferredValueSignature])
 
   return (
     <div ref={rootRef} style={{ height: 'fit-content', width: '100%' }}>
@@ -58,8 +79,14 @@ const CheckboxGroup = (rawProps: UXPinCheckboxGroupProps): JSX.Element => {
         disabled={disabled}
         readonly={readonly}
         options={resolvedOptions as CheckboxGroupProps['options']}
-        value={value}
-        defaultValue={resolvedDefaultValue}
+        onChange={(nextValue) => {
+          if (controlledValue === undefined) {
+            setPreviewValue(nextValue)
+          }
+
+          onChange?.(nextValue)
+        }}
+        value={controlledValue ?? previewValue}
         {...props}
       />
     </div>

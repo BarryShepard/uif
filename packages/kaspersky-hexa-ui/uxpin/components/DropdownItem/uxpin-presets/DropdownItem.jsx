@@ -13,6 +13,8 @@ export default (
     description={false}
     descriptionText="Additional item description"
     elementAfter={false}
+    elementAfterSlot="Placeholder"
     elementAfter2={false}
+    elementAfterSlot2="Placeholder"
   />
 );

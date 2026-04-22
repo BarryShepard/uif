@@ -18,6 +18,9 @@ import { SubmenuWrapper } from './SubmenuWrapper'
 import { HamburgerProps, MenuContextProps, MenuProps } from './types'
 import { useThemedMenu } from './useThemedMenu'
 
+export const MENU_EXPANDED_WIDTH = 280
+export const MENU_COLLAPSED_WIDTH = 64
+
 export const Hamburger = ({ collapsed, ...props }: HamburgerProps): React.ReactElement => (
   collapsed
     ? <ActionButton icon={<MenuExpand/>} {...props} />
@@ -54,6 +57,7 @@ export const Menu = (rawProps: MenuProps): JSX.Element => {
     children,
     beforeItems,
     collapsed: extCollapsed,
+    collapsedWidth = MENU_COLLAPSED_WIDTH,
     minimizerBottom,
     favItems,
     favsExpanded,
@@ -66,6 +70,7 @@ export const Menu = (rawProps: MenuProps): JSX.Element => {
     unpinIcon,
     favIcon,
     testAttributes,
+    width = MENU_EXPANDED_WIDTH,
     ...rest
   } = useTestAttribute(useThemedMenu(rawProps))
   const [submenuItems, setSubmenuItems] = useState<SubmenuItemProps[]>([])
@@ -94,6 +99,8 @@ export const Menu = (rawProps: MenuProps): JSX.Element => {
       {...testAttributes}
       {...rest}
       collapsed={collapsed}
+      collapsedWidth={collapsedWidth}
+      width={width}
       className={cn({
         'theme-dark': theme === ThemeKey.Dark,
         'menu-submenu-margin': submenuMarginActive

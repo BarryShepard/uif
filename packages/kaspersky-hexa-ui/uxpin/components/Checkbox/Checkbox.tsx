@@ -4,12 +4,17 @@ import { Checkbox as HexaCheckbox } from '@src/checkbox'
 import { CheckboxOption, CheckboxProps } from '@src/checkbox/types'
 
 import {
-  getUXPinPropSources,
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
+  resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinCheckboxProps = CheckboxProps & {
+  /** UXPin preset element id. */
+  uxpId?: string,
   /** Checkbox label text. */
   text?: string,
   codeComponentProps?: Partial<UXPinCheckboxProps>,
@@ -58,28 +63,91 @@ const getCheckboxText = (
   return `Option ${index + 1}`
 }
 
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
+const resolveCheckboxPresetDefaults = (
+  node: React.ReactNode
+): Partial<UXPinCheckboxProps> => {
+  const id = getFirstStringProp(node, ['uxpId', 'presetElementId', 'uxpinPresetElementId'])?.toLowerCase()
+  const itemNumber = id?.match(/checkbox-group-item-(\d+)/)?.[1]
+
+  if (!itemNumber) {
+    return {}
+  }
+
+  return {
+    checked: itemNumber === '1',
+    text: `Option ${itemNumber}`,
+    value: `option-${itemNumber}`
+  }
+}
+
 export const resolveUXPinCheckboxRuntimeProps = (
   rawProps: UXPinCheckboxProps = {}
 ): UXPinCheckboxProps => resolveUXPinRuntimeProps(rawProps, Checkbox.defaultProps)
 
-export const isUXPinCheckboxElement = (
+export const resolveUXPinCheckboxNodeRuntimeProps = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinCheckboxProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as CheckboxComponent)?.uxpinRole === CHECKBOX_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'Checkbox' ||
-    (node.type as { name?: string })?.name === 'Checkbox' ||
-    getUXPinPropSources(node.props).some(hasCheckboxShape)
+): UXPinCheckboxProps => (
+  resolveUXPinRuntimeProps(
+    (getUXPinElementProps(node) || {}) as UXPinCheckboxProps,
+    {
+      ...Checkbox.defaultProps,
+      ...resolveCheckboxPresetDefaults(node)
+    }
   )
 )
 
+export const isUXPinCheckboxElement = (
+  node: React.ReactNode
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as CheckboxComponent)?.uxpinRole === CHECKBOX_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'Checkbox' ||
+      (node.type as { name?: string })?.name === 'Checkbox'
+    )
+  ) ||
+  getUXPinElementPropSources(node).some((props) => (
+    hasCheckboxShape(props) ||
+    props.name === 'Checkbox' ||
+    (
+      typeof props.uxpId === 'string' &&
+      props.uxpId.toLowerCase().includes('checkbox-group-item')
+    ) ||
+    (
+      typeof props.presetElementId === 'string' &&
+      props.presetElementId.toLowerCase().includes('checkbox-group-item')
+    ) ||
+    (
+      typeof props.uxpinPresetElementId === 'string' &&
+      props.uxpinPresetElementId.toLowerCase().includes('checkbox-group-item')
+    )
+  ))
+)
+
 export const checkboxElementToOption = (
-  element: React.ReactElement<UXPinCheckboxProps>,
+  element: React.ReactNode,
   index: number,
   options: CheckboxOptionBuildOptions = {}
 ): { option: CheckboxOption, checked?: CheckboxProps['value'] } => {
-  const runtimeProps = resolveUXPinCheckboxRuntimeProps(element.props)
+  const runtimeProps = resolveUXPinCheckboxNodeRuntimeProps(element)
   const {
     checked,
     children: _children,
@@ -88,6 +156,7 @@ export const checkboxElementToOption = (
     overriddenCodeProps: _overriddenCodeProps,
     readonly,
     text: _text,
+    uxpId: _uxpId,
     value,
     ...props
   } = runtimeProps
@@ -106,6 +175,24 @@ export const checkboxElementToOption = (
   }
 }
 
+const getCheckboxChildren = (
+  children: React.ReactNode
+): React.ReactNode[] => (
+  getUXPinChildrenArray(children).flatMap((child) => {
+    if (!child || isUXPinHiddenElement(child)) {
+      return []
+    }
+
+    if (isUXPinCheckboxElement(child)) {
+      return [child]
+    }
+
+    const nestedChildren = resolveUXPinElementChildren(child)
+
+    return nestedChildren ? getCheckboxChildren(nestedChildren) : []
+  })
+)
+
 export const checkboxChildrenToOptions = (
   children: React.ReactNode,
   options: CheckboxOptionBuildOptions = {}
@@ -115,19 +202,13 @@ export const checkboxChildrenToOptions = (
     options: []
   }
 
-  React.Children.forEach(children, (child, index) => {
-    if (!child || isUXPinHiddenElement(child)) {
-      return
-    }
+  getCheckboxChildren(children).forEach((child, index) => {
+    const item = checkboxElementToOption(child, index, options)
 
-    if (isUXPinCheckboxElement(child)) {
-      const item = checkboxElementToOption(child, index, options)
+    result.options.push(item.option)
 
-      result.options.push(item.option)
-
-      if (item.checked !== undefined) {
-        result.checkedValues.push(item.checked)
-      }
+    if (item.checked !== undefined) {
+      result.checkedValues.push(item.checked)
     }
   })
 
@@ -140,6 +221,7 @@ const Checkbox: CheckboxComponent = (rawProps: UXPinCheckboxProps): JSX.Element 
     codeComponentProps: _codeComponentProps,
     overriddenCodeProps: _overriddenCodeProps,
     text,
+    uxpId: _uxpId,
     ...props
   } = resolveUXPinCheckboxRuntimeProps(rawProps)
 

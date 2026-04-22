@@ -16,6 +16,8 @@ export type UXPinActionButtonMode = 'ghost' | 'filled' | 'ghostinverted' | 'onli
 export type ActionButtonIconName = Exclude<keyof typeof Icons16Pack, 'default'>
 
 export type UXPinActionButtonProps = Omit<ActionButtonProps, 'icon' | 'elementAfter' | 'mode'> & {
+  /** UXPin preset element id. */
+  uxpId?: string,
   /** Button presentation variant. */
   variant?: UXPinActionButtonVariant,
   /** Visual mode. */
@@ -76,6 +78,7 @@ const ActionButton = (rawProps: UXPinActionButtonProps): JSX.Element => {
     overriddenCodeProps: _overriddenCodeProps,
     size = 'medium',
     text = 'Action',
+    uxpId: _uxpId,
     variant = 'iconbutton',
     ...props
   } = resolveUXPinRuntimeProps(rawProps)

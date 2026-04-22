@@ -4,9 +4,6 @@ import styled from 'styled-components'
 import { FieldProps } from '@src/field/types'
 import { HelpMessage } from '@src/help-message'
 import { Markdown } from '@src/markdown'
-import { Tag } from '@src/tag'
-import { ToggleButtonGroup } from '@src/toggle-button/ToggleButtonGroup'
-import { ToggleButtonSize } from '@src/toggle-button/types'
 
 import Button from '../Button/Button'
 import CheckboxGroupPreview from '../CheckboxGroup/CheckboxGroup'
@@ -28,12 +25,14 @@ import SegmentedButton from '../SegmentedButton/SegmentedButton'
 import SegmentedButtonItem from '../SegmentedButtonItem/SegmentedButtonItem'
 import Select from '../Select/Select'
 import StatusGroup from '../StatusGroup/StatusGroup'
+import TagGroup from '../TagGroup/TagGroup'
+import Text from '../Text/Text'
 import Textbox from '../Textbox/Textbox'
 import TimeInput from '../TimeInput/TimeInput'
 import TimePickerRange from '../TimePickerRange/TimePickerRange'
 import Toggle from '../Toggle/Toggle'
+import ToggleButtonGroup from '../ToggleButtonGroup/ToggleButtonGroup'
 import TreeList from '../TreeList/TreeList'
-import Typography from '../Typography/Typography'
 import Uploader from '../Uploader/Uploader'
 
 import {
@@ -113,6 +112,10 @@ type UXPinFieldProps = Omit<FieldProps, 'control' | 'label' | 'labelPosition' | 
   placeholderText?: string,
   /** Vertical distance between the label and the body in pixels. */
   labelPositionRange?: number,
+  /** Field width behavior. Flex fills the available row width, fixed uses widthValue. */
+  widthMode?: 'flex' | 'fixed',
+  /** Field width in pixels when widthMode is fixed. */
+  widthValue?: number,
   /** UXPin frame style. */
   style?: React.CSSProperties,
   /** Backward-compatible tooltip content. */
@@ -126,17 +129,6 @@ type ControlState = {
   readonly?: boolean,
   placeholderText?: string
 }
-
-const previewTagItems = [
-  { label: 'Tag 1' },
-  { label: 'Tag 2' }
-]
-
-const previewToggleButtonItems = [
-  { text: 'One', value: 'one', mode: 'marina' as const },
-  { text: 'Two', value: 'two', mode: 'red' as const },
-  { text: 'Three', value: 'three', mode: 'orange' as const }
-]
 
 const FieldFrame = styled.div`
   width: 100%;
@@ -173,31 +165,14 @@ const FieldFrame = styled.div`
   }
 `
 
-type PreviewToggleButtonGroupProps = {
-  size: ToggleButtonSize
-}
-
-const PreviewToggleButtonGroup = ({
-  size
-}: PreviewToggleButtonGroupProps): JSX.Element => {
-  const [value, setValue] = React.useState<string[]>([previewToggleButtonItems[0].value])
-
-  return (
-    <ToggleButtonGroup
-      items={previewToggleButtonItems.map(item => ({
-        ...item,
-        size
-      }))}
-      value={value}
-      onChange={setValue}
-    />
-  )
-}
-
 const getPlaceholder = (
   placeholderText: string | undefined,
   fallback: string
 ): string => placeholderText ?? fallback
+
+const getFixedWidth = (widthValue?: number): string => (
+  `${Math.max(Number(widthValue) || 0, 1)}px`
+)
 
 const resolveControl = (
   variant: UXPinFieldVariant,
@@ -367,15 +342,15 @@ const resolveControl = (
     case 'statusGroup':
       return <StatusGroup />
     case 'tagGroup':
-      return <Tag.Group items={previewTagItems.map(item => ({ ...item, disabled, readOnly: readonly }))} />
+      return <TagGroup />
     case 'text':
-      return <Typography type="BTR4">Text preview</Typography>
+      return <Text text="Text preview" type="body text/P4 (12, 16)/Regular" />
     case 'toggle':
       return <Toggle disabled={disabled} />
     case 'toggleButtonGroupMedium':
-      return <PreviewToggleButtonGroup size="medium" />
+      return <ToggleButtonGroup size="medium" variant="button" />
     case 'toggleButtonGroupSmall':
-      return <PreviewToggleButtonGroup size="small" />
+      return <ToggleButtonGroup size="small" variant="button" />
     case 'treeList':
       return <TreeList />
     case 'uploader':
@@ -433,7 +408,6 @@ const applyFieldControlState = (
 }
 
 const Field = (rawProps: UXPinFieldProps): JSX.Element => {
-  const rootRef = useAutoHeightMergeFrame()
   const runtimeProps = resolveUXPinRuntimeProps(rawProps)
   const {
     additionalComponent,
@@ -458,8 +432,15 @@ const Field = (rawProps: UXPinFieldProps): JSX.Element => {
     tagsAfter = false,
     text,
     tooltip,
-    variant = 'inputText'
+    variant = 'inputText',
+    widthMode = 'flex',
+    widthValue = 320
   } = runtimeProps
+  const resolvedWidth = widthMode === 'fixed' ? getFixedWidth(widthValue) : '100%'
+  const rootRef = useAutoHeightMergeFrame({
+    width: widthMode === 'fixed' ? resolvedWidth : undefined,
+    minWidth: widthMode === 'flex' ? 0 : undefined
+  })
   const visibleChildren = getUXPinChildrenArray(children).filter((child) => !isUXPinHiddenElement(child))
   const labelElement = getFirstFieldLayer(visibleChildren, isUXPinFieldLabelElement)
   const looseBodyChildren = visibleChildren.filter((child) => (
@@ -503,6 +484,8 @@ const Field = (rawProps: UXPinFieldProps): JSX.Element => {
   )
   const rootStyle = {
     ...mergeFrameStyle(style),
+    flex: widthMode === 'flex' ? '1 1 0' : '0 0 auto',
+    width: resolvedWidth,
     height: 'fit-content',
     '--hexa-uxpin-field-label-gap': `${labelPositionRange}px`
   } as React.CSSProperties

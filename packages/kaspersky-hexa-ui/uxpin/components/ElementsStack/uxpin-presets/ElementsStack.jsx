@@ -11,6 +11,6 @@ export default (
     <Icon uxpId="elements-stack-icon-1" name="Placeholder" size="small" />
     <Status uxpId="elements-stack-status-1" label="Active" mode="positive" />
     <Tag uxpId="elements-stack-tag-1" label="Tag" />
-    <Typography uxpId="elements-stack-text-1" type="BTR4">Text</Typography>
+    <Typography uxpId="elements-stack-text-1" type="body text/P4 (12, 16)/Regular">Text</Typography>
   </ElementsStack>
 );

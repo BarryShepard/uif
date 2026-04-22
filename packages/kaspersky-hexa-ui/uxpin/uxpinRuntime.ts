@@ -51,6 +51,26 @@ export const getUXPinElementProps = (
   return undefined
 }
 
+const getUXPinChildrenSource = (
+  sources: Array<UXPinPropsContainer | undefined>
+): { children?: React.ReactNode, hasChildren: boolean } => {
+  let result: { children?: React.ReactNode, hasChildren: boolean } = {
+    children: undefined,
+    hasChildren: false
+  }
+
+  sources.forEach((source) => {
+    if (hasOwnProp(source as Record<string, unknown> | undefined, 'children')) {
+      result = {
+        children: source?.children,
+        hasChildren: true
+      }
+    }
+  })
+
+  return result
+}
+
 export const getUXPinPropSources = (
   props: object = {}
 ): Array<Record<string, unknown>> => {
@@ -81,6 +101,10 @@ export const getUXPinChildrenArray = (
 
   if (Array.isArray(children)) {
     return children.flatMap(getUXPinChildrenArray)
+  }
+
+  if (React.isValidElement(children) && children.type === React.Fragment) {
+    return getUXPinChildrenArray((children.props as UXPinPropsContainer).children)
   }
 
   if (
@@ -144,6 +168,139 @@ export const resolveUXPinChildrenFromProps = (
   }
 
   return undefined
+}
+
+const getUXPinElementIdentity = (
+  node: React.ReactNode
+): string | undefined => {
+  if (React.isValidElement(node) && typeof node.key === 'string' && node.key.length) {
+    return node.key
+  }
+
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of ['id', 'uxpId', 'presetElementId', 'uxpinPresetElementId']) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
+function mergeUXPinElementChildren (
+  baseChild: React.ReactNode,
+  overrideChild: React.ReactNode
+): React.ReactNode {
+  const baseProps = getUXPinElementProps(baseChild)
+  const overrideProps = getUXPinElementProps(overrideChild)
+
+  if (!baseProps || !overrideProps) {
+    return overrideChild
+  }
+
+  const hasOverrideChildren = hasUXPinChildrenProp(overrideProps)
+  const mergedChildren = hasOverrideChildren
+    ? mergeUXPinChildren(resolveUXPinChildrenFromProps(baseProps), resolveUXPinChildrenFromProps(overrideProps))
+    : undefined
+  const mergedProps = {
+    ...baseProps,
+    ...overrideProps,
+    ...(hasOverrideChildren ? { children: mergedChildren } : {})
+  }
+
+  if (hasOverrideChildren) {
+    mergedProps.overriddenCodeProps = {
+      ...baseProps.overriddenCodeProps,
+      ...overrideProps.overriddenCodeProps,
+      children: mergedChildren
+    }
+  }
+
+  if (React.isValidElement(baseChild)) {
+    return React.cloneElement(baseChild, mergedProps)
+  }
+
+  return mergedProps
+}
+
+export function mergeUXPinChildren (
+  baseChildren: React.ReactNode,
+  overrideChildren: React.ReactNode
+): React.ReactNode {
+  if (
+    overrideChildren === null ||
+    overrideChildren === undefined ||
+    typeof overrideChildren === 'boolean'
+  ) {
+    return overrideChildren
+  }
+
+  const baseArray = getUXPinChildrenArray(baseChildren)
+  const overrideArray = getUXPinChildrenArray(overrideChildren)
+
+  if (!baseArray.length || !overrideArray.length) {
+    return overrideChildren
+  }
+
+  const overrideById = new Map<string, React.ReactNode>()
+
+  overrideArray.forEach((child) => {
+    const id = getUXPinElementIdentity(child)
+
+    if (id) {
+      overrideById.set(id, child)
+    }
+  })
+
+  const usedOverrides = new Set<React.ReactNode>()
+  const mergedChildren = baseArray.map((baseChild) => {
+    const id = getUXPinElementIdentity(baseChild)
+    const overrideChild = id ? overrideById.get(id) : undefined
+
+    if (!overrideChild) {
+      return baseChild
+    }
+
+    usedOverrides.add(overrideChild)
+
+    return mergeUXPinElementChildren(baseChild, overrideChild)
+  })
+
+  overrideArray.forEach((child) => {
+    if (!usedOverrides.has(child)) {
+      mergedChildren.push(child)
+    }
+  })
+
+  return mergedChildren
+}
+
+export function resolveUXPinMergedChildrenFromProps (
+  props: UXPinPropsContainer | undefined,
+  fallbackChildren?: React.ReactNode
+): React.ReactNode | undefined {
+  if (!props) {
+    return fallbackChildren
+  }
+
+  const base = getUXPinChildrenSource([
+    props,
+    props.codeComponentProps
+  ])
+  const overrides = getUXPinChildrenSource([
+    props.overriddenCodeProps?.codeComponentProps,
+    props.overriddenCodeProps
+  ])
+  const baseChildren = base.hasChildren ? base.children : fallbackChildren
+
+  if (!overrides.hasChildren) {
+    return baseChildren
+  }
+
+  return mergeUXPinChildren(baseChildren, overrides.children)
 }
 
 export const resolveUXPinElementChildren = (

@@ -8,6 +8,7 @@ import dropdownStyles from '@src/dropdown/styles/Dropdown.module.scss'
 import { DropdownItemProps as HexaDropdownItemProps } from '@src/dropdown/types'
 
 import { mergeFrameStyle } from '../../preview'
+import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import DropdownItem, {
@@ -63,11 +64,7 @@ const DEFAULT_STICKY_FOOTER = (
 
 const resolveDropdownRuntimeProps = (
   rawProps: UXPinDropdownProps = {}
-): UXPinDropdownProps => ({
-  ...(Dropdown.defaultProps || {}),
-  ...rawProps,
-  ...(rawProps.overriddenCodeProps || {})
-})
+): UXPinDropdownProps => resolveUXPinRuntimeProps(rawProps, Dropdown.defaultProps)
 
 export const isUXPinDropdownElement = (
   node: React.ReactNode
@@ -101,6 +98,7 @@ const renderOverlayItem = (
       return (
         <HexaDropdown.SubMenu
           key={key}
+          className={item.className}
           disabled={item.disabled}
           title={item.title}
         >
@@ -120,6 +118,7 @@ const renderOverlayItem = (
       return (
         <HexaDropdown.MenuItem
           key={key}
+          className={item.className}
           disabled={item.disabled}
           componentsBefore={item.componentsBefore}
           componentsAfter={item.componentsAfter}

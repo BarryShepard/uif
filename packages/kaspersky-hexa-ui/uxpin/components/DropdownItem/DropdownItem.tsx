@@ -9,11 +9,19 @@ import {
 import Icons16Pack, { Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import { FrameFill } from '../../preview'
+import {
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
+  resolveUXPinElementChildren,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import Button from '../Button/Button'
 import Link from '../Link/Link'
 import Textbox from '../Textbox/Textbox'
+import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinDropdownItemVariant =
   | 'buttons'
@@ -60,6 +68,7 @@ export type UXPinDropdownItemProps = {
   children?: React.ReactNode,
   /** UXPin interaction hook for item click. */
   onClick?: HexaDropdownItemProps['onClick'],
+  codeComponentProps?: Partial<UXPinDropdownItemProps>,
   overriddenCodeProps?: Partial<UXPinDropdownItemProps>
 }
 
@@ -91,26 +100,128 @@ const DROPDOWN_ITEM_DEFAULT_PROPS: Partial<UXPinDropdownItemProps> = {
   description: false,
   descriptionText: 'Additional item description',
   elementAfter: false,
-  elementAfter2: false
+  elementAfterSlot: 'Placeholder',
+  elementAfter2: false,
+  elementAfterSlot2: 'Placeholder'
 }
 
-const hasDropdownItemShape = (props: Record<string, unknown> = {}): boolean => (
+const hasDropdownItemOwnShape = (props: Record<string, unknown> = {}): boolean => (
+  'variant' in props ||
   'elementBefore' in props ||
   'elementBeforeSlot' in props ||
+  'text' in props ||
+  'description' in props ||
   'descriptionText' in props ||
   'elementAfter' in props ||
+  'elementAfterSlot' in props ||
   'elementAfter2' in props ||
   'elementAfterSlot2' in props ||
   'selected' in props
 )
 
 export const resolveDropdownItemRuntimeProps = (
-  rawProps: UXPinDropdownItemProps = {}
-): UXPinDropdownItemProps => ({
+  rawProps: UXPinDropdownItemProps = {},
+  defaults: Partial<UXPinDropdownItemProps> = {}
+): UXPinDropdownItemProps => resolveUXPinRuntimeProps(rawProps, {
   ...DROPDOWN_ITEM_DEFAULT_PROPS,
-  ...rawProps,
-  ...(rawProps.overriddenCodeProps || {})
+  ...defaults
 })
+
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
+const isDropdownItemIdentity = (value?: string): boolean => {
+  const normalizedValue = value?.toLowerCase()
+
+  return Boolean(
+    normalizedValue &&
+    (
+      normalizedValue.includes('dropdown-item') ||
+      normalizedValue.includes('select-option') ||
+      normalizedValue.includes('multi-select-option')
+    )
+  )
+}
+
+const getDropdownItemIdentity = (node: React.ReactNode): string | undefined => {
+  const propNames = ['presetElementId', 'uxpinPresetElementId', 'uxpId', 'name', 'id']
+
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && isDropdownItemIdentity(value)) {
+        return value
+      }
+    }
+  }
+
+  return getFirstStringProp(node, propNames)
+}
+
+const getDropdownItemPresetIndex = (node: React.ReactNode): number | undefined => {
+  const identity = getDropdownItemIdentity(node)
+  const match = identity?.toLowerCase().match(/(?:dropdown-item|select-option|multi-select-option)-(\d+)/)
+  const parsedIndex = match ? Number(match[1]) : undefined
+
+  return parsedIndex && Number.isFinite(parsedIndex) ? parsedIndex : undefined
+}
+
+const getDropdownItemPresetDefaults = (
+  node: React.ReactNode,
+  index: number
+): Partial<UXPinDropdownItemProps> => {
+  const identity = getDropdownItemIdentity(node)?.toLowerCase()
+  const presetIndex = getDropdownItemPresetIndex(node) ?? index + 1
+
+  if (!identity || !isDropdownItemIdentity(identity)) {
+    return {}
+  }
+
+  if (identity.includes('select-option') || identity.includes('multi-select-option')) {
+    return {
+      selected: presetIndex === 1,
+      text: `Option ${presetIndex}`
+    }
+  }
+
+  if (identity.includes('dropdown-item')) {
+    return {
+      description: presetIndex === 2,
+      descriptionText: 'Additional description',
+      elementBefore: presetIndex === 3,
+      elementAfter: presetIndex === 3,
+      selected: presetIndex === 1,
+      text: `Option ${presetIndex}`
+    }
+  }
+
+  return {}
+}
+
+export const resolveDropdownItemNodeRuntimeProps = (
+  node: React.ReactNode,
+  index = 0
+): UXPinDropdownItemProps => (
+  resolveDropdownItemRuntimeProps(
+    (getUXPinElementProps(node) || {}) as UXPinDropdownItemProps,
+    getDropdownItemPresetDefaults(node, index)
+  )
+)
 
 const resolveNamedIcon = (iconName?: DropdownItemIconName | React.ReactNode): React.ReactNode => {
   if (!iconName) {
@@ -138,37 +249,49 @@ const resolveSlot = (
 )
 
 const resolveDropdownItemKey = (
-  element: React.ReactElement<UXPinDropdownItemProps>,
+  element: React.ReactNode,
   prefix: string,
   index: number
 ): string => {
-  if (typeof element.key === 'string' && element.key.length) {
+  if (React.isValidElement(element) && typeof element.key === 'string' && element.key.length) {
     return element.key
+  }
+
+  const explicitId = getFirstStringProp(element, ['id', 'uxpId'])
+
+  if (explicitId) {
+    return explicitId
+  }
+
+  const presetId = getFirstStringProp(element, ['presetElementId', 'uxpinPresetElementId'])
+
+  if (presetId) {
+    return `${prefix}-${presetId}-${index + 1}`
   }
 
   return `${prefix}-${index + 1}`
 }
 
 const resolveDropdownItemChildren = (
-  element: React.ReactElement<UXPinDropdownItemProps>,
+  element: React.ReactNode,
   runtimeProps: UXPinDropdownItemProps
 ): React.ReactNode => (
-  runtimeProps.overriddenCodeProps?.children ??
-  runtimeProps.children ??
-  element.props.overriddenCodeProps?.children ??
-  element.props.children
+  resolveUXPinElementChildren(element) ?? runtimeProps.children
 )
 
 export const isUXPinDropdownItemElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinDropdownItemProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as DropdownItemComponent)?.uxpinRole === DROPDOWN_ITEM_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'DropdownItem' ||
-    (node.type as { name?: string })?.name === 'DropdownItem' ||
-    hasDropdownItemShape((node.props as Record<string, unknown>) || {})
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as DropdownItemComponent)?.uxpinRole === DROPDOWN_ITEM_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'DropdownItem' ||
+      (node.type as { name?: string })?.name === 'DropdownItem'
+    )
+  ) ||
+  isDropdownItemIdentity(getDropdownItemIdentity(node)) ||
+  getUXPinElementPropSources(node).some(hasDropdownItemOwnShape)
 )
 
 const buildDropdownItemComponentsAfter = ({
@@ -186,11 +309,11 @@ const buildDropdownItemComponentsAfter = ({
 }
 
 export const dropdownItemElementToOverlay = (
-  element: React.ReactElement<UXPinDropdownItemProps>,
+  element: React.ReactNode,
   index: number,
   prefix: string
 ): DropdownOverlayBuildResult => {
-  const runtimeProps = resolveDropdownItemRuntimeProps(element.props)
+  const runtimeProps = resolveDropdownItemNodeRuntimeProps(element, index)
   const {
     description = false,
     descriptionText,
@@ -200,7 +323,7 @@ export const dropdownItemElementToOverlay = (
     onClick,
     selected = false,
     text = `Dropdown item ${index + 1}`,
-    variant = 'default'
+    variant = 'text'
   } = runtimeProps
   const key = resolveDropdownItemKey(element, prefix, index)
   const children = resolveDropdownItemChildren(element, runtimeProps)
@@ -279,8 +402,8 @@ export const dropdownChildrenToOverlay = (
     selectedKeys: []
   }
 
-  React.Children.forEach(children, (child, index) => {
-    if (!child) {
+  getUXPinChildrenArray(children).forEach((child, index) => {
+    if (!child || isUXPinHiddenElement(child)) {
       return
     }
 
@@ -292,14 +415,10 @@ export const dropdownChildrenToOverlay = (
       return
     }
 
-    if (
-      React.isValidElement<{ children?: React.ReactNode, overriddenCodeProps?: { children?: React.ReactNode } }>(child) &&
-      (child.props.children || child.props.overriddenCodeProps?.children)
-    ) {
-      const nestedResult = dropdownChildrenToOverlay(
-        child.props.overriddenCodeProps?.children ?? child.props.children,
-        `${prefix}-${index + 1}`
-      )
+    const nestedChildren = resolveUXPinElementChildren(child)
+
+    if (nestedChildren) {
+      const nestedResult = dropdownChildrenToOverlay(nestedChildren, `${prefix}-${index + 1}`)
 
       result.items.push(...nestedResult.items)
       result.selectedKeys.push(...nestedResult.selectedKeys)
@@ -320,7 +439,7 @@ const DropdownItem = (props: UXPinDropdownItemProps): JSX.Element => {
     elementBeforeSlot,
     selected = false,
     text = 'Dropdown item',
-    variant = 'default'
+    variant = 'text'
   } = runtimeProps
   const componentsBefore = resolveSlot(elementBefore, elementBeforeSlot)
   const componentsAfter = buildDropdownItemComponentsAfter(runtimeProps)

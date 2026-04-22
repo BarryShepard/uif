@@ -1,6 +1,7 @@
-import React, { CSSProperties, useLayoutEffect, useMemo, useRef } from 'react'
+import React, { CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 
+import { MENU_COLLAPSED_WIDTH, MENU_EXPANDED_WIDTH } from '@src/menu/Menu'
 import { MenuPreviewShell, cloneNavItems, withPreviewUserAvailabilityItems } from '@src/menu/preview/MenuPreview'
 import { navUserItems as storyNavUserItems } from '@src/menu/stories/menu-items'
 import { NavItemData } from '@src/menu/types'
@@ -34,10 +35,8 @@ const EMPTY_ITEMS: NavItemData[] = []
 
 const PreviewRoot = styled.div`
   display: flex;
-  width: 100%;
   height: 100%;
   min-height: 100%;
-  align-self: stretch;
   background: transparent;
   box-sizing: border-box;
 
@@ -57,7 +56,7 @@ const resolveMenuChildren = (children?: React.ReactNode): React.ReactNode => {
   return menuItemChildren
 }
 
-const useSyncMenuFrameHeight = (): React.RefObject<HTMLDivElement> => {
+const useSyncMenuFrameSize = (): React.RefObject<HTMLDivElement> => {
   const rootRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -70,31 +69,47 @@ const useSyncMenuFrameHeight = (): React.RefObject<HTMLDivElement> => {
 
     const previousHeight = mergeComponent.style.height
     const previousMinHeight = mergeComponent.style.minHeight
+    const previousWidth = mergeComponent.style.width
+    const previousMinWidth = mergeComponent.style.minWidth
+    const previousMaxWidth = mergeComponent.style.maxWidth
+    const previousFlex = mergeComponent.style.flex
 
-    const syncFrameHeight = (): void => {
-      const measuredHeight = rootElement.getBoundingClientRect().height
+    const syncFrameSize = (): void => {
+      const { height, width } = rootElement.getBoundingClientRect()
 
-      if (measuredHeight > 0) {
-        const nextHeight = `${Math.ceil(measuredHeight)}px`
+      if (height > 0) {
+        const nextHeight = `${Math.ceil(height)}px`
         mergeComponent.style.height = nextHeight
         mergeComponent.style.minHeight = nextHeight
       }
+
+      if (width > 0) {
+        const nextWidth = `${Math.ceil(width)}px`
+        mergeComponent.style.width = nextWidth
+        mergeComponent.style.minWidth = nextWidth
+        mergeComponent.style.maxWidth = nextWidth
+        mergeComponent.style.flex = `0 0 ${nextWidth}`
+      }
     }
 
-    syncFrameHeight()
+    syncFrameSize()
 
     const resizeObserver = typeof ResizeObserver !== 'undefined'
-      ? new ResizeObserver(syncFrameHeight)
+      ? new ResizeObserver(syncFrameSize)
       : undefined
 
     resizeObserver?.observe(rootElement)
-    window.addEventListener('resize', syncFrameHeight)
+    window.addEventListener('resize', syncFrameSize)
 
     return () => {
       resizeObserver?.disconnect()
-      window.removeEventListener('resize', syncFrameHeight)
+      window.removeEventListener('resize', syncFrameSize)
       mergeComponent.style.height = previousHeight
       mergeComponent.style.minHeight = previousMinHeight
+      mergeComponent.style.width = previousWidth
+      mergeComponent.style.minWidth = previousMinWidth
+      mergeComponent.style.maxWidth = previousMaxWidth
+      mergeComponent.style.flex = previousFlex
     }
   }, [])
 
@@ -111,7 +126,8 @@ const Menu = ({
   style,
   title = 'Configuration Service'
 }: UXPinMenuProps): JSX.Element => {
-  const rootRef = useSyncMenuFrameHeight()
+  const rootRef = useSyncMenuFrameSize()
+  const [currentMinimized, setCurrentMinimized] = useState(minimized)
   const resolvedMenuChildren = useMemo(() => resolveMenuChildren(children), [children])
   const derivedNavItems = useMemo(
     () => menuItemElementsToNavItems(resolvedMenuChildren),
@@ -121,38 +137,48 @@ const Menu = ({
     footer ? withPreviewUserAvailabilityItems(storyNavUserItems) : undefined
   ), [footer])
   const resolvedFrameHeight = style?.height ?? '100vh'
+  const menuWidth = currentMinimized ? MENU_COLLAPSED_WIDTH : MENU_EXPANDED_WIDTH
+
+  useEffect(() => {
+    setCurrentMinimized(minimized)
+  }, [minimized])
 
   return (
     <PreviewRoot
       ref={rootRef}
       style={mergeFrameStyle({
-        minWidth: 280,
-        width: '100%',
+        ...style,
+        flex: `0 0 ${menuWidth}px`,
+        maxWidth: menuWidth,
+        minWidth: menuWidth,
+        width: menuWidth,
         height: resolvedFrameHeight,
-        minHeight: resolvedFrameHeight,
-        ...style
+        minHeight: resolvedFrameHeight
       })}
     >
       <MenuPreviewShell
         applyAppTheme={true}
         beforeItems={EMPTY_ITEMS}
-        collapsedWidth={64}
+        collapsedWidth={MENU_COLLAPSED_WIDTH}
         favItems={EMPTY_ITEMS}
-        minimized={minimized}
+        minimized={currentMinimized}
         minimizerBottom={false}
         navItems={cloneNavItems(derivedNavItems)}
         navUserItems={previewUserItems}
+        onMinimizedChange={setCurrentMinimized}
         showHeader={header}
         headerDescription={description}
         headerLogo={logo}
         headerTitle={title}
         style={mergeFrameStyle({
-          minWidth: 280,
-          width: '100%',
+          flex: `0 0 ${menuWidth}px`,
+          maxWidth: menuWidth,
+          minWidth: menuWidth,
+          width: menuWidth,
           height: '100%',
           minHeight: '100%'
         })}
-        width="100%"
+        width={MENU_EXPANDED_WIDTH}
       />
     </PreviewRoot>
   )

@@ -10,6 +10,8 @@ import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
 export type LinkIconName = Exclude<keyof typeof Icons16Pack, 'default'>
 
 export type UXPinLinkProps = Omit<LinkProps, 'decoration' | 'icon' | 'iconPosition' | 'size'> & {
+  /** UXPin preset element id. */
+  uxpId?: string,
   /** Link size. */
   size?: 'medium' | 'small',
   /** Shows an icon before text. */
@@ -45,6 +47,7 @@ const Link = (rawProps: UXPinLinkProps): JSX.Element => {
     overriddenCodeProps: _overriddenCodeProps,
     size = 'medium',
     text = 'Open documentation',
+    uxpId: _uxpId,
     ...props
   } = resolveUXPinRuntimeProps(rawProps)
   const showIcon = iconBefore || iconAfter

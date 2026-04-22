@@ -5,6 +5,8 @@ import { ArrowDown1, ArrowUp1 } from '@kaspersky/hexa-ui-icons/16'
 
 import {
   getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
   resolveUXPinChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
@@ -29,7 +31,7 @@ export type UXPinExpandProps = {
 
 const DEFAULT_EXPAND_CHILDREN = (
   <>
-    <Typography type="BTR4">
+    <Typography type="body text/P4 (12, 16)/Regular">
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent vel justo ac nibh luctus volutpat.
       Sed interdum, nisl at dapibus gravida, dui massa mattis sem, vitae viverra lectus arcu eget nibh.
     </Typography>
@@ -59,12 +61,51 @@ const ExpandRoot = styled.div`
 
 const isActionButtonElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinActionButtonProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as { displayName?: string })?.displayName === 'ActionButton' ||
-    (node.type as { name?: string })?.name === 'ActionButton'
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as { displayName?: string })?.displayName === 'ActionButton' ||
+      (node.type as { name?: string })?.name === 'ActionButton'
+    )
+  ) ||
+  getUXPinElementPropSources(node).some((props) => (
+    props.name === 'ActionButton' ||
+    (
+      typeof props.uxpId === 'string' &&
+      props.uxpId.toLowerCase().includes('action')
+    ) ||
+    (
+      typeof props.presetElementId === 'string' &&
+      props.presetElementId.toLowerCase().includes('action')
+    ) ||
+    (
+      typeof props.uxpinPresetElementId === 'string' &&
+      props.uxpinPresetElementId.toLowerCase().includes('action')
+    ) ||
+    (
+      'variant' in props &&
+      'mode' in props &&
+      (
+        'elementAfter' in props ||
+        'iconBefore' in props ||
+        'size' in props ||
+        'text' in props
+      )
+    )
+  ))
+)
+
+const getExpandChildren = (
+  children: React.ReactNode
+): React.ReactNode[] => (
+  getUXPinChildrenArray(children).flatMap((child) => {
+    if (React.isValidElement(child) && child.type === React.Fragment) {
+      return getExpandChildren(child.props.children)
+    }
+
+    return [child]
+  })
 )
 
 const Expand = (rawProps: UXPinExpandProps): JSX.Element => {
@@ -83,10 +124,15 @@ const Expand = (rawProps: UXPinExpandProps): JSX.Element => {
   const contentRef = React.useRef<HTMLDivElement | null>(null)
   const [collapsed, setCollapsed] = React.useState(true)
   const [hasOverflow, setHasOverflow] = React.useState(true)
-  const resolvedChildren = getUXPinChildrenArray(explicitChildren ?? children)
+  const resolvedChildren = getExpandChildren(explicitChildren ?? children)
     .filter((child) => !isUXPinHiddenElement(child))
   const actionButton = resolvedChildren.find(isActionButtonElement)
-  const contentChildren = resolvedChildren.filter((child) => child !== actionButton)
+  const actionButtonProps = actionButton
+    ? resolveUXPinRuntimeProps<UXPinActionButtonProps>(
+      (getUXPinElementProps(actionButton) || {}) as UXPinActionButtonProps
+    )
+    : undefined
+  const contentChildren = resolvedChildren.filter((child) => !isActionButtonElement(child))
 
   React.useLayoutEffect(() => {
     const contentElement = contentRef.current
@@ -108,23 +154,18 @@ const Expand = (rawProps: UXPinExpandProps): JSX.Element => {
 
   const buttonText = collapsed ? expandText : collapseText
   const buttonIcon = collapsed ? <ArrowDown1 /> : <ArrowUp1 />
-  const button = actionButton
-    ? React.cloneElement(actionButton, {
-      elementAfter: true,
-      elementAfterSlot: undefined,
-      onClick: () => setCollapsed((current) => !current),
-      text: buttonText
-    })
-    : (
-      <ActionButton
-        elementAfter
-        mode="ghost"
-        onClick={() => setCollapsed((current) => !current)}
-        size="large"
-        text={buttonText}
-        variant="button"
-      />
-    )
+  const button = (
+    <ActionButton
+      mode="ghost"
+      size="large"
+      variant="button"
+      {...actionButtonProps}
+      elementAfter
+      elementAfterSlot={buttonIcon}
+      onClick={() => setCollapsed((current) => !current)}
+      text={collapsed ? actionButtonProps?.text ?? buttonText : buttonText}
+    />
+  )
 
   return (
     <ExpandRoot ref={rootRef} style={style}>
@@ -140,9 +181,7 @@ const Expand = (rawProps: UXPinExpandProps): JSX.Element => {
       </div>
       {hasOverflow && (
         <div className="hexa-uxpin-expand-button">
-          {React.isValidElement<UXPinActionButtonProps>(button)
-            ? React.cloneElement(button, { elementAfterSlot: buttonIcon })
-            : button}
+          {button}
         </div>
       )}
     </ExpandRoot>

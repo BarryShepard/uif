@@ -6,11 +6,12 @@ import Icons16Pack, { Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import {
   getUXPinChildrenArray,
+  getUXPinElementPropSources,
   resolveUXPinElementChildren
 } from './uxpinRuntime'
 import {
   isUXPinDropdownItemElement,
-  resolveDropdownItemRuntimeProps
+  resolveDropdownItemNodeRuntimeProps
 } from './components/DropdownItem/DropdownItem'
 import { isUXPinHiddenElement } from './components/ToolbarButton/ToolbarButton'
 
@@ -52,6 +53,43 @@ const optionLabel = (
   )
 }
 
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
+const getOptionValue = (
+  node: React.ReactNode,
+  fallbackText: string,
+  index: number
+): string => {
+  if (React.isValidElement(node) && typeof node.key === 'string' && node.key.length) {
+    return node.key
+  }
+
+  const explicitValue = getFirstStringProp(node, ['value'])
+
+  if (explicitValue) {
+    return explicitValue
+  }
+
+  const explicitId = getFirstStringProp(node, ['id', 'uxpId', 'presetElementId', 'uxpinPresetElementId'])
+
+  return explicitId ? `${explicitId}-${index + 1}` : `${fallbackText}-${index + 1}`
+}
+
 export const parseOptionsText = (optionsText?: string): string[] => {
   const parsedOptions = (optionsText || '')
     .split(/[\n,;]/)
@@ -83,14 +121,14 @@ export const buildSelectOptions = ({
     })
   )
   const childOptions = flattenDropdownItems(children)
-    .filter(isUXPinDropdownItemElement)
     .map((child, index) => {
-      const props = resolveDropdownItemRuntimeProps(child.props)
+      const props = resolveDropdownItemNodeRuntimeProps(child, index)
       const text = props.text ?? `Option ${index + 1}`
+      const value = getOptionValue(child, text, index)
 
       return {
         label: optionLabel(text, componentBefore, iconBefore),
-        value: text,
+        value,
         description: props.description ? props.descriptionText : undefined,
         disabled: props.disabled
       }
@@ -100,8 +138,8 @@ export const buildSelectOptions = ({
     return childOptions
   }
 
-  return parseOptionsText(optionsText).map((text) => ({
+  return parseOptionsText(optionsText).map((text, index) => ({
     label: optionLabel(text, componentBefore, iconBefore),
-    value: text
+    value: `${text}-${index + 1}`
   }))
 }
