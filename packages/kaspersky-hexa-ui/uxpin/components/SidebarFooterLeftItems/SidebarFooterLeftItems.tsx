@@ -13,7 +13,7 @@ import {
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import Button from '../Button/Button'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 
 export type UXPinSidebarFooterLeftItemsProps = {
   children?: React.ReactNode,

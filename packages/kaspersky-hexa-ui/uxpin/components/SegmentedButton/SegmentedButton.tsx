@@ -8,7 +8,7 @@ import {
   getUXPinChildrenArray,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 import SegmentedButtonItem, {
   isUXPinSegmentedButtonItemElement,
   resolveSegmentedButtonItemIcon,

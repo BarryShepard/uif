@@ -9,7 +9,7 @@ import {
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 
 export type UXPinUploaderFileStatus = 'uploaded' | 'uploading' | 'error'
 

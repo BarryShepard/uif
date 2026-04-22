@@ -9,6 +9,7 @@ Use this as the first message in a new Codex chat when you want orchestration-fi
 - Репозиторий: UIF, package-oriented monorepo.
 - Главный файл инструкций: AGENTS.md.
 - Карточки ролей субагентов лежат в .agents/roles/.
+- Короткий UXPin-шаблон задачи лежит в `.agents/uxpin-task-brief.md`.
 
 Режим работы:
 1. Сначала быстро определи затронутую зону репозитория и минимальный набор проверок.
@@ -23,6 +24,7 @@ Use this as the first message in a new Codex chat when you want orchestration-fi
 - В конце: дай итог, список проверок и коротко перечисли допущения/риски.
 
 Роли:
+- uxpin-prototype-agent -> UXPin interactive prototypes, navigation/state/action patterns, nested editable layers
 - hexa-ui-agent -> компоненты, стили, Storybook, UXPin, charts
 - tokens-agent -> design tokens, themes, colors, typography
 - icons-agent -> pipeline иконок, SVG -> TSX, exports

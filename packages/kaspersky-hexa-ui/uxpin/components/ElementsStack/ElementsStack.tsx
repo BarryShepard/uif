@@ -6,7 +6,7 @@ import {
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 import Icon from '../Icon/Icon'
 import Status from '../Status/Status'
 import Tag from '../Tag/Tag'
@@ -48,7 +48,7 @@ const ElementsStack = (rawProps: UXPinElementsStackProps): JSX.Element => {
     gap = 4,
     overriddenCodeProps: _overriddenCodeProps
   } = resolveUXPinRuntimeProps(rawProps)
-  const visibleChildren = React.Children.toArray(children).filter((child) => !isUXPinHiddenElement(child))
+  const visibleChildren = getVisibleUXPinChildrenArray(children)
 
   return (
     <div ref={rootRef}>

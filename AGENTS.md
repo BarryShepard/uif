@@ -24,6 +24,8 @@ This repository is a Lerna/Yarn monorepo for UIF. Treat it as a package-oriented
 
 ## Routing Heuristics
 
+- UXPin interactive prototyping, authoring models, nested editable layers, and prototype scenario rollout:
+  see `.agents/roles/uxpin-prototype-agent.md`
 - Component behavior, styles, Storybook stories, UXPin sync, visual regressions:
   see `.agents/roles/hexa-ui-agent.md`
 - Tokens, themes, colors, typography:
@@ -118,6 +120,7 @@ Checks: npm run test
 
 - Start a dedicated orchestrator chat from `.agents/orchestrator-chat.md`
 - Use the compact task template from `.agents/task-brief.md`
+- Use the UXPin-focused task template from `.agents/uxpin-task-brief.md`
 - Pick role cards from `.agents/roles/`
 - Repo-local skill sources: `codex-skills/`
 - Skill install helper: `codex-tools/install-uif-skills.sh`

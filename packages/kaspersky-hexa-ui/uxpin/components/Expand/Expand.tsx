@@ -12,7 +12,7 @@ import {
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import ActionButton, { UXPinActionButtonProps } from '../ActionButton/ActionButton'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 import Typography from '../Typography/Typography'
 
 export type UXPinExpandProps = {
@@ -124,8 +124,7 @@ const Expand = (rawProps: UXPinExpandProps): JSX.Element => {
   const contentRef = React.useRef<HTMLDivElement | null>(null)
   const [collapsed, setCollapsed] = React.useState(true)
   const [hasOverflow, setHasOverflow] = React.useState(true)
-  const resolvedChildren = getExpandChildren(explicitChildren ?? children)
-    .filter((child) => !isUXPinHiddenElement(child))
+  const resolvedChildren = getVisibleUXPinChildrenArray(getExpandChildren(explicitChildren ?? children))
   const actionButton = resolvedChildren.find(isActionButtonElement)
   const actionButtonProps = actionButton
     ? resolveUXPinRuntimeProps<UXPinActionButtonProps>(

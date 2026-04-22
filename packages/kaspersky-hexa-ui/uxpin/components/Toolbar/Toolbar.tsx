@@ -4,6 +4,8 @@ import { Toolbar as HexaToolbar } from '@src/toolbar'
 import { ToolbarProps as OriginToolbarProps, ToolbarItems } from '@src/toolbar/types'
 
 import { mergeFrameStyle } from '../../preview'
+import { getUXPinChildrenArray } from '../../uxpinRuntime'
+import { getVisibleUXPinChildrenArray, isUXPinHiddenElement } from '../../visibility'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import ToolbarLeftItems, {
@@ -17,7 +19,7 @@ import ToolbarSearch, {
   isUXPinToolbarSearchElement,
   resolveToolbarSearchChildProps
 } from '../ToolbarSearch/ToolbarSearch'
-import { isUXPinHiddenElement, toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
+import { toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinToolbarProps = {
   /** Shows the left section with action items. */
@@ -99,12 +101,13 @@ const Toolbar = ({
   }
   const rootRef = useAutoHeightMergeFrame()
   const resolvedChildren = children ?? DEFAULT_TOOLBAR_CHILDREN
-  const allDirectChildren = React.Children.toArray(resolvedChildren).filter(React.isValidElement)
-  const directChildren = allDirectChildren.filter((child): child is React.ReactElement => (
-    !isUXPinHiddenElement(child)
+  const directChildren = getVisibleUXPinChildrenArray(resolvedChildren).filter((child): child is React.ReactElement => (
+    React.isValidElement(child)
   ))
-  const hasHiddenSearchElement = allDirectChildren.some((child) => (
-    isUXPinToolbarSearchElement(child) && isUXPinHiddenElement(child)
+  const hasHiddenSearchElement = getUXPinChildrenArray(resolvedChildren).some((child) => (
+    React.isValidElement(child) &&
+    isUXPinToolbarSearchElement(child) &&
+    isUXPinHiddenElement(child)
   ))
   const leftSectionElement = (
     directChildren.find(isUXPinToolbarLeftItemsElement) ??

@@ -2,11 +2,14 @@ import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
+import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
 
 export type UXPinPageWrapperProps = {
   /** Page content. Place PageHeader, Toolbar, SectionWrapper, Table, or other page blocks here. */
   children?: React.ReactNode,
-  style?: CSSProperties
+  style?: CSSProperties,
+  codeComponentProps?: Partial<UXPinPageWrapperProps>,
+  overriddenCodeProps?: Partial<UXPinPageWrapperProps>
 }
 
 const pageWrapperStyle: CSSProperties = {
@@ -55,20 +58,26 @@ const EmptyPageWrapperHint = (): JSX.Element => (
   </div>
 )
 
-const PageWrapper = ({
-  children,
-  style
-}: UXPinPageWrapperProps): JSX.Element => (
-  <PageWrapperRoot
-    style={mergeFrameStyle({
-      ...pageWrapperStyle,
-      ...style
-    })}
-    data-hexa-uxpin-page-wrapper="true"
-  >
-    {children ?? <EmptyPageWrapperHint />}
-  </PageWrapperRoot>
-)
+const PageWrapper = (rawProps: UXPinPageWrapperProps): JSX.Element => {
+  const {
+    children,
+    codeComponentProps: _codeComponentProps,
+    overriddenCodeProps: _overriddenCodeProps,
+    style
+  } = resolveUXPinRuntimeProps(rawProps)
+
+  return (
+    <PageWrapperRoot
+      style={mergeFrameStyle({
+        ...pageWrapperStyle,
+        ...style
+      })}
+      data-hexa-uxpin-page-wrapper="true"
+    >
+      {children ?? <EmptyPageWrapperHint />}
+    </PageWrapperRoot>
+  )
+}
 
 PageWrapper.displayName = 'PageWrapper'
 

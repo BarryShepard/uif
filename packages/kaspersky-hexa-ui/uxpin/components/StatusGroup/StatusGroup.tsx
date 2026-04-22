@@ -2,12 +2,11 @@ import React from 'react'
 import styled from 'styled-components'
 
 import {
-  getUXPinChildrenArray,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import Status from '../Status/Status'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 
 export type UXPinStatusGroupProps = {
   /** Group orientation. */
@@ -43,7 +42,7 @@ const StatusGroup = (rawProps: UXPinStatusGroupProps): JSX.Element => {
     orientation = 'vertical',
     overriddenCodeProps: _overriddenCodeProps
   } = resolveUXPinRuntimeProps(rawProps)
-  const visibleChildren = getUXPinChildrenArray(children).filter((child) => !isUXPinHiddenElement(child))
+  const visibleChildren = getVisibleUXPinChildrenArray(children)
 
   return (
     <div ref={rootRef} style={{ height: 'fit-content', width: '100%' }}>

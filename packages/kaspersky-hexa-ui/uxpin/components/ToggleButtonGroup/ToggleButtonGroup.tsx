@@ -10,7 +10,7 @@ import {
   resolveUXPinMergedChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 import ToggleButton, {
   isUXPinToggleButtonElement,
   resolveToggleButtonIcon,

@@ -19,7 +19,7 @@ import {
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 import SidebarFooter, {
   UXPinSidebarFooterProps,
   UXPinSidebarFooterRuntimeProps

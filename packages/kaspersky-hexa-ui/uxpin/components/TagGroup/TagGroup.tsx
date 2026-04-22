@@ -11,7 +11,7 @@ import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import ActionButton from '../ActionButton/ActionButton'
 import Link from '../Link/Link'
 import Tag from '../Tag/Tag'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 
 export type UXPinTagGroupProps = {
   /** Tags layout direction. */
@@ -63,8 +63,7 @@ const TagGroup = (rawProps: UXPinTagGroupProps): JSX.Element => {
     overriddenCodeProps: _overriddenCodeProps
   } = resolveUXPinRuntimeProps(rawProps)
   const resolvedChildren = resolveUXPinMergedChildrenFromProps(rawProps, DEFAULT_TAG_GROUP_CHILDREN)
-  const visibleChildren = getTagGroupChildren(resolvedChildren)
-    .filter((child) => child && !isUXPinHiddenElement(child))
+  const visibleChildren = getVisibleUXPinChildrenArray(getTagGroupChildren(resolvedChildren))
 
   return (
     <div ref={rootRef} style={{ display: 'inline-flex', flex: '0 0 auto', height: 'fit-content', width: 'fit-content' }}>

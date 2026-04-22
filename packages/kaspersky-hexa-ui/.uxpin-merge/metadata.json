@@ -57780,6 +57780,24 @@
                 "name": "shape",
                 "structure": {}
               }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
             }
           ],
           "wrappers": [],
@@ -104700,7 +104718,7 @@
   "name": "Kaspersky Hexa UI",
   "vcs": {
     "branchName": "master",
-    "commitHash": "e2a67558fb6549aa2640219783098464d3178ad6",
+    "commitHash": "8cfad49adc842939aa6119929529f1d1db050744",
     "paths": {
       "configPath": "/Users/dmitry/uif/packages/kaspersky-hexa-ui/uxpin.config.js",
       "projectRoot": "/Users/dmitry/uif/packages/kaspersky-hexa-ui"

@@ -6,13 +6,12 @@ import { FormLabelProps } from '@src/form-label/types'
 import { TagProps } from '@src/tag/types'
 
 import {
-  getUXPinChildrenArray,
   getUXPinPropSources,
   hasUXPinChildrenProp,
   resolveUXPinChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 import Tag from '../Tag/Tag'
 
 export type UXPinFieldLabelProps = Omit<FormLabelProps, 'children' | 'tooltip' | 'tagsAfter'> & {
@@ -115,8 +114,7 @@ const FieldLabel: FieldLabelComponent = (rawProps: UXPinFieldLabelProps): JSX.El
   } = runtimeProps
   const explicitChildren = resolveUXPinChildrenFromProps(rawProps)
   const tagChildrenSource = hasUXPinChildrenProp(rawProps) ? explicitChildren : children ?? DEFAULT_FIELD_LABEL_TAGS
-  const tagChildren = getUXPinChildrenArray(tagChildrenSource)
-    .filter((child) => !isUXPinHiddenElement(child))
+  const tagChildren = getVisibleUXPinChildrenArray(tagChildrenSource)
     .map((child) => applyTagState(child, disabled, readonly))
 
   return (

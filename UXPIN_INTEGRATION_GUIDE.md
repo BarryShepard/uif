@@ -16,7 +16,7 @@
 - `packages/kaspersky-hexa-ui/uxpin/components/*` - UXPin-обертки над компонентами Hexa UI.
 - `packages/kaspersky-hexa-ui/uxpin/components/*/uxpin-presets/*.jsx` - стартовые JSX presets для drag-and-drop в UXPin.
 - `packages/kaspersky-hexa-ui/uxpin/preview.tsx` - preview-данные и общие helpers для UXPin-компонентов.
-- `packages/kaspersky-hexa-ui/uxpin/scripts/generate-components.mjs` - генератор простых UXPin wrappers из public exports пакета.
+- `packages/kaspersky-hexa-ui/uxpin/scripts/generate-components.mjs` - генератор простых UXPin wrappers и missing JSX presets из public exports пакета.
 
 В `package.json` пакета есть команды:
 
@@ -201,7 +201,7 @@ Table
 
 ## 6. Как добавить компонент в UXPin
 
-Если компонент простой и его public API уже экспортируется из `src/index.ts`, можно сгенерировать базовую обертку:
+Если компонент простой и его public API уже экспортируется из `src/index.ts`, можно сгенерировать базовую обертку и стартовый preset:
 
 ```bash
 cd /Users/dmitry/uif/packages/kaspersky-hexa-ui
@@ -212,6 +212,25 @@ npm run uxpin:sync-components
 
 ```text
 uxpin/components/<Component>/<Component>.tsx
+uxpin/components/<Component>/uxpin-presets/<Component>.jsx
+```
+
+Полезные режимы:
+
+```bash
+# посмотреть, что будет создано, не меняя файлы
+npm run uxpin:sync-components -- --dry-run
+
+# синхронизировать только один или несколько компонентов
+npm run uxpin:sync-components -- --component Tag
+npm run uxpin:sync-components -- --component Tag,ToggleButtonGroup
+
+# дособрать только missing presets
+npm run uxpin:sync-components -- --presets-only
+
+# пересоздать presets или wrappers принудительно
+npm run uxpin:sync-components -- --component Text --force-presets
+npm run uxpin:sync-components -- --component Text --force-wrappers
 ```
 
 Если компонент уже имеет ручную UXPin-обертку, не перезатирайте ее без необходимости. Для сложных компонентов ручная обертка предпочтительнее, потому что она может:
@@ -232,7 +251,7 @@ uxpin/components/<Component>/<Component>.tsx
 
 ## 7. JSX presets
 
-Presets задают стартовое состояние компонента при drag-and-drop в UXPin.
+Presets задают стартовое состояние компонента при drag-and-drop в UXPin. Для простых компонентов их теперь можно получать автоматически через `npm run uxpin:sync-components`, а потом при необходимости вручную улучшать для более богатого стартового состояния.
 
 Путь:
 
@@ -363,4 +382,3 @@ PageWrapper
 - UXPin Merge integration guide: https://www.uxpin.com/docs/merge/integrating-your-own-components/
 - UXPin Merge CLI: https://www.uxpin.com/docs/merge/cli-tool/
 - JSX presets: https://www.uxpin.com/docs/merge/authoring-and-managing-jsx-presets/
-

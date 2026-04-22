@@ -22,7 +22,7 @@ import {
   isUXPinSidebarFooterRightItemsElement,
   resolveSidebarFooterRightItemsChildren
 } from '../SidebarFooterRightItems/SidebarFooterRightItems'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 
 export type UXPinSidebarFooterProps = {
   /** Shows the right footer zone even when the right slot is empty. */
@@ -137,9 +137,8 @@ const combineFooterItems = (
 const resolveDirectFooterChildren = (
   children: React.ReactNode
 ): React.ReactNode | undefined => {
-  const directChildren = getUXPinChildrenArray(children).filter((child) => (
+  const directChildren = getVisibleUXPinChildrenArray(children).filter((child) => (
     child &&
-    !isUXPinHiddenElement(child) &&
     !isUXPinSidebarFooterLeftItemsElement(child) &&
     !isUXPinSidebarFooterRightItemsElement(child)
   ))

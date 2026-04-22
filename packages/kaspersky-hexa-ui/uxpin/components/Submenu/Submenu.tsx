@@ -6,7 +6,6 @@ import { RowProps, SubmenuItemProps as HexaSubmenuItemProps } from '@src/submenu
 
 import { mergeFrameStyle } from '../../preview'
 import {
-  getUXPinChildrenArray,
   getUXPinPropSources,
   resolveUXPinChildrenFromProps,
   resolveUXPinRuntimeProps
@@ -17,7 +16,7 @@ import {
   isUXPinSubmenuItemElement,
   submenuChildrenToItems
 } from '../SubmenuItem/SubmenuItem'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 
 export type UXPinSubmenuProps = {
   /** Initial active item key. If a child SubmenuItem is selected, it wins over this value. */
@@ -190,9 +189,8 @@ const applySubmenuItemSettings = (
 const getDirectContentChildren = (
   children: React.ReactNode
 ): React.ReactNode[] => (
-  getUXPinChildrenArray(children).filter((child) => (
+  getVisibleUXPinChildrenArray(children).filter((child) => (
     child &&
-    !isUXPinHiddenElement(child) &&
     !isUXPinSubmenuItemElement(child)
   ))
 )

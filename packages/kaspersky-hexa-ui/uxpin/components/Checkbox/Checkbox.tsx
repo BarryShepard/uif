@@ -10,7 +10,7 @@ import {
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 
 export type UXPinCheckboxProps = CheckboxProps & {
   /** UXPin preset element id. */

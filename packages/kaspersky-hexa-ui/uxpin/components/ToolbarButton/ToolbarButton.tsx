@@ -8,12 +8,14 @@ import { ArrowDown1, Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import { FrameFill } from '../../preview'
 import {
-  getUXPinElementProps,
-  getUXPinElementPropSources
+  getUXPinElementPropSources,
+  isUXPinHiddenElement
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import { dropdownNodeToOverlay } from '../Dropdown/Dropdown'
+
+export { isUXPinHiddenElement }
 
 export type UXPinToolbarButtonVariant = 'default' | 'dropdown' | 'toggle'
 
@@ -44,27 +46,6 @@ export type UXPinToolbarButtonProps = {
 type ToolbarButtonComponent = React.FC<UXPinToolbarButtonProps> & {
   uxpinRole?: string,
   defaultProps?: Partial<UXPinToolbarButtonProps>
-}
-
-type UXPinElementVisibilityProps = {
-  hidden?: boolean,
-  isHidden?: boolean,
-  isVisible?: boolean,
-  stateIa?: string,
-  uxpinHidden?: boolean,
-  visible?: boolean,
-  style?: React.CSSProperties,
-  codeComponentProps?: UXPinElementVisibilityProps,
-  overriddenCodeProps?: {
-    codeComponentProps?: UXPinElementVisibilityProps,
-    hidden?: boolean,
-    isHidden?: boolean,
-    isVisible?: boolean,
-    stateIa?: string,
-    visible?: boolean,
-    style?: React.CSSProperties,
-    uxpinHidden?: boolean
-  }
 }
 
 const resolveToolbarButtonRuntimeProps = (
@@ -138,39 +119,6 @@ const hasToolbarButtonShape = (props: Record<string, unknown> = {}): boolean => 
   const overriddenCodeProps = props.overriddenCodeProps as Record<string, unknown> | undefined
 
   return hasToolbarButtonOwnShape(props) || hasToolbarButtonOwnShape(overriddenCodeProps || {})
-}
-
-export const isUXPinHiddenElement = (node: React.ReactNode): boolean => {
-  const props = getUXPinElementProps(node) as UXPinElementVisibilityProps | undefined
-
-  if (!props) {
-    return false
-  }
-
-  const { codeComponentProps, overriddenCodeProps, style } = props
-  const resolvedStyle = {
-    ...style,
-    ...codeComponentProps?.style,
-    ...overriddenCodeProps?.codeComponentProps?.style,
-    ...overriddenCodeProps?.style
-  }
-  const visibilitySources = getUXPinElementPropSources(node) as UXPinElementVisibilityProps[]
-
-  const hasHiddenState = visibilitySources.some((props) => (
-    props.hidden === true ||
-    props.isHidden === true ||
-    props.uxpinHidden === true ||
-    props.visible === false ||
-    props.isVisible === false ||
-    props.stateIa === 'hidden' ||
-    props.stateIa === 'invisible'
-  ))
-
-  return (
-    hasHiddenState ||
-    resolvedStyle.display === 'none' ||
-    resolvedStyle.visibility === 'hidden'
-  )
 }
 
 const resolveToolbarButtonIcon = (

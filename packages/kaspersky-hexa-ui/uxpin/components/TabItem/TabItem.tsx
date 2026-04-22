@@ -11,7 +11,7 @@ import {
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 
 export type UXPinTabItemProps = {
   /** Marks this tab as initially active in parent Tabs. */

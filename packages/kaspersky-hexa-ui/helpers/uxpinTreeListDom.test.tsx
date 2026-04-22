@@ -1,10 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import React from 'react'
 
-jest.mock('../uxpin/components/ToolbarButton/ToolbarButton', () => ({
-  isUXPinHiddenElement: () => false
-}))
-
 import TreeList from '../uxpin/components/TreeList/TreeList'
 
 describe('UXPin TreeList DOM preview', () => {

@@ -15,6 +15,27 @@ type UXPinPropsContainer = {
 
 export type UXPinRuntimeElementProps = UXPinPropsContainer & Record<string, unknown>
 
+type UXPinElementVisibilityProps = {
+  hidden?: boolean,
+  isHidden?: boolean,
+  isVisible?: boolean,
+  stateIa?: string,
+  uxpinHidden?: boolean,
+  visible?: boolean,
+  style?: React.CSSProperties,
+  codeComponentProps?: UXPinElementVisibilityProps,
+  overriddenCodeProps?: {
+    codeComponentProps?: UXPinElementVisibilityProps,
+    hidden?: boolean,
+    isHidden?: boolean,
+    isVisible?: boolean,
+    stateIa?: string,
+    style?: React.CSSProperties,
+    uxpinHidden?: boolean,
+    visible?: boolean
+  }
+}
+
 const hasOwnProp = (
   source: Record<string, unknown> | undefined,
   key: string
@@ -92,6 +113,39 @@ export const getUXPinElementPropSources = (
   return props ? getUXPinPropSources(props) : []
 }
 
+export const isUXPinHiddenElement = (node: React.ReactNode): boolean => {
+  const props = getUXPinElementProps(node) as UXPinElementVisibilityProps | undefined
+
+  if (!props) {
+    return false
+  }
+
+  const { codeComponentProps, overriddenCodeProps, style } = props
+  const resolvedStyle = {
+    ...style,
+    ...codeComponentProps?.style,
+    ...overriddenCodeProps?.codeComponentProps?.style,
+    ...overriddenCodeProps?.style
+  }
+  const visibilitySources = getUXPinElementPropSources(node) as UXPinElementVisibilityProps[]
+
+  const hasHiddenState = visibilitySources.some((visibilityProps) => (
+    visibilityProps.hidden === true ||
+    visibilityProps.isHidden === true ||
+    visibilityProps.uxpinHidden === true ||
+    visibilityProps.visible === false ||
+    visibilityProps.isVisible === false ||
+    visibilityProps.stateIa === 'hidden' ||
+    visibilityProps.stateIa === 'invisible'
+  ))
+
+  return (
+    hasHiddenState ||
+    resolvedStyle.display === 'none' ||
+    resolvedStyle.visibility === 'hidden'
+  )
+}
+
 export const getUXPinChildrenArray = (
   children: React.ReactNode
 ): React.ReactNode[] => {
@@ -118,6 +172,10 @@ export const getUXPinChildrenArray = (
 
   return []
 }
+
+export const getVisibleUXPinChildrenArray = (
+  children: React.ReactNode
+): React.ReactNode[] => getUXPinChildrenArray(children).filter((child) => !isUXPinHiddenElement(child))
 
 export const countUXPinChildren = (
   children: React.ReactNode

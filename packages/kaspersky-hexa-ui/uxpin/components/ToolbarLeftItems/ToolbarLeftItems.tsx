@@ -3,9 +3,10 @@ import React from 'react'
 import { Toolbar as HexaToolbar } from '@src/toolbar'
 
 import { FrameFill } from '../../preview'
+import { isUXPinHiddenElement } from '../../visibility'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
-import ToolbarButton, { isUXPinHiddenElement, toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
+import ToolbarButton, { toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinToolbarLeftItemsProps = {
   children?: React.ReactNode,

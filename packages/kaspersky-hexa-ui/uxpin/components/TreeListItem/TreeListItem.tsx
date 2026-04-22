@@ -12,7 +12,7 @@ import {
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 
 export type UXPinTreeListItemVariant = 'readonly' | 'multiplechoice' | 'singlechoice'
 export type TreeListItemIconName = Exclude<keyof typeof Icons16Pack, 'default'>
@@ -55,10 +55,12 @@ const TREE_LIST_ITEM_ROLE = 'hexa-uxpin-tree-list-item'
 const TREE_LIST_ITEM_PRESET_PARENT_KEYS = new Set(['tree-list-item', 'workspace', 'policies'])
 
 const hasTreeListItemShape = (props: Record<string, unknown> = {}): boolean => (
+  'value' in props ||
+  'text' in props ||
+  'disabled' in props ||
   'elementBeforeSlot' in props ||
   'selected' in props ||
   (
-    'text' in props &&
     'elementBefore' in props &&
     'variant' in props
   )
@@ -289,10 +291,40 @@ const getTreeListItemChildren = (
   })
 )
 
+const hasExplicitTreeListItemElementBefore = (
+  node: React.ReactNode
+): boolean => (
+  getUXPinElementPropSources(node).some((props) => Object.prototype.hasOwnProperty.call(props, 'elementBefore'))
+)
+
+const resolveTreeListItemElementBefore = (
+  node: React.ReactNode,
+  props: UXPinTreeListItemProps,
+  options: {
+    elementBefore?: boolean,
+    elementBeforeExplicit?: boolean
+  }
+): boolean => {
+  if (options.elementBeforeExplicit && options.elementBefore === false) {
+    return false
+  }
+
+  if (hasExplicitTreeListItemElementBefore(node)) {
+    return Boolean(props.elementBefore)
+  }
+
+  if (options.elementBeforeExplicit) {
+    return Boolean(options.elementBefore)
+  }
+
+  return Boolean(props.elementBefore)
+}
+
 export const treeListChildrenToData = (
   children: React.ReactNode,
   options: {
     elementBefore?: boolean,
+    elementBeforeExplicit?: boolean,
     prefix?: string,
     variant?: UXPinTreeListItemVariant
   } = {}
@@ -308,11 +340,12 @@ export const treeListChildrenToData = (
     const key = resolveTreeListItemKey(child, options.prefix ?? 'tree-list-item', index, props)
     const nested = treeListChildrenToData(resolveTreeListItemChildren(child), {
       elementBefore: options.elementBefore,
+      elementBeforeExplicit: options.elementBeforeExplicit,
       prefix: key,
       variant: props.variant ?? options.variant
     })
     const hasChildren = nested.nodes.length > 0
-    const elementBefore = props.elementBefore || options.elementBefore
+    const elementBefore = resolveTreeListItemElementBefore(child, props, options)
 
     if (props.selected) {
       result.selectedKeys.push(key)

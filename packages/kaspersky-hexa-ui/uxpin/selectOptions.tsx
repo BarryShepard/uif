@@ -13,7 +13,7 @@ import {
   isUXPinDropdownItemElement,
   resolveDropdownItemNodeRuntimeProps
 } from './components/DropdownItem/DropdownItem'
-import { isUXPinHiddenElement } from './components/ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from './visibility'
 
 export type SelectOptionIconName = Exclude<keyof typeof Icons16Pack, 'default'>
 

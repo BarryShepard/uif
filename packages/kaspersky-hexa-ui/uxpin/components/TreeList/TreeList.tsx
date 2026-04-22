@@ -5,6 +5,7 @@ import { TreeList as HexaTreeList } from '@src/tree'
 import { TreeListProps } from '@src/tree/types'
 
 import {
+  getUXPinPropSources,
   resolveUXPinMergedChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
@@ -41,9 +42,10 @@ const DEFAULT_TREE_LIST_CHILDREN = (
   </>
 )
 
-const TreeListFrame = styled.div`
+const TreeListFrame = styled.div<{ $virtual?: boolean }>`
   width: 100%;
   height: fit-content;
+  overflow: visible;
 
   .ant-tree-switcher {
     display: inline-flex !important;
@@ -60,13 +62,31 @@ const TreeListFrame = styled.div`
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
+    color: var(--action_button--icon--ghost--enabled, #1d1d1b);
     opacity: 1;
     visibility: visible;
+  }
+
+  .ant-tree-switcher-icon svg {
+    display: block;
+    color: inherit;
+    fill: currentColor;
   }
 
   .ant-tree-switcher-noop .ant-tree-switcher-icon {
     display: none !important;
   }
+
+  ${({ $virtual }) => !$virtual && `
+    .ant-tree,
+    .ant-tree-list,
+    .ant-tree-list-holder,
+    .ant-tree-list-holder-inner {
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+  `}
 `
 
 const mapTreeListVariant = (
@@ -97,7 +117,22 @@ const mapItemVariant = (
   }
 }
 
+const normalizePreviewKeys = (
+  keys: unknown
+): string[] | undefined => (
+  Array.isArray(keys) && keys.length > 0
+    ? keys.map(String)
+    : undefined
+)
+
+const hasExplicitElementBeforeProp = (
+  rawProps: UXPinTreeListProps
+): boolean => (
+  getUXPinPropSources(rawProps).some((props) => Object.prototype.hasOwnProperty.call(props, 'elementBefore'))
+)
+
 const TreeList = (rawProps: UXPinTreeListProps): JSX.Element => {
+  const elementBeforeExplicit = hasExplicitElementBeforeProp(rawProps)
   const {
     children = DEFAULT_TREE_LIST_CHILDREN,
     checkedKeys,
@@ -107,10 +142,12 @@ const TreeList = (rawProps: UXPinTreeListProps): JSX.Element => {
     draggable = false,
     elementBefore = false,
     expandedKeys,
+    height,
     onCheck,
     onExpand,
     overriddenCodeProps: _overriddenCodeProps,
     selectedKeys,
+    virtual = false,
     variant = 'multiplechoice',
     ...props
   } = resolveUXPinRuntimeProps(rawProps)
@@ -118,16 +155,19 @@ const TreeList = (rawProps: UXPinTreeListProps): JSX.Element => {
   const resolvedChildren = resolveUXPinMergedChildrenFromProps(rawProps, DEFAULT_TREE_LIST_CHILDREN)
   const built = treeListChildrenToData(resolvedChildren, {
     elementBefore,
+    elementBeforeExplicit,
     variant: mapItemVariant(variant)
   })
+  const controlledExpandedKeys = normalizePreviewKeys(expandedKeys)
+  const controlledCheckedKeys = normalizePreviewKeys(checkedKeys)
   const inferredExpandedKeys = (
-    expandedKeys ??
-    defaultExpandedKeys?.map(String) ??
+    controlledExpandedKeys ??
+    normalizePreviewKeys(defaultExpandedKeys) ??
     built.expandedKeys
   )
   const inferredCheckedKeys = (
-    checkedKeys ??
-    defaultCheckedKeys?.map(String) ??
+    controlledCheckedKeys ??
+    normalizePreviewKeys(defaultCheckedKeys) ??
     built.selectedKeys
   )
   const [previewExpandedKeys, setPreviewExpandedKeys] = React.useState<string[]>(inferredExpandedKeys)
@@ -144,17 +184,18 @@ const TreeList = (rawProps: UXPinTreeListProps): JSX.Element => {
   }, [checkedKeysSignature])
 
   return (
-    <TreeListFrame ref={rootRef}>
+    <TreeListFrame $virtual={virtual} ref={rootRef}>
       <HexaTreeList
         {...props}
-        checkedKeys={checkedKeys ?? previewCheckedKeys}
+        checkedKeys={controlledCheckedKeys ?? previewCheckedKeys}
         draggable={draggable}
-        expandedKeys={expandedKeys ?? previewExpandedKeys}
+        expandedKeys={controlledExpandedKeys ?? previewExpandedKeys}
+        {...(virtual && height !== undefined ? { height } : {})}
         mode={mapTreeListVariant(variant)}
         onCheck={(nextCheckedKeys, event) => {
           const nextKeys = nextCheckedKeys.map(String)
 
-          if (checkedKeys === undefined) {
+          if (controlledCheckedKeys === undefined) {
             setPreviewCheckedKeys(nextKeys)
           }
 
@@ -163,7 +204,7 @@ const TreeList = (rawProps: UXPinTreeListProps): JSX.Element => {
         onExpand={(nextExpandedKeys, info) => {
           const nextKeys = nextExpandedKeys.map(String)
 
-          if (expandedKeys === undefined) {
+          if (controlledExpandedKeys === undefined) {
             setPreviewExpandedKeys(nextKeys)
           }
 
@@ -171,6 +212,7 @@ const TreeList = (rawProps: UXPinTreeListProps): JSX.Element => {
         }}
         selectedKeys={selectedKeys}
         treeData={built.nodes}
+        virtual={virtual}
       />
     </TreeListFrame>
   )

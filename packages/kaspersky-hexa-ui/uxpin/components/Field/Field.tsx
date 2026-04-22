@@ -42,12 +42,11 @@ import {
 } from '../../preview'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import {
-  getUXPinChildrenArray,
   getUXPinElementProps,
   hasUXPinChildrenProp,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray } from '../../visibility'
 
 type UXPinFieldVariant =
   | 'button'
@@ -441,7 +440,7 @@ const Field = (rawProps: UXPinFieldProps): JSX.Element => {
     width: widthMode === 'fixed' ? resolvedWidth : undefined,
     minWidth: widthMode === 'flex' ? 0 : undefined
   })
-  const visibleChildren = getUXPinChildrenArray(children).filter((child) => !isUXPinHiddenElement(child))
+  const visibleChildren = getVisibleUXPinChildrenArray(children)
   const labelElement = getFirstFieldLayer(visibleChildren, isUXPinFieldLabelElement)
   const looseBodyChildren = visibleChildren.filter((child) => (
     child !== labelElement

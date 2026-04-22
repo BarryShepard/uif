@@ -10,7 +10,7 @@ import {
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 import RadioItem, {
   isUXPinRadioItemElement,
   resolveRadioItemNodeRuntimeProps

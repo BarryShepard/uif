@@ -50,6 +50,7 @@ npm run release
 - Webpack-конфиг для Merge CLI: `uxpin.webpack.config.js`
 - общий враппер с `DesignSystemProvider`: `uxpin/UXPinWrapper.tsx`
 - стартовый набор компонентов для UXPin: `uxpin/components/*`
+- генератор wrappers и missing presets: `uxpin/scripts/generate-components.mjs`
 
 #### Запуск локального Merge-сервера
 1. Убедитесь, что зависимости установлены (`npm i`)
@@ -64,3 +65,17 @@ npm run uxpin:push
 ```
 
 Перед публикацией убедитесь, что вы авторизованы в UXPin CLI и настроили проект в UXPin Dashboard.
+
+#### Быстрая синхронизация wrappers и presets
+
+```bash
+npm run uxpin:sync-components
+```
+
+Полезные варианты:
+
+```bash
+npm run uxpin:sync-components -- --dry-run
+npm run uxpin:sync-components -- --component Tag
+npm run uxpin:sync-components -- --component Tag,Text --force-presets
+```

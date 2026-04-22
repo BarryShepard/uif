@@ -21,7 +21,7 @@ import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import Button from '../Button/Button'
 import Link from '../Link/Link'
 import Textbox from '../Textbox/Textbox'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { isUXPinHiddenElement } from '../../visibility'
 
 export type UXPinDropdownItemVariant =
   | 'buttons'

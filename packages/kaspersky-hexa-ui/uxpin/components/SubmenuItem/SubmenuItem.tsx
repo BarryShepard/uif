@@ -15,7 +15,7 @@ import {
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
-import { isUXPinHiddenElement } from '../ToolbarButton/ToolbarButton'
+import { getVisibleUXPinChildrenArray, isUXPinHiddenElement } from '../../visibility'
 
 export type UXPinSubmenuItemVariant = 'title' | 'divider' | 'item'
 
@@ -223,9 +223,8 @@ export const hasUXPinSubmenuItemChildren = (children: React.ReactNode): boolean 
 const getSubmenuItemContent = (
   children: React.ReactNode
 ): React.ReactNode | undefined => {
-  const content = getUXPinChildrenArray(children).filter((child) => (
+  const content = getVisibleUXPinChildrenArray(children).filter((child) => (
     child &&
-    !isUXPinHiddenElement(child) &&
     !isUXPinSubmenuItemElement(child) &&
     !hasUXPinSubmenuItemChildren(resolveUXPinElementChildren(child))
   ))
