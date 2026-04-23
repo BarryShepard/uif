@@ -3,6 +3,7 @@ import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
 import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+import { buildFlexHeightChildSelectors, wrapperChildrenCss } from '../wrapperFlexLayout'
 
 export type UXPinPageWrapperProps = {
   /** Page content. Place PageHeader, Toolbar, SectionWrapper, Table, or other page blocks here. */
@@ -27,14 +28,16 @@ const pageWrapperStyle: CSSProperties = {
   boxSizing: 'border-box'
 }
 
-const PageWrapperRoot = styled.div`
-  > * {
-    flex: 0 0 auto !important;
-  }
+const pageWrapperFlexHeightSelectors = buildFlexHeightChildSelectors(
+  "[data-hexa-uxpin-table-height-mode='fill']",
+  "[data-hexa-uxpin-section-wrapper][data-hexa-uxpin-flex-height='true']",
+  "[data-hexa-uxpin-group-wrapper][data-hexa-uxpin-flex-height='true']"
+)
 
-  > [data-hexa-uxpin-table-height-mode='fill'],
-  > [data-hexa-uxpin-section-wrapper][data-hexa-uxpin-flex-height='true'],
-  > [data-hexa-uxpin-group-wrapper][data-hexa-uxpin-flex-height='true'] {
+const PageWrapperRoot = styled.div`
+  ${wrapperChildrenCss}
+
+  ${pageWrapperFlexHeightSelectors} {
     flex: 1 1 auto !important;
     min-height: 0;
   }

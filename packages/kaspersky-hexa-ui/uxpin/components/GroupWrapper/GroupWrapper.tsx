@@ -3,6 +3,7 @@ import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
+import { buildFlexHeightChildSelectors, wrapperChildrenCss } from '../wrapperFlexLayout'
 
 export type UXPinGroupWrapperProps = {
   /** Group content. Place controls, form fields, cards, tables, or any other blocks here. */
@@ -59,13 +60,15 @@ const EmptyGroupWrapperHint = (): JSX.Element => (
   </div>
 )
 
+const groupWrapperFlexHeightSelectors = buildFlexHeightChildSelectors(
+  "[data-hexa-uxpin-table-height-mode='fill']"
+)
+
 const GroupWrapperRoot = styled.div<{ $flexHeight?: boolean }>`
-  > * {
-    flex: 0 0 auto !important;
-  }
+  ${wrapperChildrenCss}
 
   ${({ $flexHeight }) => $flexHeight && `
-    > [data-hexa-uxpin-table-height-mode='fill'] {
+    ${groupWrapperFlexHeightSelectors} {
       flex: 1 1 auto !important;
       min-height: 0;
     }

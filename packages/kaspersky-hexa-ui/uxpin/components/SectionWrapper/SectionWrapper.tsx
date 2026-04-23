@@ -3,6 +3,7 @@ import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
+import { buildFlexHeightChildSelectors, wrapperChildrenCss } from '../wrapperFlexLayout'
 
 export type UXPinSectionWrapperProps = {
   /** Section content. Place GroupWrapper, Toolbar, Table, forms, or cards here. */
@@ -36,14 +37,16 @@ const getSectionHeightStyle = (flexHeight: boolean): CSSProperties => (
     }
 )
 
+const sectionWrapperFlexHeightSelectors = buildFlexHeightChildSelectors(
+  "[data-hexa-uxpin-table-height-mode='fill']",
+  "[data-hexa-uxpin-group-wrapper][data-hexa-uxpin-flex-height='true']"
+)
+
 const SectionWrapperRoot = styled.div<{ $flexHeight?: boolean }>`
-  > * {
-    flex: 0 0 auto !important;
-  }
+  ${wrapperChildrenCss}
 
   ${({ $flexHeight }) => $flexHeight && `
-    > [data-hexa-uxpin-table-height-mode='fill'],
-    > [data-hexa-uxpin-group-wrapper][data-hexa-uxpin-flex-height='true'] {
+    ${sectionWrapperFlexHeightSelectors} {
       flex: 1 1 auto !important;
       min-height: 0;
     }
