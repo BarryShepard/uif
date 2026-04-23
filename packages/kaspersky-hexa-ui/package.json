@@ -57,7 +57,7 @@
     "audit:contracts": "node scripts/audit-component-contracts.mjs",
     "audit:contracts:strict": "node scripts/audit-component-contracts.mjs --strict",
     "uxpin:dev": "uxpin-merge --disable-tunneling",
-    "uxpin:push": "uxpin-merge push",
+    "uxpin:push": "node uxpin/scripts/push-current-branch.mjs",
     "uxpin:sync-components": "node uxpin/scripts/generate-components.mjs"
   },
   "sideEffects": [

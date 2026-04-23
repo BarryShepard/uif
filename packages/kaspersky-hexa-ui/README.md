@@ -64,6 +64,12 @@ npm run uxpin:dev
 npm run uxpin:push
 ```
 
+Команда автоматически использует текущую git-ветку. При необходимости ветку можно переопределить вручную:
+
+```bash
+npm run uxpin:push -- --branch my-feature-branch
+```
+
 Перед публикацией убедитесь, что вы авторизованы в UXPin CLI и настроили проект в UXPin Dashboard.
 
 #### Быстрая синхронизация wrappers и presets
