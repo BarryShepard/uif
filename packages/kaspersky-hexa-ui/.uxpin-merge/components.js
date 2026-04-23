@@ -94,6 +94,7 @@ import ToggleButton from '../uxpin/components/ToggleButton/ToggleButton';
 import ToggleButtonGroup from '../uxpin/components/ToggleButtonGroup/ToggleButtonGroup';
 import Toolbar from '../uxpin/components/Toolbar/Toolbar';
 import ToolbarButton from '../uxpin/components/ToolbarButton/ToolbarButton';
+import ToolbarDivider from '../uxpin/components/ToolbarDivider/ToolbarDivider';
 import ToolbarLeftItems from '../uxpin/components/ToolbarLeftItems/ToolbarLeftItems';
 import ToolbarRightItems from '../uxpin/components/ToolbarRightItems/ToolbarRightItems';
 import ToolbarSearch from '../uxpin/components/ToolbarSearch/ToolbarSearch';
@@ -211,6 +212,7 @@ export {
   ToggleButtonGroup,
   Toolbar,
   ToolbarButton,
+  ToolbarDivider,
   ToolbarLeftItems,
   ToolbarRightItems,
   ToolbarSearch,

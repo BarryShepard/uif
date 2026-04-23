@@ -19,6 +19,21 @@ export default (
     tagsAfter={false}
     placeholderText="Value"
     labelPositionRange={4}
+    validationMode="manual"
+    validationRule="required"
+    validationPattern=""
+    validationState="default"
+    validationTrigger="always"
+    validationVisible={false}
+    showSuccessState={false}
+    successMessage=""
+    trimValidationValue={true}
+    minLength={0}
+    maxLength={64}
+    minValue={0}
+    maxValue={100}
+    minSelected={1}
+    maxSelected={5}
     widthMode="flex"
     widthValue={320}
   >

@@ -9,6 +9,7 @@ export default (
     disabled={false}
     selected={false}
     elementBefore={false}
+    elementBeforeSlot="Placeholder"
     text="Dropdown item"
     description={false}
     descriptionText="Additional item description"

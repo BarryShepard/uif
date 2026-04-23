@@ -1,6 +1,7 @@
 import { ThemeKey } from '@design-system/types'
 import { TestingProps } from '@helpers/typesHelpers'
 import { ButtonProps } from '@src/button/types'
+import { DividerProps } from '@src/divider/types'
 import { DropdownItemProps, DropdownProps } from '@src/dropdown/types'
 import { IconProps } from '@src/icon/types'
 import { LinkProps } from '@src/link/types'
@@ -61,7 +62,7 @@ type ToolbarLinkProps = ForwardRefExoticComponent<LinkProps & {
   href?: string
 }
 
-type ToolbarDividerProps = {
+type ToolbarDividerItemProps = {
   type: (typeof ToolbarItemKeyConst)['DIVIDER']
 }
 
@@ -80,11 +81,12 @@ export type ToolbarItems<T extends ToolbarItemKey = ToolbarItemKey> = {
   | ToolbarDropdownProps
   | ToolbarIconProps
   | ToolbarLinkProps
-  | ToolbarDividerProps
+  | ToolbarDividerItemProps
   | ToolbarChildrenProps
 )
 
 export type ToolbarVariantButtonProps = Omit<ButtonProps, keyof ToolbarButtonCommonProps> & ToolbarButtonCommonProps
+export type ToolbarDividerProps = Omit<DividerProps, 'direction' | 'mode'>
 
 interface ImportExportButtonProps extends ToolbarVariantButtonProps {
   /** Switch ImportExportButton, true - dropdown, false - button */
@@ -116,7 +118,7 @@ export type ToolbarVariants = {
   SettingsItem: FC<ToolbarVariantButtonProps>,
   FilterSidebar: FC<ToolbarVariantButtonProps>,
   ScaleItem: FC<ToolbarVariantButtonProps>,
-  Divider: FC
+  Divider: FC<ToolbarDividerProps>
 }
 
 export type ToolbarProps = {

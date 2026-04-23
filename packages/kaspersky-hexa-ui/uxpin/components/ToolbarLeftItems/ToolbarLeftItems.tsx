@@ -6,6 +6,8 @@ import { FrameFill } from '../../preview'
 import { isUXPinHiddenElement } from '../../visibility'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
+import Dropdown from '../Dropdown/Dropdown'
+import DropdownItem from '../DropdownItem/DropdownItem'
 import ToolbarButton, { toolbarChildrenToItems } from '../ToolbarButton/ToolbarButton'
 
 export type UXPinToolbarLeftItemsProps = {
@@ -32,7 +34,13 @@ export const DEFAULT_TOOLBAR_LEFT_ITEMS_CHILDREN = (
       variant="dropdown"
       iconBefore={true}
       iconAfter={true}
-    />
+    >
+      <Dropdown>
+        <DropdownItem text="Action 1" />
+        <DropdownItem text="Action 2" />
+        <DropdownItem text="Action 3" />
+      </Dropdown>
+    </ToolbarButton>
     <ToolbarButton
       text="Button 3"
     />

@@ -48,8 +48,8 @@ export type UXPinDropdownItemProps = {
   selected?: boolean,
   /** Shows leading content. */
   elementBefore?: boolean,
-  /** Slot for leading content. */
-  elementBeforeSlot?: DropdownItemIconName | React.ReactNode,
+  /** Icon name for the leading content slot. */
+  elementBeforeSlot?: DropdownItemIconName,
   /** Main item text. */
   text?: string,
   /** Shows secondary description. */
@@ -58,12 +58,12 @@ export type UXPinDropdownItemProps = {
   descriptionText?: string,
   /** Shows trailing content. */
   elementAfter?: boolean,
-  /** Slot for trailing content. */
-  elementAfterSlot?: DropdownItemIconName | React.ReactNode,
+  /** Icon name for the trailing content slot. */
+  elementAfterSlot?: DropdownItemIconName,
   /** Shows second trailing content slot. */
   elementAfter2?: boolean,
-  /** Second trailing content slot. */
-  elementAfterSlot2?: DropdownItemIconName | React.ReactNode,
+  /** Icon name for the second trailing content slot. */
+  elementAfterSlot2?: DropdownItemIconName,
   /** Nested DropdownItem nodes or action buttons. */
   children?: React.ReactNode,
   /** UXPin interaction hook for item click. */
@@ -96,6 +96,7 @@ const DROPDOWN_ITEM_DEFAULT_PROPS: Partial<UXPinDropdownItemProps> = {
   disabled: false,
   selected: false,
   elementBefore: false,
+  elementBeforeSlot: 'Placeholder',
   text: 'Dropdown item',
   description: false,
   descriptionText: 'Additional item description',
@@ -151,6 +152,7 @@ const isDropdownItemIdentity = (value?: string): boolean => {
     normalizedValue &&
     (
       normalizedValue.includes('dropdown-item') ||
+      normalizedValue.includes('dropdownitem') ||
       normalizedValue.includes('select-option') ||
       normalizedValue.includes('multi-select-option')
     )
@@ -223,27 +225,19 @@ export const resolveDropdownItemNodeRuntimeProps = (
   )
 )
 
-const resolveNamedIcon = (iconName?: DropdownItemIconName | React.ReactNode): React.ReactNode => {
+const resolveNamedIcon = (iconName?: DropdownItemIconName): React.ReactNode => {
   if (!iconName) {
     return null
   }
 
-  if (React.isValidElement(iconName)) {
-    return iconName
-  }
-
-  if (typeof iconName !== 'string') {
-    return iconName
-  }
-
-  const IconComponent = Icons16Pack[iconName as DropdownItemIconName]
+  const IconComponent = Icons16Pack[iconName]
 
   return IconComponent ? <IconComponent /> : null
 }
 
 const resolveSlot = (
   enabled: boolean | undefined,
-  slot: DropdownItemIconName | React.ReactNode
+  slot?: DropdownItemIconName
 ): React.ReactNode | undefined => (
   enabled ? resolveNamedIcon(slot) ?? <Placeholder /> : undefined
 )
@@ -290,6 +284,7 @@ export const isUXPinDropdownItemElement = (
       (node.type as { name?: string })?.name === 'DropdownItem'
     )
   ) ||
+  getUXPinElementPropSources(node).some((props) => props.name === 'DropdownItem') ||
   isDropdownItemIdentity(getDropdownItemIdentity(node)) ||
   getUXPinElementPropSources(node).some(hasDropdownItemOwnShape)
 )
@@ -428,7 +423,7 @@ export const dropdownChildrenToOverlay = (
   return result
 }
 
-const DropdownItem = (props: UXPinDropdownItemProps): JSX.Element => {
+const DropdownItem: DropdownItemComponent = (props: UXPinDropdownItemProps): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame()
   const runtimeProps = resolveDropdownItemRuntimeProps(props)
   const {
@@ -493,7 +488,7 @@ DropdownItem.uxpinRole = DROPDOWN_ITEM_ROLE
 DropdownItem.displayName = 'DropdownItem'
 DropdownItem.defaultProps = DROPDOWN_ITEM_DEFAULT_PROPS
 
-export default DropdownItem as DropdownItemComponent
+export default DropdownItem
 
 const DropdownItemActions = styled.div`
   display: inline-flex;

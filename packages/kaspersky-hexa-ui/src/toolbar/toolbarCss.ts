@@ -1,5 +1,6 @@
 import { Button } from '@src/button'
 import buttonStyles from '@src/button/Button.module.scss'
+import { Divider } from '@src/divider'
 import { Indicator } from '@src/indicator'
 import { Textbox } from '@src/input'
 import { Search } from '@src/search'
@@ -12,6 +13,15 @@ import { ToolbarBlockSide } from './types'
 export const ToolbarButton = styled(Button)``
 
 export const ToolbarSearch = styled(Search)``
+
+export const StyledToolbarDivider = styled(Divider)`
+  && {
+    height: 24px;
+    margin: 0 4px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+`
 
 export const ButtonIndicator = styled(Indicator)`
   position: absolute;
@@ -45,16 +55,6 @@ export const toolbarCss = css<StyledToolbarProps>`
   border-radius: 8px;
   width: 100%;
   min-width: ${props => props.$autoDropdown ? 0 : 'max-content'};
-
-  .toolbar-divider {
-    vertical-align: middle;
-    background: var(--divider--bg--bold);
-    border: 0;
-    display: inline-block;
-    height: 24px;
-    width: 1px;
-    margin: 0 4px;
-  }
 
   .kl-components-button-text {
     display: flex;

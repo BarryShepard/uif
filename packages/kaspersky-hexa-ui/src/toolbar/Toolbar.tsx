@@ -40,6 +40,7 @@ import {
   ToolbarMeasureLayer,
   ToolbarSearch
 } from './toolbarCss'
+import { ToolbarDivider } from './ToolbarDivider'
 import { ToolbarSearch as ToolbarCollapsibleSearch } from './ToolbarSearch'
 import {
   ToolbarButtonProps,
@@ -86,10 +87,6 @@ const ToolbarButton: FC<Omit<ToolbarButtonProps, 'type'> & ToolbarVariantButtonP
     </Tooltip>
   )
 }
-
-const Divider = () => (
-  <hr className="toolbar-divider" />
-)
 
 const ToolbarComponentMapping: {
   [key in ToolbarItemKey]: FC<ToolbarItems<key>>
@@ -141,7 +138,7 @@ const ToolbarComponentMapping: {
     )
   },
   [ToolbarItemKeyConst.DIVIDER]: () => {
-    return <Divider />
+    return <ToolbarDivider />
   },
   [ToolbarItemKeyConst.CHILDREN]: (props) => {
     const { children } = props
@@ -428,7 +425,7 @@ Toolbar.FilterSidebar = (props) => <ToolbarButton mode="tertiary" iconBefore={<F
 
 Toolbar.ScaleItem = (props) => <ToolbarButton mode="tertiary" iconBefore={<SizeMaximize />} {...props} />
 
-Toolbar.Divider = Divider
+Toolbar.Divider = (props) => <ToolbarDivider {...props} />
 
 Toolbar.displayName = 'Toolbar'
 Toolbar.Button.displayName = 'Toolbar.Button'

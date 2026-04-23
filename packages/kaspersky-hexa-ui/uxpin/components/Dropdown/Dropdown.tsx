@@ -8,7 +8,13 @@ import dropdownStyles from '@src/dropdown/styles/Dropdown.module.scss'
 import { DropdownItemProps as HexaDropdownItemProps } from '@src/dropdown/types'
 
 import { mergeFrameStyle } from '../../preview'
-import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+import {
+  getUXPinElementProps,
+  getUXPinElementPropSources,
+  hasUXPinChildrenProp,
+  resolveUXPinChildrenFromProps,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import DropdownItem, {
@@ -50,6 +56,18 @@ export type DropdownNodeOverlayResult = DropdownOverlayBuildResult & {
   variant?: UXPinDropdownVariant
 }
 
+const hasDropdownOwnShape = (props: Record<string, unknown> = {}): boolean => (
+  'maxHeight' in props ||
+  'stickyHeader' in props ||
+  'stickyFooter' in props ||
+  (
+    'variant' in props &&
+    'children' in props &&
+    !('text' in props) &&
+    !('description' in props)
+  )
+)
+
 const DEFAULT_DROPDOWN_CHILDREN = (
   <>
     <DropdownItem text="Option 1" selected />
@@ -66,15 +84,48 @@ const resolveDropdownRuntimeProps = (
   rawProps: UXPinDropdownProps = {}
 ): UXPinDropdownProps => resolveUXPinRuntimeProps(rawProps, Dropdown.defaultProps)
 
+const isDropdownIdentity = (value?: string): boolean => {
+  const normalizedValue = value?.toLowerCase()
+
+  return Boolean(
+    normalizedValue &&
+    normalizedValue.includes('dropdown') &&
+    !normalizedValue.includes('dropdown-item') &&
+    !normalizedValue.includes('dropdownitem')
+  )
+}
+
+const hasDropdownIdentity = (node: React.ReactNode): boolean => (
+  getUXPinElementPropSources(node).some((props) => (
+    props.name === 'Dropdown' ||
+    isDropdownIdentity(typeof props.uxpId === 'string' ? props.uxpId : undefined) ||
+    isDropdownIdentity(typeof props.id === 'string' ? props.id : undefined) ||
+    isDropdownIdentity(typeof props.presetElementId === 'string' ? props.presetElementId : undefined) ||
+    isDropdownIdentity(typeof props.uxpinPresetElementId === 'string' ? props.uxpinPresetElementId : undefined) ||
+    hasDropdownOwnShape(props)
+  ))
+)
+
+const resolveDropdownChildren = (
+  props: UXPinDropdownProps | undefined
+): React.ReactNode => (
+  hasUXPinChildrenProp(props)
+    ? resolveUXPinChildrenFromProps(props)
+    : DEFAULT_DROPDOWN_CHILDREN
+)
+
 export const isUXPinDropdownElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinDropdownProps> => (
-  React.isValidElement(node) &&
+): boolean => (
   (
-    (node.type as DropdownComponent)?.uxpinRole === DROPDOWN_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'Dropdown' ||
-    (node.type as { name?: string })?.name === 'Dropdown'
-  )
+    React.isValidElement(node) &&
+    (
+      (node.type as DropdownComponent)?.uxpinRole === DROPDOWN_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'Dropdown' ||
+      (node.type as { name?: string })?.name === 'Dropdown'
+    )
+  ) ||
+  hasDropdownIdentity(node)
 )
 
 const stringifyKey = (key: React.Key | null | undefined, fallback: string): string => (
@@ -154,15 +205,9 @@ const renderStickySlot = (
 
 const resolveDropdownOverlay = (
   children: React.ReactNode
-): DropdownOverlayBuildResult => {
-  const overlay = dropdownChildrenToOverlay(children, 'dropdown-item')
-
-  if (overlay.items.length) {
-    return overlay
-  }
-
-  return dropdownChildrenToOverlay(DEFAULT_DROPDOWN_CHILDREN, 'dropdown-item')
-}
+): DropdownOverlayBuildResult => (
+  dropdownChildrenToOverlay(children, 'dropdown-item')
+)
 
 export const dropdownNodeToOverlay = (
   node: React.ReactNode
@@ -171,8 +216,15 @@ export const dropdownNodeToOverlay = (
     return undefined
   }
 
-  const runtimeProps = resolveDropdownRuntimeProps(node.props)
-  const overlay = resolveDropdownOverlay(runtimeProps.children)
+  const nodeProps = getUXPinElementProps(node) as UXPinDropdownProps | undefined
+
+  if (!nodeProps) {
+    return undefined
+  }
+
+  const runtimeProps = resolveDropdownRuntimeProps(nodeProps)
+  const resolvedChildren = resolveDropdownChildren(nodeProps)
+  const overlay = resolveDropdownOverlay(resolvedChildren)
 
   return {
     ...overlay,
@@ -185,17 +237,14 @@ const Dropdown: DropdownComponent = (props: UXPinDropdownProps): JSX.Element => 
   const rootRef = useAutoHeightMergeFrame()
   const runtimeProps = resolveDropdownRuntimeProps(props)
   const {
-    children = DEFAULT_DROPDOWN_CHILDREN,
     maxHeight = 280,
     stickyFooter = DEFAULT_STICKY_FOOTER,
     stickyHeader,
     style,
     variant = 'single choice'
   } = runtimeProps
-  const { items, selectedKeys } = React.useMemo(
-    () => resolveDropdownOverlay(children),
-    [children]
-  )
+  const resolvedChildren = resolveDropdownChildren(props)
+  const { items, selectedKeys } = resolveDropdownOverlay(resolvedChildren)
   const selectedSignature = selectedKeys.join('|')
   const [activeSelectedKeys, setActiveSelectedKeys] = React.useState<string[]>(selectedKeys)
   const multiple = isMultipleVariant(variant)

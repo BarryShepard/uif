@@ -137,6 +137,23 @@ describe('Toolbar ', () => {
     expect(container.querySelector('[data-testid="ScaleItem"]')).toBeInTheDocument()
   })
 
+  test('should render Toolbar.Divider as a standalone toolbar child component', () => {
+    const { container } = render(
+      <DefaultToolbar
+        left={[
+          {
+            type: 'children',
+            key: 'toolbar-divider-item',
+            children: <Toolbar.Divider klId="toolbar-divider-item" testId="toolbar-divider-item" />
+          }
+        ]}
+      />
+    )
+
+    expect(container.querySelector('[data-testid="toolbar-divider-item"]')).toBeInTheDocument()
+    expect(container.querySelector('[kl-id="toolbar-divider-item"]')).toBeInTheDocument()
+  })
+
   test('should render toolbar items in left part', () => {
     render(
       <Toolbar testId={testId} left={itemsLeft}/>

@@ -4,20 +4,32 @@ import { DropdownItemProps } from '@src/dropdown/types'
 import { Toolbar as HexaToolbar } from '@src/toolbar'
 import { ToolbarItems } from '@src/toolbar/types'
 
-import { ArrowDown1, Placeholder } from '@kaspersky/hexa-ui-icons/16'
+import Icons16Pack, { ArrowDown1, Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import { FrameFill } from '../../preview'
 import {
+  getUXPinChildrenArray,
   getUXPinElementPropSources,
-  isUXPinHiddenElement
+  hasUXPinChildrenProp,
+  isUXPinHiddenElement,
+  resolveUXPinElementChildren,
+  resolveUXPinChildrenFromProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
-import { dropdownNodeToOverlay } from '../Dropdown/Dropdown'
+import {
+  dropdownNodeToOverlay,
+  isUXPinDropdownElement
+} from '../Dropdown/Dropdown'
+import {
+  isUXPinToolbarDividerElement,
+  toolbarDividerElementToItem
+} from '../ToolbarDivider/ToolbarDivider'
 
 export { isUXPinHiddenElement }
 
 export type UXPinToolbarButtonVariant = 'default' | 'dropdown' | 'toggle'
+export type ToolbarButtonIconName = Exclude<keyof typeof Icons16Pack, 'default'>
 
 export type UXPinToolbarButtonProps = {
   /** Visual button variant. */
@@ -26,19 +38,21 @@ export type UXPinToolbarButtonProps = {
   disabled?: boolean,
   /** Shows the icon before the button text. */
   iconBefore?: boolean,
-  /** Slot for the leading icon. */
-  iconBeforeSlot?: React.ReactNode,
+  /** Icon name for the leading icon. */
+  iconBeforeSlot?: ToolbarButtonIconName,
   /** Button text. */
   text?: string,
   /** Hides the button text while keeping icons and state. */
   hideText?: boolean,
   /** Shows the icon after the button text. */
   iconAfter?: boolean,
-  /** Slot for the trailing icon. */
-  iconAfterSlot?: React.ReactNode,
+  /** Icon name for the trailing icon. */
+  iconAfterSlot?: ToolbarButtonIconName,
   /** Shows the critical indicator dot near the icon. */
   indicator?: boolean,
-  /** Dropdown instance used as overlay for dropdown variant. */
+  /** Nested Dropdown component used as overlay for dropdown variant. */
+  children?: React.ReactNode,
+  /** @deprecated Use nested Dropdown child instead. */
   dropdown?: React.ReactNode,
   overriddenCodeProps?: Partial<UXPinToolbarButtonProps>
 }
@@ -55,6 +69,59 @@ const resolveToolbarButtonRuntimeProps = (
   ...rawProps,
   ...(rawProps.overriddenCodeProps || {})
 })
+
+const resolveToolbarButtonChildren = (
+  rawProps: UXPinToolbarButtonProps
+): React.ReactNode | undefined => (
+  hasUXPinChildrenProp(rawProps)
+    ? resolveUXPinChildrenFromProps(rawProps)
+    : undefined
+)
+
+const findToolbarButtonDropdownNode = (
+  children: React.ReactNode
+): React.ReactNode | undefined => {
+  const childNodes = getUXPinChildrenArray(children)
+
+  for (const child of childNodes) {
+    if (!child || isUXPinHiddenElement(child)) {
+      continue
+    }
+
+    if (isUXPinDropdownElement(child)) {
+      return child
+    }
+
+    const nestedChildren = resolveUXPinElementChildren(child)
+
+    if (nestedChildren) {
+      const nestedDropdown = findToolbarButtonDropdownNode(nestedChildren)
+
+      if (nestedDropdown) {
+        return nestedDropdown
+      }
+    }
+  }
+
+  return undefined
+}
+
+const resolveToolbarButtonDropdownNode = (
+  rawProps: UXPinToolbarButtonProps
+): React.ReactNode | undefined => {
+  const runtimeChildren = resolveToolbarButtonChildren(rawProps)
+  const nestedDropdown = runtimeChildren
+    ? findToolbarButtonDropdownNode(runtimeChildren)
+    : undefined
+
+  if (nestedDropdown) {
+    return nestedDropdown
+  }
+
+  const runtimeProps = resolveToolbarButtonRuntimeProps(rawProps)
+
+  return runtimeProps.dropdown
+}
 
 type ToolbarButtonPreviewProps = Pick<
 UXPinToolbarButtonProps,
@@ -121,12 +188,32 @@ const hasToolbarButtonShape = (props: Record<string, unknown> = {}): boolean => 
   return hasToolbarButtonOwnShape(props) || hasToolbarButtonOwnShape(overriddenCodeProps || {})
 }
 
+const resolveNamedIcon = (
+  iconName?: ToolbarButtonIconName | React.ReactNode
+): React.ReactNode => {
+  if (!iconName) {
+    return null
+  }
+
+  if (React.isValidElement(iconName)) {
+    return iconName
+  }
+
+  if (typeof iconName !== 'string') {
+    return iconName
+  }
+
+  const IconComponent = Icons16Pack[iconName as ToolbarButtonIconName]
+
+  return IconComponent ? <IconComponent /> : null
+}
+
 const resolveToolbarButtonIcon = (
   enabled: boolean | undefined,
-  slot: React.ReactNode,
+  slot?: ToolbarButtonIconName | React.ReactNode,
   fallback?: React.ReactNode
 ): React.ReactNode | undefined => (
-  enabled ? slot ?? fallback ?? <Placeholder /> : undefined
+  enabled ? resolveNamedIcon(slot) ?? fallback ?? <Placeholder /> : undefined
 )
 
 export const resolveToolbarButtonItemKey = (
@@ -183,7 +270,9 @@ export const toolbarButtonElementToItem = (
   const resolvedLabel = hideText ? undefined : text
 
   if (variant === 'dropdown') {
-    const dropdownOverlay = dropdownNodeToOverlay(dropdown)
+    const dropdownOverlay = dropdownNodeToOverlay(
+      resolveToolbarButtonDropdownNode(element.props) ?? dropdown
+    )
 
     return {
       type: 'dropdown',
@@ -248,6 +337,10 @@ export const toolbarNodeToItem = (
 
   if (isUXPinToolbarButtonElement(node)) {
     return toolbarButtonElementToItem(node, index, prefix)
+  }
+
+  if (isUXPinToolbarDividerElement(node)) {
+    return toolbarDividerElementToItem(node, index, prefix)
   }
 
   if (React.isValidElement(node)) {

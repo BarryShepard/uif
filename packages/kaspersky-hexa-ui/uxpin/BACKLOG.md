@@ -16,17 +16,25 @@ Recommended future work:
 
 ## Field validation trigger model
 
-Status: pending
+Status: implemented
 
 Context:
 - `Field` needs validation states, but prototype authors need a clear way to trigger validation at the right moment: immediately, on blur, on submit, after interaction, or through UXPin interactions.
 - Production validation is usually state-driven by form logic, while UXPin prototypes need an authoring model that can be configured without writing application state.
 
-Recommended future work:
-1. Decide whether validation is controlled by explicit props, UXPin interactions, form wrapper state, or a small validation trigger component.
-2. Define states for neutral, error, warning, success, disabled, and readonly.
-3. Decide how nested controls receive validation state from `Field`.
-4. Validate common flows: empty required field on submit, invalid mask after blur, and server-side error after action.
+Implemented model:
+1. `Field` now supports both `validationMode="manual"` and `validationMode="rule"` for declarative prototype validation.
+2. Rule mode supports `required`, `email`, `regex`/`mask`, `length`, `numberRange`, and `selectionCount`, plus `validationTrigger` (`always` / `blur` / `change` / `external`).
+3. `validationVisible` covers submit-like and UXPin-interaction-driven flows without adding a separate form controller component.
+4. Supported nested controls inherit validation from `Field`: input-like controls receive `validationStatus`, while checkbox/radio groups receive `invalid`.
+5. UXPin `Textbox` now exposes declarative input constraints for masked input, allowed charset filtering, max length, and numeric min/max helpers so rule validation can stay close to production control APIs.
+
+Validation checklist:
+1. `validationTrigger="blur"` keeps the message hidden until the nested control blurs.
+2. `validationTrigger="change"` reveals validation after typing/clicking/changing the field control.
+3. `validationTrigger="external"` + `validationVisible={true}` supports submit buttons and UXPin interactions.
+4. `validationMode="rule"` covers email, hash/length, numeric range, and multi-select CTA validation without custom code.
+5. Error, warning, and success messages match the field validation state, while nested supported controls stay aligned where production APIs allow it.
 
 ## Checkbox and radio label component reuse
 
