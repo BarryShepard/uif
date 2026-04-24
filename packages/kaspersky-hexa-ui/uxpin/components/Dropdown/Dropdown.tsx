@@ -12,6 +12,7 @@ import {
   getUXPinChildrenArray,
   getUXPinElementProps,
   getUXPinElementPropSources,
+  hasUXPinChildrenProp,
   resolveUXPinMergedChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
@@ -137,14 +138,19 @@ const hasDropdownItemDescendants = (
 }
 
 const resolveDropdownChildren = (
-  props: UXPinDropdownProps | undefined
-): React.ReactNode => {
+  props: UXPinDropdownProps | undefined,
+  fallbackToDefaults = true
+): React.ReactNode | undefined => {
   const resolvedChildren = resolveUXPinMergedChildrenFromProps(
     props,
-    DEFAULT_DROPDOWN_CHILDREN
+    fallbackToDefaults ? DEFAULT_DROPDOWN_CHILDREN : undefined
   )
 
-  return resolvedChildren === undefined ? DEFAULT_DROPDOWN_CHILDREN : resolvedChildren
+  if (resolvedChildren !== undefined) {
+    return resolvedChildren
+  }
+
+  return fallbackToDefaults ? DEFAULT_DROPDOWN_CHILDREN : undefined
 }
 
 export const isUXPinDropdownElement = (
@@ -257,7 +263,16 @@ export const dropdownNodeToOverlay = (
   }
 
   const runtimeProps = resolveDropdownRuntimeProps(nodeProps)
-  const resolvedChildren = resolveDropdownChildren(nodeProps)
+  const shouldUseDefaultChildren = (
+    React.isValidElement(node) ||
+    hasUXPinChildrenProp(nodeProps)
+  )
+  const resolvedChildren = resolveDropdownChildren(nodeProps, shouldUseDefaultChildren)
+
+  if (resolvedChildren === undefined) {
+    return undefined
+  }
+
   const overlay = resolveDropdownOverlay(resolvedChildren)
 
   return {

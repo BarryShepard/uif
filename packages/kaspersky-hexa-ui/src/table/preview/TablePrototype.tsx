@@ -449,7 +449,8 @@ export const TablePrototype = ({
 
     const updateMetrics = () => {
       frameId = 0
-      setContainerWidth(element.getBoundingClientRect().width)
+      const rootRect = element.getBoundingClientRect()
+      setContainerWidth(rootRect.width)
 
       if (!hasExplicitFrameHeight) {
         setScrollViewportHeight(undefined)
@@ -468,8 +469,25 @@ export const TablePrototype = ({
         scrollingWrapper.querySelector('.ant-table-thead')
       ) as HTMLElement | null
       const headerHeight = headerElement?.getBoundingClientRect().height ?? (size === 'compact' ? 28 : 40)
+      const horizontalScrollbarHeight = (
+        element.querySelector('.table-horizontal-scrollbar') as HTMLElement | null
+      )?.getBoundingClientRect().height ?? 0
+      const paginationHeight = (
+        element.querySelector('.ant-pagination-container') as HTMLElement | null
+      )?.getBoundingClientRect().height ?? 0
+      const availableWrapperHeight = Math.max(
+        Math.floor(rootRect.height - horizontalScrollbarHeight - paginationHeight),
+        headerHeight + 80
+      )
       const wrapperHeight = scrollingWrapper.getBoundingClientRect().height
-      const nextViewportHeight = Math.max(Math.floor(wrapperHeight - headerHeight), 80)
+      const constrainedWrapperHeight = Math.min(
+        wrapperHeight > 0 ? wrapperHeight : availableWrapperHeight,
+        availableWrapperHeight
+      )
+      const nextViewportHeight = Math.max(
+        Math.floor(constrainedWrapperHeight - headerHeight),
+        80
+      )
       const bodyContentElement = (
         scrollingWrapper.querySelector('.ant-table-tbody') ||
         scrollingWrapper.querySelector('.ant-table-placeholder')
