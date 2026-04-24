@@ -684,6 +684,7 @@ export const TablePrototype = ({
         pageSize: activeRowsPerPage,
         pageSizeOptions: PROTOTYPE_PAGE_SIZE_OPTIONS,
         showSizeChanger: showRowsPerPageSelector,
+        total: resolvedDataSource.length,
         showTotalSummary: showPaginationSummary,
         restoreCurrentWhenDataChange: true,
         onChange: (nextCurrent: number, nextPageSize: number) => {

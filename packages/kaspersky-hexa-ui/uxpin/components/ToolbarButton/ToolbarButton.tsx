@@ -24,6 +24,10 @@ import {
   isUXPinDropdownElement
 } from '../Dropdown/Dropdown'
 import {
+  DropdownOverlayBuildResult,
+  dropdownChildrenToOverlay
+} from '../DropdownItem/DropdownItem'
+import {
   isUXPinToolbarDividerElement,
   toolbarDividerElementToItem
 } from '../ToolbarDivider/ToolbarDivider'
@@ -122,6 +126,49 @@ const resolveToolbarButtonDropdownNode = (
   const runtimeProps = resolveToolbarButtonRuntimeProps(rawProps)
 
   return runtimeProps.dropdown
+}
+
+const hasToolbarButtonOverlayItems = (
+  overlay: DropdownOverlayBuildResult | undefined
+): overlay is DropdownOverlayBuildResult => Boolean(
+  overlay &&
+  (overlay.items.length > 0 || overlay.selectedKeys.length > 0)
+)
+
+const resolveToolbarButtonDropdownOverlay = (
+  rawProps: UXPinToolbarButtonProps
+): DropdownOverlayBuildResult & { maxHeight?: number } => {
+  const runtimeChildren = resolveToolbarButtonChildren(rawProps)
+  const runtimeProps = resolveToolbarButtonRuntimeProps(rawProps)
+  const explicitDropdownNode = resolveToolbarButtonDropdownNode(rawProps)
+  const explicitOverlay = explicitDropdownNode
+    ? dropdownNodeToOverlay(explicitDropdownNode)
+    : undefined
+
+  if (explicitOverlay) {
+    return explicitOverlay
+  }
+
+  const subtreeOverlay = runtimeChildren
+    ? dropdownChildrenToOverlay(runtimeChildren, 'toolbar-button-dropdown')
+    : undefined
+
+  if (hasToolbarButtonOverlayItems(subtreeOverlay)) {
+    return subtreeOverlay
+  }
+
+  const propOverlay = runtimeProps.dropdown
+    ? dropdownChildrenToOverlay(runtimeProps.dropdown, 'toolbar-button-dropdown-prop')
+    : undefined
+
+  if (hasToolbarButtonOverlayItems(propOverlay)) {
+    return propOverlay
+  }
+
+  return {
+    items: [],
+    selectedKeys: []
+  }
 }
 
 type ToolbarButtonPreviewProps = Pick<
@@ -429,9 +476,15 @@ export const toolbarButtonElementToItem = (
     : undefined
 
   if (variant === 'dropdown') {
-    const dropdownNode = resolveToolbarButtonDropdownNode(elementProps)
-    const dropdownOverlay = dropdownNodeToOverlay(dropdownNode ?? dropdown)
-    const hasExplicitDropdownOverlay = dropdownNode !== undefined || dropdown !== undefined
+    const dropdownOverlay = resolveToolbarButtonDropdownOverlay({
+      ...elementProps,
+      dropdown
+    })
+    const hasExplicitDropdownOverlay = (
+      dropdown !== undefined ||
+      resolveToolbarButtonChildren(elementProps) !== undefined ||
+      dropdownOverlay.items.length > 0
+    )
 
     return {
       type: 'dropdown',
@@ -442,9 +495,9 @@ export const toolbarButtonElementToItem = (
       iconAfter: resolvedIconAfter,
       showIndicator: indicator,
       onClick: handleClick,
-      overlay: dropdownOverlay?.items ?? (hasExplicitDropdownOverlay ? [] : DEFAULT_DROPDOWN_OVERLAY),
-      popupMaxHeight: dropdownOverlay?.maxHeight,
-      selectedItemsKeys: dropdownOverlay?.selectedKeys
+      overlay: dropdownOverlay.items.length ? dropdownOverlay.items : (hasExplicitDropdownOverlay ? [] : DEFAULT_DROPDOWN_OVERLAY),
+      popupMaxHeight: dropdownOverlay.maxHeight,
+      selectedItemsKeys: dropdownOverlay.selectedKeys
     }
   }
 

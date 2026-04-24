@@ -41,6 +41,9 @@ export const useAutoHeightMergeFrame = (
     }
 
     const previousFillShell = mergeComponent.getAttribute(FILL_SHELL_ATTRIBUTE)
+    const previousDisplay = mergeComponent.style.display
+    const previousFlexDirection = mergeComponent.style.flexDirection
+    const previousFlex = mergeComponent.style.flex
 
     if (markFillShell) {
       mergeComponent.setAttribute(FILL_SHELL_ATTRIBUTE, 'true')
@@ -61,10 +64,27 @@ export const useAutoHeightMergeFrame = (
       } else {
         mergeComponent.setAttribute(FILL_SHELL_ATTRIBUTE, previousFillShell)
       }
+
+      mergeComponent.style.display = previousDisplay
+      mergeComponent.style.flexDirection = previousFlexDirection
+      mergeComponent.style.flex = previousFlex
     }
 
     if (skipIfWithinSelector && rootElement?.closest(skipIfWithinSelector)) {
       return restoreFillShell
+    }
+
+    if (markFillShell) {
+      mergeComponent.style.display = 'flex'
+      mergeComponent.style.flexDirection = 'column'
+      mergeComponent.style.flex = '1 1 auto'
+      mergeComponent.style.minHeight = '0'
+      mergeComponent.style.minWidth = '0'
+      mergeComponent.style.width = '100%'
+
+      if (!previousHeight) {
+        mergeComponent.style.height = '100%'
+      }
     }
 
     if (!disabled) {

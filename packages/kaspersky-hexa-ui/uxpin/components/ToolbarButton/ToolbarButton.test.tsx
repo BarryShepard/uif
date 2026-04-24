@@ -84,4 +84,51 @@ describe('ToolbarButton UXPin integration', () => {
     expect(item.overlay).toHaveLength(1)
     expect(item.overlay[0]).toMatchObject({ children: 'Edited action' })
   })
+
+  test('should build dropdown overlay from nested dropdown items even when the dropdown wrapper is not recognized directly', () => {
+    const item = toolbarButtonElementToItem(
+      (
+        <ToolbarButton
+          text="Actions"
+          variant="dropdown"
+          overriddenCodeProps={{
+            children: [
+              {
+                uxpinTargetElementType: 'CodeComponent',
+                overriddenCodeProps: {
+                  children: [
+                    {
+                      name: 'DropdownItem',
+                      overriddenCodeProps: {
+                        text: 'Nested action 1'
+                      }
+                    },
+                    {
+                      name: 'DropdownItem',
+                      overriddenCodeProps: {
+                        text: 'Nested action 2',
+                        disabled: true
+                      }
+                    }
+                  ]
+                }
+              }
+            ] as unknown as React.ReactNode
+          }}
+        />
+      ),
+      0
+    )
+
+    expect(item.type).toBe('dropdown')
+
+    if (item.type !== 'dropdown') {
+      throw new Error('ToolbarButton did not resolve to dropdown item')
+    }
+
+    expect(item.overlay).toEqual([
+      expect.objectContaining({ children: 'Nested action 1' }),
+      expect.objectContaining({ children: 'Nested action 2', disabled: true })
+    ])
+  })
 })
