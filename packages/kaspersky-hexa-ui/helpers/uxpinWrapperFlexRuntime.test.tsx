@@ -43,28 +43,28 @@ describe('UXPin wrapper flex height runtime', () => {
 
     // @ts-ignore
     expect(pageRoot).toHaveStyleRule('flex', '1 1 auto !important', {
-      modifier: "> .merge-component:has(> [data-hexa-uxpin-section-wrapper][data-hexa-uxpin-flex-height='true'])"
+      modifier: "> .merge-component[data-hexa-uxpin-fill-shell='true']"
     })
     // @ts-ignore
     expect(sectionRoot).toHaveStyleRule('flex', '1 1 auto !important', {
-      modifier: "> .merge-component:has(> [data-hexa-uxpin-group-wrapper][data-hexa-uxpin-flex-height='true'])"
+      modifier: "> .merge-component[data-hexa-uxpin-fill-shell='true']"
     })
     // @ts-ignore
     expect(groupRoot).toHaveStyleRule('flex', '1 1 auto !important', {
-      modifier: "> .merge-component:has(> [data-hexa-uxpin-table-height-mode='fill'])"
+      modifier: "> .merge-component[data-hexa-uxpin-fill-shell='true']"
     })
 
     // @ts-ignore
     expect(pageRoot).toHaveStyleRule('min-height', '0', {
-      modifier: "> .merge-component:has(> [data-hexa-uxpin-section-wrapper][data-hexa-uxpin-flex-height='true'])"
+      modifier: "> .merge-component[data-hexa-uxpin-fill-shell='true']"
     })
     // @ts-ignore
     expect(sectionRoot).toHaveStyleRule('min-height', '0', {
-      modifier: "> .merge-component:has(> [data-hexa-uxpin-group-wrapper][data-hexa-uxpin-flex-height='true'])"
+      modifier: "> .merge-component[data-hexa-uxpin-fill-shell='true']"
     })
     // @ts-ignore
     expect(groupRoot).toHaveStyleRule('min-height', '0', {
-      modifier: "> .merge-component:has(> [data-hexa-uxpin-table-height-mode='fill'])"
+      modifier: "> .merge-component[data-hexa-uxpin-fill-shell='true']"
     })
   })
 })

@@ -14,6 +14,7 @@ import {
   getUXPinElementProps,
   getUXPinElementPropSources,
   resolveUXPinElementChildren,
+  resolveUXPinMergedChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
@@ -269,9 +270,12 @@ const resolveDropdownItemKey = (
 const resolveDropdownItemChildren = (
   element: React.ReactNode,
   runtimeProps: UXPinDropdownItemProps
-): React.ReactNode => (
-  resolveUXPinElementChildren(element) ?? runtimeProps.children
-)
+): React.ReactNode => {
+  const elementProps = getUXPinElementProps(element) as UXPinDropdownItemProps | undefined
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(elementProps, runtimeProps.children)
+
+  return resolvedChildren === undefined ? runtimeProps.children : resolvedChildren
+}
 
 export const isUXPinDropdownItemElement = (
   node: React.ReactNode
@@ -410,7 +414,8 @@ export const dropdownChildrenToOverlay = (
       return
     }
 
-    const nestedChildren = resolveUXPinElementChildren(child)
+    const childProps = getUXPinElementProps(child) as UXPinDropdownItemProps | undefined
+    const nestedChildren = resolveUXPinMergedChildrenFromProps(childProps) ?? resolveUXPinElementChildren(child)
 
     if (nestedChildren) {
       const nestedResult = dropdownChildrenToOverlay(nestedChildren, `${prefix}-${index + 1}`)

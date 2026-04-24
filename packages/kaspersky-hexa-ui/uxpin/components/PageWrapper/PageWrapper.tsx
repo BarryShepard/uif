@@ -3,6 +3,7 @@ import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
 import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 import { buildFlexHeightChildSelectors, wrapperChildrenCss } from '../wrapperFlexLayout'
 
 export type UXPinPageWrapperProps = {
@@ -68,9 +69,14 @@ const PageWrapper = (rawProps: UXPinPageWrapperProps): JSX.Element => {
     overriddenCodeProps: _overriddenCodeProps,
     style
   } = resolveUXPinRuntimeProps(rawProps)
+  const rootRef = useAutoHeightMergeFrame({
+    disabled: true,
+    markFillShell: true
+  })
 
   return (
     <PageWrapperRoot
+      ref={rootRef}
       style={mergeFrameStyle({
         ...pageWrapperStyle,
         ...style

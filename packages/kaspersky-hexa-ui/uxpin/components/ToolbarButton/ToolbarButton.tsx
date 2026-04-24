@@ -11,11 +11,10 @@ import {
   getUXPinChildrenArray,
   getUXPinElementProps,
   getUXPinElementPropSources,
-  hasUXPinChildrenProp,
   isUXPinHiddenElement,
   UXPinInteractionHandler,
   resolveUXPinElementChildren,
-  resolveUXPinChildrenFromProps,
+  resolveUXPinMergedChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
@@ -78,11 +77,7 @@ const resolveToolbarButtonRuntimeProps = (
 
 const resolveToolbarButtonChildren = (
   rawProps: UXPinToolbarButtonProps
-): React.ReactNode | undefined => (
-  hasUXPinChildrenProp(rawProps)
-    ? resolveUXPinChildrenFromProps(rawProps)
-    : undefined
-)
+): React.ReactNode | undefined => resolveUXPinMergedChildrenFromProps(rawProps)
 
 const findToolbarButtonDropdownNode = (
   children: React.ReactNode

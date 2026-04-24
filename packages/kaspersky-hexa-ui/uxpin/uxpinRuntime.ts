@@ -232,6 +232,10 @@ export const resolveUXPinChildrenFromProps = (
   return undefined
 }
 
+const hasIdentifiableUXPinChildren = (
+  children: React.ReactNode[]
+): boolean => children.some((child) => Boolean(getUXPinElementIdentity(child)))
+
 const getUXPinElementIdentity = (
   node: React.ReactNode
 ): string | undefined => {
@@ -304,6 +308,10 @@ export function mergeUXPinChildren (
   const overrideArray = getUXPinChildrenArray(overrideChildren)
 
   if (!baseArray.length || !overrideArray.length) {
+    return overrideChildren
+  }
+
+  if (!hasIdentifiableUXPinChildren(baseArray) || !hasIdentifiableUXPinChildren(overrideArray)) {
     return overrideChildren
   }
 

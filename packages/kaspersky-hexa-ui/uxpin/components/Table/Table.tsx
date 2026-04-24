@@ -14,6 +14,7 @@ import {
   resolveUXPinChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
+import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import TableColumn, {
   resolveTableColumnChildren,
@@ -167,9 +168,13 @@ const Table = (rawProps: UXPinTableProps): JSX.Element => {
   )
   const resolvedRowsPerPage = resolveRowsPerPage(rowsPerPage)
   const shouldFillHeight = heightMode === 'fill'
+  const rootRef = useAutoHeightMergeFrame({
+    disabled: shouldFillHeight,
+    markFillShell: shouldFillHeight
+  })
 
   return (
-    <PreviewRoot data-hexa-uxpin-table-root="true" data-hexa-uxpin-table-height-mode={heightMode} style={mergeFrameStyle({
+    <PreviewRoot ref={rootRef} data-hexa-uxpin-table-root="true" data-hexa-uxpin-table-height-mode={heightMode} style={mergeFrameStyle({
       width: '100%',
       height: shouldFillHeight ? '100%' : 'auto',
       flex: shouldFillHeight ? '1 1 auto' : '0 0 auto',

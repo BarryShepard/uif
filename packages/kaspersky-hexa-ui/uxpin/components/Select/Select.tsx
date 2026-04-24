@@ -5,7 +5,7 @@ import { SelectProps } from '@src/select/types'
 
 import { FrameFill, mergeFrameStyle } from '../../preview'
 import { buildSelectOptions, SelectOptionIconName } from '../../selectOptions'
-import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+import { resolveUXPinMergedChildrenFromProps, resolveUXPinRuntimeProps } from '../../uxpinRuntime'
 import Dropdown from '../Dropdown/Dropdown'
 import DropdownItem from '../DropdownItem/DropdownItem'
 
@@ -40,8 +40,11 @@ const DEFAULT_SELECT_CHILDREN = (
 )
 
 const Select = (rawProps: UXPinSelectProps): JSX.Element => {
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(
+    rawProps,
+    DEFAULT_SELECT_CHILDREN
+  )
   const {
-    children = DEFAULT_SELECT_CHILDREN,
     codeComponentProps: _codeComponentProps,
     componentBefore = false,
     elementAfter = true,
@@ -57,7 +60,7 @@ const Select = (rawProps: UXPinSelectProps): JSX.Element => {
   } = resolveUXPinRuntimeProps(rawProps)
   const dropdownPerformanceProps = instantDropdown ? { transitionName: '' } : {}
   const options = buildSelectOptions({
-    children,
+    children: resolvedChildren === undefined ? DEFAULT_SELECT_CHILDREN : resolvedChildren,
     componentBefore,
     iconBefore,
     optionsText

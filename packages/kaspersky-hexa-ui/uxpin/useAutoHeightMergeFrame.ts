@@ -1,7 +1,10 @@
 import React from 'react'
 
+import { FILL_SHELL_ATTRIBUTE } from './components/wrapperFlexLayout'
+
 type AutoHeightMergeFrameOptions = {
   disabled?: boolean,
+  markFillShell?: boolean,
   width?: React.CSSProperties['width'],
   minWidth?: React.CSSProperties['minWidth'],
   skipIfWithinSelector?: string
@@ -19,17 +22,14 @@ export const useAutoHeightMergeFrame = (
   const rootRef = React.useRef<HTMLDivElement>(null)
   const {
     disabled,
+    markFillShell = false,
     minWidth,
     skipIfWithinSelector,
     width
   } = options
 
   React.useLayoutEffect(() => {
-    if (disabled) {
-      return undefined
-    }
-
-    if (skipIfWithinSelector && rootRef.current?.closest(skipIfWithinSelector)) {
+    if (disabled && !markFillShell) {
       return undefined
     }
 
@@ -40,11 +40,10 @@ export const useAutoHeightMergeFrame = (
       return undefined
     }
 
-    const wrapperBoundary = rootElement?.parentElement?.closest(WRAPPER_BOUNDARY_SELECTOR)
-    const wrapperMergeComponent = wrapperBoundary?.closest('.merge-component')
+    const previousFillShell = mergeComponent.getAttribute(FILL_SHELL_ATTRIBUTE)
 
-    if (wrapperMergeComponent === mergeComponent) {
-      return undefined
+    if (markFillShell) {
+      mergeComponent.setAttribute(FILL_SHELL_ATTRIBUTE, 'true')
     }
 
     const previousHeight = mergeComponent.style.height
@@ -52,24 +51,50 @@ export const useAutoHeightMergeFrame = (
     const previousWidth = mergeComponent.style.width
     const previousMinWidth = mergeComponent.style.minWidth
 
-    mergeComponent.style.height = 'auto'
-    mergeComponent.style.minHeight = '0'
+    const restoreFillShell = () => {
+      if (!markFillShell) {
+        return
+      }
 
-    if (width !== undefined) {
-      mergeComponent.style.width = String(width)
+      if (previousFillShell === null) {
+        mergeComponent.removeAttribute(FILL_SHELL_ATTRIBUTE)
+      } else {
+        mergeComponent.setAttribute(FILL_SHELL_ATTRIBUTE, previousFillShell)
+      }
     }
 
-    if (minWidth !== undefined) {
-      mergeComponent.style.minWidth = String(minWidth)
+    if (skipIfWithinSelector && rootElement?.closest(skipIfWithinSelector)) {
+      return restoreFillShell
+    }
+
+    if (!disabled) {
+      const wrapperBoundary = rootElement?.parentElement?.closest(WRAPPER_BOUNDARY_SELECTOR)
+      const wrapperMergeComponent = wrapperBoundary?.closest('.merge-component')
+
+      if (wrapperMergeComponent === mergeComponent) {
+        return restoreFillShell
+      }
+
+      mergeComponent.style.height = 'auto'
+      mergeComponent.style.minHeight = '0'
+
+      if (width !== undefined) {
+        mergeComponent.style.width = String(width)
+      }
+
+      if (minWidth !== undefined) {
+        mergeComponent.style.minWidth = String(minWidth)
+      }
     }
 
     return () => {
+      restoreFillShell()
       mergeComponent.style.height = previousHeight
       mergeComponent.style.minHeight = previousMinHeight
       mergeComponent.style.width = previousWidth
       mergeComponent.style.minWidth = previousMinWidth
     }
-  }, [disabled, minWidth, skipIfWithinSelector, width])
+  }, [disabled, markFillShell, minWidth, skipIfWithinSelector, width])
 
   return rootRef
 }

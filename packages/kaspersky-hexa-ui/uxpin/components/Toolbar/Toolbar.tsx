@@ -4,7 +4,12 @@ import { Toolbar as HexaToolbar } from '@src/toolbar'
 import { ToolbarProps as OriginToolbarProps, ToolbarItems } from '@src/toolbar/types'
 
 import { mergeFrameStyle } from '../../preview'
-import { getUXPinChildrenArray, getUXPinElementProps, resolveUXPinElementChildren } from '../../uxpinRuntime'
+import {
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  resolveUXPinElementChildren,
+  resolveUXPinMergedChildrenFromProps
+} from '../../uxpinRuntime'
 import { getVisibleUXPinChildrenArray, isUXPinHiddenElement } from '../../visibility'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
@@ -62,7 +67,10 @@ const resolveToolbarSectionChildren = (
   element: React.ReactNode
 ): React.ReactNode | undefined => {
   const props = getUXPinElementProps(element) as ToolbarSectionElementProps | undefined
-  const resolvedChildren = resolveUXPinElementChildren(element)
+  const defaultChildren = React.isValidElement(element) && typeof element.type === 'function'
+    ? (element.type as { defaultProps?: Partial<ToolbarSectionElementProps> }).defaultProps?.children
+    : undefined
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(props, defaultChildren) ?? resolveUXPinElementChildren(element)
 
   if (resolvedChildren !== undefined) {
     return resolvedChildren
@@ -82,7 +90,7 @@ const resolveToolbarSectionChildren = (
   }
 
   return React.isValidElement(element) && typeof element.type === 'function'
-    ? (element.type as { defaultProps?: Partial<ToolbarSectionElementProps> }).defaultProps?.children
+    ? defaultChildren
     : undefined
 }
 
@@ -118,7 +126,10 @@ const Toolbar = ({
     ...(overriddenCodeProps || {})
   }
   const rootRef = useAutoHeightMergeFrame()
-  const resolvedChildren = children ?? DEFAULT_TOOLBAR_CHILDREN
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(
+    { children, overriddenCodeProps },
+    DEFAULT_TOOLBAR_CHILDREN
+  ) ?? DEFAULT_TOOLBAR_CHILDREN
   const directChildren = getVisibleUXPinChildrenArray(resolvedChildren)
   const hasHiddenSearchElement = getUXPinChildrenArray(resolvedChildren).some((child) => (
     isUXPinToolbarSearchElement(child) &&

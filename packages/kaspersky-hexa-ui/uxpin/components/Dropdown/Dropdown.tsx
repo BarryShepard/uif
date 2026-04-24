@@ -9,17 +9,18 @@ import { DropdownItemProps as HexaDropdownItemProps } from '@src/dropdown/types'
 
 import { mergeFrameStyle } from '../../preview'
 import {
+  getUXPinChildrenArray,
   getUXPinElementProps,
   getUXPinElementPropSources,
-  hasUXPinChildrenProp,
-  resolveUXPinChildrenFromProps,
+  resolveUXPinMergedChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import DropdownItem, {
   dropdownChildrenToOverlay,
-  DropdownOverlayBuildResult
+  DropdownOverlayBuildResult,
+  isUXPinDropdownItemElement
 } from '../DropdownItem/DropdownItem'
 
 export type UXPinDropdownVariant =
@@ -106,13 +107,45 @@ const hasDropdownIdentity = (node: React.ReactNode): boolean => (
   ))
 )
 
+const hasDropdownItemDescendants = (
+  node: React.ReactNode,
+  depth = 0
+): boolean => {
+  if (depth > 6) {
+    return false
+  }
+
+  const nodeProps = getUXPinElementProps(node) as UXPinDropdownProps | undefined
+
+  if (!nodeProps) {
+    return false
+  }
+
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(nodeProps)
+
+  if (
+    resolvedChildren === undefined ||
+    resolvedChildren === null ||
+    typeof resolvedChildren === 'boolean'
+  ) {
+    return false
+  }
+
+  return getUXPinChildrenArray(resolvedChildren).some((child) => (
+    isUXPinDropdownItemElement(child) || hasDropdownItemDescendants(child, depth + 1)
+  ))
+}
+
 const resolveDropdownChildren = (
   props: UXPinDropdownProps | undefined
-): React.ReactNode => (
-  hasUXPinChildrenProp(props)
-    ? resolveUXPinChildrenFromProps(props)
-    : DEFAULT_DROPDOWN_CHILDREN
-)
+): React.ReactNode => {
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(
+    props,
+    DEFAULT_DROPDOWN_CHILDREN
+  )
+
+  return resolvedChildren === undefined ? DEFAULT_DROPDOWN_CHILDREN : resolvedChildren
+}
 
 export const isUXPinDropdownElement = (
   node: React.ReactNode
@@ -125,7 +158,8 @@ export const isUXPinDropdownElement = (
       (node.type as { name?: string })?.name === 'Dropdown'
     )
   ) ||
-  hasDropdownIdentity(node)
+  hasDropdownIdentity(node) ||
+  hasDropdownItemDescendants(node)
 )
 
 const stringifyKey = (key: React.Key | null | undefined, fallback: string): string => (

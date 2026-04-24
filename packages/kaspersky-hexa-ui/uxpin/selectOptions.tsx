@@ -6,8 +6,10 @@ import Icons16Pack, { Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
 import {
   getUXPinChildrenArray,
+  getUXPinElementProps,
   getUXPinElementPropSources,
-  resolveUXPinElementChildren
+  resolveUXPinElementChildren,
+  resolveUXPinMergedChildrenFromProps
 } from './uxpinRuntime'
 import {
   isUXPinDropdownItemElement,
@@ -115,7 +117,8 @@ export const buildSelectOptions = ({
         return [child]
       }
 
-      const nestedChildren = resolveUXPinElementChildren(child)
+      const childProps = getUXPinElementProps(child)
+      const nestedChildren = resolveUXPinMergedChildrenFromProps(childProps) ?? resolveUXPinElementChildren(child)
 
       return nestedChildren ? flattenDropdownItems(nestedChildren) : []
     })

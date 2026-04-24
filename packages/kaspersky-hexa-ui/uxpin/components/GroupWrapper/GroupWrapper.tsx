@@ -82,7 +82,8 @@ const GroupWrapper = ({
   style
 }: UXPinGroupWrapperProps): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame({
-    disabled: flexHeight
+    disabled: flexHeight,
+    markFillShell: flexHeight
   })
 
   return (

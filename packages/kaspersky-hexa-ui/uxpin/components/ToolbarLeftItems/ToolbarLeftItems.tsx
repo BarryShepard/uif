@@ -5,8 +5,10 @@ import { Toolbar as HexaToolbar } from '@src/toolbar'
 import { FrameFill } from '../../preview'
 import {
   getUXPinChildrenArray,
+  getUXPinElementProps,
   getUXPinElementPropSources,
-  resolveUXPinElementChildren
+  resolveUXPinElementChildren,
+  resolveUXPinMergedChildrenFromProps
 } from '../../uxpinRuntime'
 import { isUXPinHiddenElement } from '../../visibility'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
@@ -54,14 +56,17 @@ export const DEFAULT_TOOLBAR_LEFT_ITEMS_CHILDREN = (
 
 const resolveElementChildren = (
   element: React.ReactNode
-): React.ReactNode => (
-  resolveUXPinElementChildren(element) ??
-  (
-    React.isValidElement(element) && typeof element.type === 'function'
-      ? (element.type as ToolbarLeftItemsComponent).defaultProps?.children
-      : undefined
-  )
-)
+): React.ReactNode => {
+  const defaultChildren = React.isValidElement(element) && typeof element.type === 'function'
+    ? (element.type as ToolbarLeftItemsComponent).defaultProps?.children
+    : undefined
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(
+    getUXPinElementProps(element) as UXPinToolbarLeftItemsProps | undefined,
+    defaultChildren
+  ) ?? resolveUXPinElementChildren(element)
+
+  return resolvedChildren ?? defaultChildren
+}
 
 const hasToolbarLeftItemsIdentity = (
   node: React.ReactNode
@@ -141,7 +146,10 @@ const ToolbarLeftItems: ToolbarLeftItemsComponent = ({
   overriddenCodeProps
 }: UXPinToolbarLeftItemsProps): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame()
-  const resolvedChildren = overriddenCodeProps?.children ?? children
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(
+    { children, overriddenCodeProps },
+    DEFAULT_TOOLBAR_LEFT_ITEMS_CHILDREN
+  ) ?? DEFAULT_TOOLBAR_LEFT_ITEMS_CHILDREN
 
   return (
     <div ref={rootRef} style={{ width: '100%' }}>
