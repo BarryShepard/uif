@@ -9,11 +9,13 @@ import Icons16Pack, { ArrowDown1, Placeholder } from '@kaspersky/hexa-ui-icons/1
 import { FrameFill } from '../../preview'
 import {
   getUXPinChildrenArray,
+  getUXPinElementProps,
   getUXPinElementPropSources,
   hasUXPinChildrenProp,
   isUXPinHiddenElement,
   resolveUXPinElementChildren,
-  resolveUXPinChildrenFromProps
+  resolveUXPinChildrenFromProps,
+  resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
@@ -54,6 +56,7 @@ export type UXPinToolbarButtonProps = {
   children?: React.ReactNode,
   /** @deprecated Use nested Dropdown child instead. */
   dropdown?: React.ReactNode,
+  codeComponentProps?: Partial<UXPinToolbarButtonProps>,
   overriddenCodeProps?: Partial<UXPinToolbarButtonProps>
 }
 
@@ -64,11 +67,10 @@ type ToolbarButtonComponent = React.FC<UXPinToolbarButtonProps> & {
 
 const resolveToolbarButtonRuntimeProps = (
   rawProps: UXPinToolbarButtonProps = {}
-): UXPinToolbarButtonProps => ({
-  ...(ToolbarButton.defaultProps || {}),
-  ...rawProps,
-  ...(rawProps.overriddenCodeProps || {})
-})
+): UXPinToolbarButtonProps => resolveUXPinRuntimeProps(
+  rawProps,
+  ToolbarButton.defaultProps
+)
 
 const resolveToolbarButtonChildren = (
   rawProps: UXPinToolbarButtonProps
@@ -183,10 +185,37 @@ const hasToolbarButtonOwnShape = (props: Record<string, unknown> = {}): boolean 
 )
 
 const hasToolbarButtonShape = (props: Record<string, unknown> = {}): boolean => {
+  const codeComponentProps = props.codeComponentProps as Record<string, unknown> | undefined
   const overriddenCodeProps = props.overriddenCodeProps as Record<string, unknown> | undefined
+  const overriddenCodeComponentProps = overriddenCodeProps?.codeComponentProps as Record<string, unknown> | undefined
 
-  return hasToolbarButtonOwnShape(props) || hasToolbarButtonOwnShape(overriddenCodeProps || {})
+  return (
+    hasToolbarButtonOwnShape(props) ||
+    hasToolbarButtonOwnShape(codeComponentProps || {}) ||
+    hasToolbarButtonOwnShape(overriddenCodeProps || {}) ||
+    hasToolbarButtonOwnShape(overriddenCodeComponentProps || {})
+  )
 }
+
+const isToolbarButtonIdentity = (value?: string): boolean => {
+  const normalizedValue = value?.toLowerCase()
+
+  return Boolean(
+    normalizedValue &&
+    normalizedValue.includes('toolbar') &&
+    normalizedValue.includes('button')
+  )
+}
+
+const hasToolbarButtonIdentity = (
+  node: React.ReactNode
+): boolean => getUXPinElementPropSources(node).some((props) => (
+  props.name === 'ToolbarButton' ||
+  isToolbarButtonIdentity(typeof props.uxpId === 'string' ? props.uxpId : undefined) ||
+  isToolbarButtonIdentity(typeof props.id === 'string' ? props.id : undefined) ||
+  isToolbarButtonIdentity(typeof props.presetElementId === 'string' ? props.presetElementId : undefined) ||
+  isToolbarButtonIdentity(typeof props.uxpinPresetElementId === 'string' ? props.uxpinPresetElementId : undefined)
+))
 
 const resolveNamedIcon = (
   iconName?: ToolbarButtonIconName | React.ReactNode
@@ -230,22 +259,26 @@ export const resolveToolbarButtonItemKey = (
 
 export const isUXPinToolbarButtonElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinToolbarButtonProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as ToolbarButtonComponent)?.uxpinRole === TOOLBAR_BUTTON_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'ToolbarButton' ||
-    (node.type as { name?: string })?.name === 'ToolbarButton' ||
-    hasToolbarButtonShape((node.props as Record<string, unknown>) || {})
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as ToolbarButtonComponent)?.uxpinRole === TOOLBAR_BUTTON_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'ToolbarButton' ||
+      (node.type as { name?: string })?.name === 'ToolbarButton'
+    )
+  ) ||
+  hasToolbarButtonIdentity(node) ||
+  getUXPinElementPropSources(node).some(hasToolbarButtonOwnShape)
 )
 
 export const toolbarButtonElementToItem = (
-  element: React.ReactElement<UXPinToolbarButtonProps>,
+  element: React.ReactNode,
   index: number,
   prefix = 'toolbar-button'
 ): ToolbarItems => {
-  const runtimeProps = resolveToolbarButtonRuntimeProps(element.props)
+  const elementProps = (getUXPinElementProps(element) || {}) as UXPinToolbarButtonProps
+  const runtimeProps = resolveToolbarButtonRuntimeProps(elementProps)
   const {
     disabled = false,
     dropdown,
@@ -271,7 +304,7 @@ export const toolbarButtonElementToItem = (
 
   if (variant === 'dropdown') {
     const dropdownOverlay = dropdownNodeToOverlay(
-      resolveToolbarButtonDropdownNode(element.props) ?? dropdown
+      resolveToolbarButtonDropdownNode(elementProps) ?? dropdown
     )
 
     return {
@@ -368,16 +401,8 @@ export const toolbarChildrenToItems = (
 ): ToolbarItems[] => {
   const items: ToolbarItems[] = []
 
-  React.Children.forEach(children, (child, index) => {
+  getUXPinChildrenArray(children).forEach((child, index) => {
     if (!child || isUXPinHiddenElement(child)) {
-      return
-    }
-
-    if (
-      React.isValidElement<{ children?: React.ReactNode }>(child) &&
-      child.type === React.Fragment
-    ) {
-      items.push(...toolbarChildrenToItems(child.props.children, `${prefix}-${index + 1}`))
       return
     }
 

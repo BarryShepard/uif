@@ -142,6 +142,7 @@ export const paginationCss = css<PaginationCssProps>`
 
 export const containerCss = css`
   width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   height: 32px;
@@ -152,6 +153,7 @@ export const containerCss = css`
     align-items: center;
     gap: 16px;
     margin-left: auto;
+    min-width: 0;
   }
 
   & a {

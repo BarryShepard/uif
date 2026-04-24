@@ -3,6 +3,11 @@ import React from 'react'
 import { Toolbar as HexaToolbar } from '@src/toolbar'
 
 import { FrameFill } from '../../preview'
+import {
+  getUXPinChildrenArray,
+  getUXPinElementPropSources,
+  resolveUXPinElementChildren
+} from '../../uxpinRuntime'
 import { isUXPinHiddenElement } from '../../visibility'
 import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
@@ -48,32 +53,46 @@ export const DEFAULT_TOOLBAR_LEFT_ITEMS_CHILDREN = (
 )
 
 const resolveElementChildren = (
-  element: React.ReactElement<UXPinToolbarLeftItemsProps>
+  element: React.ReactNode
 ): React.ReactNode => (
-  element.props.overriddenCodeProps?.children ??
-  element.props.children ??
-  (typeof element.type === 'function'
-    ? (element.type as ToolbarLeftItemsComponent).defaultProps?.children
-    : undefined)
+  resolveUXPinElementChildren(element) ??
+  (
+    React.isValidElement(element) && typeof element.type === 'function'
+      ? (element.type as ToolbarLeftItemsComponent).defaultProps?.children
+      : undefined
+  )
 )
+
+const hasToolbarLeftItemsIdentity = (
+  node: React.ReactNode
+): boolean => getUXPinElementPropSources(node).some((props) => (
+  props.name === 'ToolbarLeftItems' ||
+  (typeof props.uxpId === 'string' && props.uxpId.includes('toolbar-left-items')) ||
+  (typeof props.id === 'string' && props.id.includes('toolbar-left-items')) ||
+  (typeof props.presetElementId === 'string' && props.presetElementId.includes('toolbar-left-items')) ||
+  (typeof props.uxpinPresetElementId === 'string' && props.uxpinPresetElementId.includes('toolbar-left-items'))
+))
 
 export const isUXPinToolbarLeftItemsElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinToolbarLeftItemsProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as ToolbarLeftItemsComponent)?.uxpinRole === TOOLBAR_LEFT_ITEMS_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'ToolbarLeftItems' ||
-    (node.type as { name?: string })?.name === 'ToolbarLeftItems'
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as ToolbarLeftItemsComponent)?.uxpinRole === TOOLBAR_LEFT_ITEMS_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'ToolbarLeftItems' ||
+      (node.type as { name?: string })?.name === 'ToolbarLeftItems'
+    )
+  ) ||
+  hasToolbarLeftItemsIdentity(node)
 )
 
 export const resolveToolbarLeftItemsChildren = (
   children: React.ReactNode
-): Array<React.ReactElement<UXPinToolbarLeftItemsProps>> => {
-  const elements: Array<React.ReactElement<UXPinToolbarLeftItemsProps>> = []
+): React.ReactNode[] => {
+  const elements: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child || isUXPinHiddenElement(child)) {
       return
     }
@@ -83,13 +102,10 @@ export const resolveToolbarLeftItemsChildren = (
       return
     }
 
-    if (
-      React.isValidElement<{ children?: React.ReactNode, overriddenCodeProps?: { children?: React.ReactNode } }>(child) &&
-      (child.props?.children || child.props?.overriddenCodeProps?.children)
-    ) {
-      elements.push(...resolveToolbarLeftItemsChildren(
-        child.props?.overriddenCodeProps?.children ?? child.props.children
-      ))
+    const nestedChildren = resolveUXPinElementChildren(child)
+
+    if (nestedChildren) {
+      elements.push(...resolveToolbarLeftItemsChildren(nestedChildren))
     }
   })
 
@@ -106,13 +122,17 @@ export const resolveToolbarLeftItemsChildNodes = (
   }
 
   return (
-    <>
-      {elements.map((element, index) => (
-        <React.Fragment key={element.key ?? `toolbar-left-items-${index + 1}`}>
-          {resolveElementChildren(element)}
-        </React.Fragment>
+      <>
+        {elements.map((element, index) => (
+          <React.Fragment
+            key={React.isValidElement(element) && element.key !== null
+              ? element.key
+              : `toolbar-left-items-${index + 1}`}
+          >
+            {resolveElementChildren(element)}
+          </React.Fragment>
       ))}
-    </>
+      </>
   )
 }
 

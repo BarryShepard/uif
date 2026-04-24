@@ -12,6 +12,8 @@ import { TableModule } from './index'
 type StyledPaginationProps = { $enableStickyFooter: boolean } & Partial<Pick<TableCssConfig, 'pagination'>>
 
 const StyledPaginationContainer = styled.div<StyledPaginationProps>`
+  width: 100%;
+  min-width: 0;
   margin: 16px 0;
   ${(props) => props.$enableStickyFooter && props.pagination && `
     margin: 8px 0;
@@ -19,6 +21,8 @@ const StyledPaginationContainer = styled.div<StyledPaginationProps>`
     bottom: 0;
     clip-path: inset(-100vw 0 0 0);
     > div {
+      width: 100%;
+      min-width: 0;
       padding: 5px 0;
       background: ${props.pagination.background};
       box-shadow: ${props.pagination.boxShadow};

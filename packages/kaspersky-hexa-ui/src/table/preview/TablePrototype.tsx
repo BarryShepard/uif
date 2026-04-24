@@ -1968,13 +1968,19 @@ const PreviewRoot = styled.div`
     min-height: 0;
   }
 
+  > .table-horizontal-scrollbar,
+  > .ant-pagination-container {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   > .table-horizontal-scrollbar {
     flex: 0 0 auto;
   }
 
   > .ant-pagination-container {
     flex: 0 0 auto;
-    margin-top: auto;
   }
 
   && {
