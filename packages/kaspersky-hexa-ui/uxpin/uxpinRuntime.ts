@@ -13,6 +13,10 @@ type UXPinPropsContainer = {
   }
 }
 
+export type UXPinInteractionHandler = (
+  ...args: any[]
+) => void | boolean | Promise<void | boolean>
+
 export type UXPinRuntimeElementProps = UXPinPropsContainer & Record<string, unknown>
 
 type UXPinElementVisibilityProps = {

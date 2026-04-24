@@ -57,4 +57,44 @@ describe('UXPin toolbar runtime', () => {
     expect(item.overlay[0]).toMatchObject({ children: 'Action 1' })
     expect(item.overlay[1]).toMatchObject({ children: 'Action 2', disabled: true })
   })
+
+  it('keeps dropdown preset behavior when UXPin only overrides nested dropdown children', () => {
+    const [item] = toolbarChildrenToItems(
+      [
+        {
+          presetElementId: 'toolbar-left-button-2',
+          overriddenCodeProps: {
+            children: [
+              {
+                presetElementId: 'toolbar-left-button-2-dropdown',
+                overriddenCodeProps: {
+                  variant: 'single choice',
+                  children: [
+                    {
+                      name: 'DropdownItem',
+                      overriddenCodeProps: {
+                        text: 'Threats only'
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ] as unknown as React.ReactNode,
+      'toolbar-left'
+    )
+
+    expect(item.type).toBe('dropdown')
+
+    if (item.type !== 'dropdown') {
+      throw new Error('Serialized preset ToolbarButton did not stay a dropdown item')
+    }
+
+    expect(item.label).toBe('Button 2')
+    expect(item.overlay).toEqual([
+      expect.objectContaining({ children: 'Threats only' })
+    ])
+  })
 })

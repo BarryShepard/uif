@@ -12,6 +12,13 @@ import React from 'react'
 import styled from 'styled-components'
 
 import { PreviewSurface } from '../../preview'
+import {
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
+  resolveUXPinElementChildren,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
 
 /**
  * Config-only child for the UXPin `Table` prototype.
@@ -75,7 +82,8 @@ type LegacyUXPinTableColumnProps = {
 type TableColumnRuntimeProps = UXPinTableColumnProps & LegacyUXPinTableColumnProps
 
 type TableColumnComponent = React.FC<UXPinTableColumnProps> & {
-  uxpinRole?: string
+  uxpinRole?: string,
+  defaultProps?: Partial<UXPinTableColumnProps>
 }
 
 const TABLE_COLUMN_ROLE = 'hexa-uxpin-table-column'
@@ -111,33 +119,77 @@ const hasTableColumnShape = (props: Record<string, unknown> = {}): boolean => (
   'elementAfterSlot' in props
 )
 
-const isTableColumnSearchBoundary = (node: React.ReactNode): boolean => (
-  React.isValidElement(node) &&
-  (
-    TABLE_COLUMN_SEARCH_BOUNDARY_ROLES.has(String((node.type as { uxpinRole?: string })?.uxpinRole)) ||
-    (node.type as { displayName?: string })?.displayName === 'TablePlaceholder' ||
-    (node.type as { name?: string })?.name === 'TablePlaceholder'
+const isTableColumnIdentity = (value?: string): boolean => {
+  const normalizedValue = value?.toLowerCase()
+
+  return Boolean(
+    normalizedValue &&
+    normalizedValue.includes('table-column')
   )
+}
+
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
+const isTableColumnSearchBoundary = (node: React.ReactNode): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      TABLE_COLUMN_SEARCH_BOUNDARY_ROLES.has(String((node.type as { uxpinRole?: string })?.uxpinRole)) ||
+      (node.type as { displayName?: string })?.displayName === 'TablePlaceholder' ||
+      (node.type as { name?: string })?.name === 'TablePlaceholder'
+    )
+  ) ||
+  getUXPinElementPropSources(node).some((props) => (
+    props.name === 'TablePlaceholder' ||
+    TABLE_COLUMN_SEARCH_BOUNDARY_ROLES.has(String(props.uxpinRole)) ||
+    (typeof props.presetElementId === 'string' && props.presetElementId.toLowerCase().includes('table-placeholder')) ||
+    (typeof props.uxpinPresetElementId === 'string' && props.uxpinPresetElementId.toLowerCase().includes('table-placeholder'))
+  ))
 )
 
 export const isUXPinTableColumnElement = (
   node: React.ReactNode
-): node is React.ReactElement<TableColumnRuntimeProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as TableColumnComponent)?.uxpinRole === TABLE_COLUMN_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'TableColumn' ||
-    (node.type as { name?: string })?.name === 'TableColumn' ||
-    hasTableColumnShape((node.props as Record<string, unknown>) || {})
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as TableColumnComponent)?.uxpinRole === TABLE_COLUMN_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'TableColumn' ||
+      (node.type as { name?: string })?.name === 'TableColumn' ||
+      hasTableColumnShape((node.props as Record<string, unknown>) || {})
+    )
+  ) ||
+  getUXPinElementPropSources(node).some((props) => (
+    props.name === 'TableColumn' ||
+    isTableColumnIdentity(typeof props.uxpId === 'string' ? props.uxpId : undefined) ||
+    isTableColumnIdentity(typeof props.id === 'string' ? props.id : undefined) ||
+    isTableColumnIdentity(typeof props.presetElementId === 'string' ? props.presetElementId : undefined) ||
+    isTableColumnIdentity(typeof props.uxpinPresetElementId === 'string' ? props.uxpinPresetElementId : undefined) ||
+    hasTableColumnShape(props)
+  ))
 )
 
 export const resolveTableColumnChildren = (
   children: React.ReactNode
-): Array<React.ReactElement<TableColumnRuntimeProps>> => {
-  const columns: Array<React.ReactElement<TableColumnRuntimeProps>> = []
+): React.ReactNode[] => {
+  const columns: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child) {
       return
     }
@@ -151,29 +203,47 @@ export const resolveTableColumnChildren = (
       return
     }
 
-    if (
-      React.isValidElement<{ children?: React.ReactNode }>(child) &&
-      child.props?.children
-    ) {
-      columns.push(...resolveTableColumnChildren(child.props.children))
+    const nestedChildren = resolveUXPinElementChildren(child)
+
+    if (nestedChildren) {
+      columns.push(...resolveTableColumnChildren(nestedChildren))
     }
   })
 
   return columns
 }
 
+const resolveTableColumnRuntimeProps = (
+  node: React.ReactNode
+): TableColumnRuntimeProps => resolveUXPinRuntimeProps(
+  (getUXPinElementProps(node) || {}) as TableColumnRuntimeProps,
+  TableColumn.defaultProps
+)
+
+const resolveTableColumnKey = (
+  node: React.ReactNode,
+  index: number
+): string => {
+  if (React.isValidElement(node) && typeof node.key === 'string' && node.key.length) {
+    return node.key
+  }
+
+  return getFirstStringProp(
+    node,
+    ['id', 'uxpId', 'presetElementId', 'uxpinPresetElementId']
+  ) ?? `uxpin-column-${index + 1}`
+}
+
 export const tableColumnElementsToConfigs = (
   children: React.ReactNode
 ): TablePrototypeColumnConfig[] => (
   resolveTableColumnChildren(children).map((element, index) => {
-    const props = (element.props || {}) as TableColumnRuntimeProps
+    const props = resolveTableColumnRuntimeProps(element)
     const resolvedField = props.field ?? props.dataIndex
     const resolvedTitle = props.title ?? props.headerText
 
     return {
-      key: typeof element.key === 'string' && element.key.length
-        ? element.key
-        : `uxpin-column-${index + 1}`,
+      key: resolveTableColumnKey(element, index),
       field: resolvedField,
       dataIndex: props.dataIndex,
       title: resolvedTitle,

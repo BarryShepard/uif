@@ -13,6 +13,7 @@ import {
   getUXPinElementPropSources,
   hasUXPinChildrenProp,
   isUXPinHiddenElement,
+  UXPinInteractionHandler,
   resolveUXPinElementChildren,
   resolveUXPinChildrenFromProps,
   resolveUXPinRuntimeProps
@@ -52,6 +53,8 @@ export type UXPinToolbarButtonProps = {
   iconAfterSlot?: ToolbarButtonIconName,
   /** Shows the critical indicator dot near the icon. */
   indicator?: boolean,
+  /** UXPin interaction hook for button click. */
+  onClick?: UXPinInteractionHandler,
   /** Nested Dropdown component used as overlay for dropdown variant. */
   children?: React.ReactNode,
   /** @deprecated Use nested Dropdown child instead. */
@@ -66,10 +69,11 @@ type ToolbarButtonComponent = React.FC<UXPinToolbarButtonProps> & {
 }
 
 const resolveToolbarButtonRuntimeProps = (
-  rawProps: UXPinToolbarButtonProps = {}
+  rawProps: UXPinToolbarButtonProps = {},
+  defaults: Partial<UXPinToolbarButtonProps> = ToolbarButton.defaultProps || {}
 ): UXPinToolbarButtonProps => resolveUXPinRuntimeProps(
   rawProps,
-  ToolbarButton.defaultProps
+  defaults
 )
 
 const resolveToolbarButtonChildren = (
@@ -127,7 +131,7 @@ const resolveToolbarButtonDropdownNode = (
 
 type ToolbarButtonPreviewProps = Pick<
 UXPinToolbarButtonProps,
-'disabled' | 'hideText' | 'iconAfter' | 'iconAfterSlot' | 'iconBefore' | 'iconBeforeSlot' | 'indicator' | 'text' | 'variant'
+'disabled' | 'hideText' | 'iconAfter' | 'iconAfterSlot' | 'iconBefore' | 'iconBeforeSlot' | 'indicator' | 'onClick' | 'text' | 'variant'
 >
 
 const ToolbarButtonPreview = ({
@@ -138,6 +142,7 @@ const ToolbarButtonPreview = ({
   iconBefore = false,
   iconBeforeSlot,
   indicator = false,
+  onClick,
   text = 'Button',
   variant = 'default'
 }: ToolbarButtonPreviewProps): JSX.Element => {
@@ -148,6 +153,9 @@ const ToolbarButtonPreview = ({
     iconAfterSlot,
     variant === 'dropdown' ? <ArrowDown1 /> : undefined
   )
+  const handleClick = onClick
+    ? ((event: React.MouseEvent<HTMLElement>) => { void onClick(event) })
+    : undefined
 
   return (
     <HexaToolbar.Button
@@ -156,7 +164,12 @@ const ToolbarButtonPreview = ({
       iconAfter={resolvedIconAfter}
       showIndicator={indicator}
       isPressed={variant === 'toggle' ? pressed : undefined}
-      onClick={variant === 'toggle' ? (() => setPressed((current) => !current)) : undefined}
+      onClick={variant === 'toggle'
+        ? ((event) => {
+          setPressed((current) => !current)
+          void onClick?.(event)
+        })
+        : handleClick}
     >
       {hideText ? undefined : text}
     </HexaToolbar.Button>
@@ -181,6 +194,7 @@ const hasToolbarButtonOwnShape = (props: Record<string, unknown> = {}): boolean 
   'iconAfter' in props ||
   'iconAfterSlot' in props ||
   'indicator' in props ||
+  'onClick' in props ||
   'dropdown' in props
 )
 
@@ -216,6 +230,119 @@ const hasToolbarButtonIdentity = (
   isToolbarButtonIdentity(typeof props.presetElementId === 'string' ? props.presetElementId : undefined) ||
   isToolbarButtonIdentity(typeof props.uxpinPresetElementId === 'string' ? props.uxpinPresetElementId : undefined)
 ))
+
+const getFirstStringProp = (
+  node: React.ReactNode,
+  propNames: string[]
+): string | undefined => {
+  for (const props of getUXPinElementPropSources(node)) {
+    for (const propName of propNames) {
+      const value = props[propName]
+
+      if (typeof value === 'string' && value.length) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
+const resolveToolbarButtonPresetDefaults = (
+  node: React.ReactNode,
+  index: number
+): Partial<UXPinToolbarButtonProps> => {
+  const identity = getFirstStringProp(
+    node,
+    ['presetElementId', 'uxpinPresetElementId', 'uxpId', 'id', 'name']
+  )?.toLowerCase()
+
+  if (!identity || !isToolbarButtonIdentity(identity)) {
+    return {}
+  }
+
+  if (identity.includes('toolbar-left-button-1')) {
+    return {
+      disabled: false,
+      iconAfter: false,
+      iconBefore: true,
+      indicator: false,
+      text: 'Button 1',
+      variant: 'default'
+    }
+  }
+
+  if (identity.includes('toolbar-left-button-2')) {
+    return {
+      disabled: false,
+      iconAfter: true,
+      iconBefore: true,
+      indicator: false,
+      text: 'Button 2',
+      variant: 'dropdown'
+    }
+  }
+
+  if (identity.includes('toolbar-left-button-3')) {
+    return {
+      disabled: false,
+      iconAfter: false,
+      iconBefore: false,
+      indicator: false,
+      text: 'Button 3',
+      variant: 'default'
+    }
+  }
+
+  if (identity.includes('toolbar-right-button-1')) {
+    return {
+      disabled: false,
+      hideText: true,
+      iconAfter: false,
+      iconBefore: true,
+      indicator: false,
+      text: 'Filter',
+      variant: 'default'
+    }
+  }
+
+  if (identity.includes('toolbar-right-button-2')) {
+    return {
+      disabled: false,
+      hideText: true,
+      iconAfter: false,
+      iconBefore: true,
+      indicator: false,
+      text: 'Settings',
+      variant: 'default'
+    }
+  }
+
+  if (identity.includes('toolbar-button')) {
+    return {
+      disabled: false,
+      hideText: false,
+      iconAfter: false,
+      iconBefore: false,
+      indicator: false,
+      text: `Button ${index + 1}`,
+      variant: 'default'
+    }
+  }
+
+  return {}
+}
+
+const resolveToolbarButtonNodeRuntimeProps = (
+  node: React.ReactNode,
+  index: number
+): UXPinToolbarButtonProps => resolveToolbarButtonRuntimeProps(
+  (getUXPinElementProps(node) || {}) as UXPinToolbarButtonProps,
+  {
+    ...(ToolbarButton.defaultProps || {}),
+    ...resolveToolbarButtonPresetDefaults(node, index)
+  }
+)
 
 const resolveNamedIcon = (
   iconName?: ToolbarButtonIconName | React.ReactNode
@@ -278,7 +405,7 @@ export const toolbarButtonElementToItem = (
   prefix = 'toolbar-button'
 ): ToolbarItems => {
   const elementProps = (getUXPinElementProps(element) || {}) as UXPinToolbarButtonProps
-  const runtimeProps = resolveToolbarButtonRuntimeProps(elementProps)
+  const runtimeProps = resolveToolbarButtonNodeRuntimeProps(element, index)
   const {
     disabled = false,
     dropdown,
@@ -288,6 +415,7 @@ export const toolbarButtonElementToItem = (
     iconBefore = false,
     iconBeforeSlot,
     indicator = false,
+    onClick,
     text = `Button ${index + 1}`,
     variant = 'default'
   } = runtimeProps
@@ -301,11 +429,14 @@ export const toolbarButtonElementToItem = (
   )
 
   const resolvedLabel = hideText ? undefined : text
+  const handleClick = onClick
+    ? ((event: React.MouseEvent<HTMLElement>) => { void onClick(event) })
+    : undefined
 
   if (variant === 'dropdown') {
-    const dropdownOverlay = dropdownNodeToOverlay(
-      resolveToolbarButtonDropdownNode(elementProps) ?? dropdown
-    )
+    const dropdownNode = resolveToolbarButtonDropdownNode(elementProps)
+    const dropdownOverlay = dropdownNodeToOverlay(dropdownNode ?? dropdown)
+    const hasExplicitDropdownOverlay = dropdownNode !== undefined || dropdown !== undefined
 
     return {
       type: 'dropdown',
@@ -315,7 +446,8 @@ export const toolbarButtonElementToItem = (
       iconBefore: resolvedIconBefore,
       iconAfter: resolvedIconAfter,
       showIndicator: indicator,
-      overlay: dropdownOverlay?.items ?? DEFAULT_DROPDOWN_OVERLAY,
+      onClick: handleClick,
+      overlay: dropdownOverlay?.items ?? (hasExplicitDropdownOverlay ? [] : DEFAULT_DROPDOWN_OVERLAY),
       popupMaxHeight: dropdownOverlay?.maxHeight,
       selectedItemsKeys: dropdownOverlay?.selectedKeys
     }
@@ -334,6 +466,7 @@ export const toolbarButtonElementToItem = (
           iconBefore={iconBefore}
           iconBeforeSlot={iconBeforeSlot}
           indicator={indicator}
+          onClick={onClick}
           text={text}
           variant={variant}
         />
@@ -348,7 +481,8 @@ export const toolbarButtonElementToItem = (
     disabled,
     iconBefore: resolvedIconBefore,
     iconAfter: resolvedIconAfter,
-    showIndicator: indicator
+    showIndicator: indicator,
+    onClick: handleClick
   }
 }
 
@@ -431,6 +565,7 @@ const ToolbarButton: ToolbarButtonComponent = (props: UXPinToolbarButtonProps): 
           iconBefore={runtimeProps.iconBefore}
           iconBeforeSlot={runtimeProps.iconBeforeSlot}
           indicator={runtimeProps.indicator}
+          onClick={runtimeProps.onClick}
           text={runtimeProps.text}
           variant={runtimeProps.variant}
         />

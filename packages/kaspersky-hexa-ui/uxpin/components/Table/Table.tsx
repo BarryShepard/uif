@@ -9,6 +9,11 @@ import React, { CSSProperties, useMemo } from 'react'
 import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
+import {
+  hasUXPinChildrenProp,
+  resolveUXPinChildrenFromProps,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
 
 import TableColumn, {
   resolveTableColumnChildren,
@@ -38,6 +43,8 @@ type UXPinTableProps = {
   showPagination?: boolean,
   size?: TablePrototypeSize,
   children?: React.ReactNode,
+  codeComponentProps?: Partial<UXPinTableProps>,
+  overriddenCodeProps?: Partial<UXPinTableProps>,
   style?: CSSProperties
 }
 
@@ -104,6 +111,18 @@ const DEFAULT_TABLE_CHILDREN = (
   </>
 )
 
+const TABLE_DEFAULT_PROPS: Partial<UXPinTableProps> = {
+  children: DEFAULT_TABLE_CHILDREN,
+  rowsCount: 30,
+  rowsPerPage: '20 on page',
+  showPaginationSummary: true,
+  showRowsPerPageSelector: true,
+  selectionMode: 'checkbox',
+  heightMode: 'hug',
+  showPagination: true,
+  size: 'compact'
+}
+
 const resolveRowsPerPage = (
   rowsPerPage: UXPinRowsPerPage | number | undefined
 ): number => {
@@ -114,20 +133,26 @@ const resolveRowsPerPage = (
   return rowsPerPage ? ROWS_PER_PAGE_BY_OPTION[rowsPerPage] : 20
 }
 
-const Table = ({
-  children = DEFAULT_TABLE_CHILDREN,
-  dataMode,
-  dataSourceJson,
-  rowsCount = 30,
-  rowsPerPage = '20 on page',
-  showPaginationSummary = true,
-  showRowsPerPageSelector = true,
-  selectionMode = 'checkbox',
-  heightMode = 'hug',
-  showPagination = true,
-  size = 'compact',
-  style
-}: UXPinTableProps): JSX.Element => {
+const Table = (rawProps: UXPinTableProps): JSX.Element => {
+  const runtimeProps = resolveUXPinRuntimeProps(rawProps, TABLE_DEFAULT_PROPS)
+  const runtimeChildren = hasUXPinChildrenProp(rawProps)
+    ? resolveUXPinChildrenFromProps(rawProps)
+    : runtimeProps.children
+  const {
+    dataMode,
+    dataSourceJson,
+    rowsCount = 30,
+    rowsPerPage = '20 on page',
+    showPaginationSummary = true,
+    showRowsPerPageSelector = true,
+    selectionMode = 'checkbox',
+    heightMode = 'hug',
+    showPagination = true,
+    size = 'compact',
+    style
+  } = runtimeProps
+  const children = runtimeChildren ?? DEFAULT_TABLE_CHILDREN
+
   const resolvedChildren = useMemo(() => {
     const resolvedColumns = resolveTableColumnChildren(children)
     return resolvedColumns.length ? resolvedColumns : DEFAULT_TABLE_CHILDREN
@@ -175,17 +200,7 @@ const Table = ({
   )
 }
 
-Table.defaultProps = {
-  children: DEFAULT_TABLE_CHILDREN,
-  rowsCount: 30,
-  rowsPerPage: '20 on page',
-  showPaginationSummary: true,
-  showRowsPerPageSelector: true,
-  selectionMode: 'checkbox',
-  heightMode: 'hug',
-  showPagination: true,
-  size: 'compact'
-}
+Table.defaultProps = TABLE_DEFAULT_PROPS
 
 Table.displayName = 'Table'
 

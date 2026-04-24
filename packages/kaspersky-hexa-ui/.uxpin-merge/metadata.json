@@ -67280,11 +67280,38 @@
               }
             },
             {
+              "description": "UXPin interaction hook for item click.",
+              "isRequired": false,
+              "name": "onClick",
+              "type": {
+                "name": "func",
+                "structure": {}
+              }
+            },
+            {
               "description": "",
               "isRequired": false,
               "name": "children",
               "type": {
                 "name": "node",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
                 "structure": {}
               }
             }
@@ -110219,6 +110246,15 @@
               }
             },
             {
+              "description": "UXPin interaction hook for row click.",
+              "isRequired": false,
+              "name": "onClick",
+              "type": {
+                "name": "func",
+                "structure": {}
+              }
+            },
+            {
               "description": "Nested SubmenuItem nodes and optional content for the row.",
               "isRequired": false,
               "name": "children",
@@ -110320,6 +110356,15 @@
               }
             },
             {
+              "description": "UXPin interaction hook for tab click.",
+              "isRequired": false,
+              "name": "onClick",
+              "type": {
+                "name": "func",
+                "structure": {}
+              }
+            },
+            {
               "description": "Tab content.",
               "isRequired": false,
               "name": "children",
@@ -110417,9 +110462,6 @@
               "type": {
                 "name": "number",
                 "structure": {}
-              },
-              "defaultValue": {
-                "value": 30
               }
             },
             {
@@ -110450,9 +110492,6 @@
                     }
                   ]
                 }
-              },
-              "defaultValue": {
-                "value": "20 on page"
               }
             },
             {
@@ -110462,9 +110501,6 @@
               "type": {
                 "name": "boolean",
                 "structure": {}
-              },
-              "defaultValue": {
-                "value": true
               }
             },
             {
@@ -110474,9 +110510,6 @@
               "type": {
                 "name": "boolean",
                 "structure": {}
-              },
-              "defaultValue": {
-                "value": true
               }
             },
             {
@@ -110507,9 +110540,6 @@
                     }
                   ]
                 }
-              },
-              "defaultValue": {
-                "value": "checkbox"
               }
             },
             {
@@ -110534,9 +110564,6 @@
                     }
                   ]
                 }
-              },
-              "defaultValue": {
-                "value": "hug"
               }
             },
             {
@@ -110546,9 +110573,6 @@
               "type": {
                 "name": "boolean",
                 "structure": {}
-              },
-              "defaultValue": {
-                "value": true
               }
             },
             {
@@ -110573,9 +110597,6 @@
                     }
                   ]
                 }
-              },
-              "defaultValue": {
-                "value": "compact"
               }
             },
             {
@@ -110584,6 +110605,24 @@
               "name": "children",
               "type": {
                 "name": "node",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
                 "structure": {}
               }
             },
@@ -129453,6 +129492,15 @@
               }
             },
             {
+              "description": "UXPin interaction hook for button click.",
+              "isRequired": false,
+              "name": "onClick",
+              "type": {
+                "name": "func",
+                "structure": {}
+              }
+            },
+            {
               "description": "Nested Dropdown component used as overlay for dropdown variant.",
               "isRequired": false,
               "name": "children",
@@ -129467,6 +129515,15 @@
               "name": "dropdown",
               "type": {
                 "name": "node",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
                 "structure": {}
               }
             },
@@ -129834,6 +129891,15 @@
               },
               "defaultValue": {
                 "value": "Search"
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
               }
             },
             {
@@ -132381,7 +132447,7 @@
   "name": "Kaspersky Hexa UI",
   "vcs": {
     "branchName": "master",
-    "commitHash": "450bb995ced62f4b60e3164296c1175439a52339",
+    "commitHash": "ed16201285beae95caccac5ed0eaa1e921ba10e0",
     "paths": {
       "configPath": "/Users/dmitry/uif/packages/kaspersky-hexa-ui/uxpin.config.js",
       "projectRoot": "/Users/dmitry/uif/packages/kaspersky-hexa-ui"

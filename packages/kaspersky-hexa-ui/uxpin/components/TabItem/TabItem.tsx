@@ -8,6 +8,7 @@ import {
   getUXPinChildrenArray,
   getUXPinElementProps,
   getUXPinElementPropSources,
+  UXPinInteractionHandler,
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
@@ -22,6 +23,8 @@ export type UXPinTabItemProps = {
   text?: string,
   /** Shows a small indicator next to the tab text. */
   indicator?: boolean,
+  /** UXPin interaction hook for tab click. */
+  onClick?: UXPinInteractionHandler,
   /** Tab content. */
   children?: React.ReactNode,
   overriddenCodeProps?: Partial<UXPinTabItemProps>
@@ -34,7 +37,8 @@ type TabItemComponent = React.FC<UXPinTabItemProps> & {
 
 export type TabItemsBuildResult = {
   panes: React.ReactNode[],
-  selectedKey?: string
+  selectedKey?: string,
+  tabClickHandlers: Record<string, UXPinInteractionHandler | undefined>
 }
 
 const TAB_ITEM_ROLE = 'hexa-uxpin-tab-item'
@@ -67,6 +71,7 @@ const hasTabItemShape = (props: Record<string, unknown> = {}): boolean => (
   'selected' in props ||
   'disabled' in props ||
   'indicator' in props ||
+  'onClick' in props ||
   (
     'text' in props &&
     Object.keys(props).some((key) => key !== 'children')
@@ -204,11 +209,16 @@ export const hasUXPinTabItemChildren = (children: React.ReactNode): boolean => (
   getTabItemChildren(children).length > 0
 )
 
+const isPreviewActivationKey = (key: string): boolean => (
+  key === 'Enter' || key === ' '
+)
+
 export const tabChildrenToPanes = (
   children: React.ReactNode
 ): TabItemsBuildResult => {
   const result: TabItemsBuildResult = {
-    panes: []
+    panes: [],
+    tabClickHandlers: {}
   }
 
   getTabItemChildren(children).forEach((child) => {
@@ -224,6 +234,7 @@ export const tabChildrenToPanes = (
     const {
       disabled = false,
       children: content,
+      onClick,
       selected = false
     } = runtimeProps
 
@@ -237,6 +248,8 @@ export const tabChildrenToPanes = (
       </HexaTabs.TabPane>
     )
 
+    result.tabClickHandlers[key] = onClick
+
     if (selected) {
       result.selectedKey = key
     }
@@ -248,13 +261,31 @@ export const tabChildrenToPanes = (
 const TabItem = (rawProps: UXPinTabItemProps): JSX.Element => {
   const {
     disabled = false,
+    onClick,
     selected = false,
     text = 'Tab'
   } = resolveTabItemRuntimeProps(rawProps)
+  const handlePreviewClick = !disabled && onClick
+    ? (() => { void onClick?.() })
+    : undefined
 
   return (
     <FrameFill style={{ height: 'fit-content', width: 'fit-content' }}>
-      <TabItemPreviewRoot className={[selected ? 'selected' : '', disabled ? 'disabled' : ''].filter(Boolean).join(' ')}>
+      <TabItemPreviewRoot
+        className={[selected ? 'selected' : '', disabled ? 'disabled' : ''].filter(Boolean).join(' ')}
+        onClick={handlePreviewClick}
+        onKeyDown={handlePreviewClick
+          ? ((event) => {
+            if (isPreviewActivationKey(event.key)) {
+              event.preventDefault()
+              handlePreviewClick?.()
+            }
+          })
+          : undefined}
+        role={handlePreviewClick ? 'button' : undefined}
+        style={handlePreviewClick ? { cursor: 'pointer' } : undefined}
+        tabIndex={handlePreviewClick ? 0 : undefined}
+      >
         {text}
       </TabItemPreviewRoot>
     </FrameFill>

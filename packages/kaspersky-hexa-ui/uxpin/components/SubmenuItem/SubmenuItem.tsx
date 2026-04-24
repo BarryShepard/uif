@@ -11,6 +11,7 @@ import {
   getUXPinChildrenArray,
   getUXPinElementProps,
   getUXPinElementPropSources,
+  UXPinInteractionHandler,
   resolveUXPinElementChildren,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
@@ -46,6 +47,8 @@ export type UXPinSubmenuItemProps = {
   elementAfterSlot?: React.ReactNode,
   /** Shows critical notification indicator. */
   notification?: boolean,
+  /** UXPin interaction hook for row click. */
+  onClick?: UXPinInteractionHandler,
   /** Nested SubmenuItem nodes and optional content for the row. */
   children?: React.ReactNode,
   overriddenCodeProps?: Partial<UXPinSubmenuItemProps>
@@ -81,6 +84,7 @@ const hasSubmenuItemShape = (props: Record<string, unknown> = {}): boolean => (
   'iconBefore' in props ||
   'iconBeforeSlot' in props ||
   'elementAfterSlot' in props ||
+  'onClick' in props ||
   (
     'text' in props &&
     'descriptionText' in props &&
@@ -232,6 +236,10 @@ const getSubmenuItemContent = (
   return content.length ? <>{content}</> : undefined
 }
 
+const isPreviewActivationKey = (key: string): boolean => (
+  key === 'Enter' || key === ' '
+)
+
 export const submenuItemElementToItem = (
   element: React.ReactNode,
   index: number,
@@ -254,6 +262,7 @@ export const submenuItemElementToItem = (
     iconBefore = false,
     iconBeforeSlot,
     notification = false,
+    onClick,
     selected = false,
     text = `Submenu item ${index + 1}`,
     variant = 'item'
@@ -291,7 +300,8 @@ export const submenuItemElementToItem = (
     elementAfter: resolveElementAfter(elementAfter, elementAfterSlot),
     notification: notification ? { type: 'indicator', mode: 'critical' } : undefined,
     children: nestedRows.length ? nestedRows : undefined,
-    content
+    content,
+    onClick: onClick ? ((key, row) => onClick(key, row)) : undefined
   }
 
   return {
@@ -439,11 +449,15 @@ const SubmenuItem = (rawProps: UXPinSubmenuItemProps): JSX.Element => {
     iconBefore = false,
     iconBeforeSlot,
     notification = false,
+    onClick,
     selected = false,
     text = 'Submenu item',
     variant = 'item'
   } = resolveSubmenuItemRuntimeProps(rawProps)
   const nestedItems = getSubmenuItemChildren(children)
+  const handlePreviewClick = !disabled && onClick
+    ? (() => { void onClick?.() })
+    : undefined
 
   if (variant === 'divider') {
     return (
@@ -469,6 +483,18 @@ const SubmenuItem = (rawProps: UXPinSubmenuItemProps): JSX.Element => {
         selected ? 'selected' : '',
         disabled ? 'disabled' : ''
       ].filter(Boolean).join(' ')}
+        onClick={handlePreviewClick}
+        onKeyDown={handlePreviewClick
+          ? ((event) => {
+            if (isPreviewActivationKey(event.key)) {
+              event.preventDefault()
+              handlePreviewClick?.()
+            }
+          })
+          : undefined}
+        role={handlePreviewClick ? 'button' : undefined}
+        style={handlePreviewClick ? { cursor: 'pointer' } : undefined}
+        tabIndex={handlePreviewClick ? 0 : undefined}
       >
         {nestedItems.length > 0 && (
           <span className="submenu-item-preview-arrow">

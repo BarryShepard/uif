@@ -6,6 +6,13 @@ import React from 'react'
 import styled from 'styled-components'
 
 import { PreviewSurface } from '../../preview'
+import {
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
+  resolveUXPinElementChildren,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
 
 import Button from '../Button/Button'
 
@@ -47,32 +54,54 @@ const hasTablePlaceholderShape = (props: Record<string, unknown> = {}): boolean 
 )
 
 const resolveElementChildren = (
-  element: React.ReactElement<UXPinTablePlaceholderProps>
-): React.ReactNode => (
-  element.props.children ??
-  (typeof element.type === 'function'
-    ? (element.type as TablePlaceholderComponent).defaultProps?.children
-    : undefined)
-)
+  element: React.ReactNode
+): React.ReactNode => {
+  const elementChildren = resolveUXPinElementChildren(element)
+
+  if (elementChildren !== undefined) {
+    return elementChildren
+  }
+
+  if (React.isValidElement<UXPinTablePlaceholderProps>(element)) {
+    return (
+      element.props.children ??
+      (typeof element.type === 'function'
+        ? (element.type as TablePlaceholderComponent).defaultProps?.children
+        : undefined)
+    )
+  }
+
+  return TablePlaceholder.defaultProps?.children
+}
 
 export const isUXPinTablePlaceholderElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinTablePlaceholderProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as TablePlaceholderComponent)?.uxpinRole === TABLE_PLACEHOLDER_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'TablePlaceholder' ||
-    (node.type as { name?: string })?.name === 'TablePlaceholder' ||
-    hasTablePlaceholderShape((node.props as Record<string, unknown>) || {})
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as TablePlaceholderComponent)?.uxpinRole === TABLE_PLACEHOLDER_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'TablePlaceholder' ||
+      (node.type as { name?: string })?.name === 'TablePlaceholder' ||
+      hasTablePlaceholderShape((node.props as Record<string, unknown>) || {})
+    )
+  ) ||
+  getUXPinElementPropSources(node).some((props) => (
+    props.name === 'TablePlaceholder' ||
+    (typeof props.uxpId === 'string' && props.uxpId.toLowerCase().includes('table-placeholder')) ||
+    (typeof props.id === 'string' && props.id.toLowerCase().includes('table-placeholder')) ||
+    (typeof props.presetElementId === 'string' && props.presetElementId.toLowerCase().includes('table-placeholder')) ||
+    (typeof props.uxpinPresetElementId === 'string' && props.uxpinPresetElementId.toLowerCase().includes('table-placeholder')) ||
+    hasTablePlaceholderShape(props)
+  ))
 )
 
 export const resolveTablePlaceholderChildren = (
   children: React.ReactNode
-): Array<React.ReactElement<UXPinTablePlaceholderProps>> => {
-  const placeholders: Array<React.ReactElement<UXPinTablePlaceholderProps>> = []
+): React.ReactNode[] => {
+  const placeholders: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child) {
       return
     }
@@ -82,16 +111,22 @@ export const resolveTablePlaceholderChildren = (
       return
     }
 
-    if (
-      React.isValidElement<{ children?: React.ReactNode }>(child) &&
-      child.props?.children
-    ) {
-      placeholders.push(...resolveTablePlaceholderChildren(child.props.children))
+    const nestedChildren = resolveUXPinElementChildren(child)
+
+    if (nestedChildren) {
+      placeholders.push(...resolveTablePlaceholderChildren(nestedChildren))
     }
   })
 
   return placeholders
 }
+
+const resolveTablePlaceholderRuntimeProps = (
+  node: React.ReactNode
+): UXPinTablePlaceholderProps => resolveUXPinRuntimeProps(
+  (getUXPinElementProps(node) || {}) as UXPinTablePlaceholderProps,
+  TablePlaceholder.defaultProps
+)
 
 export const resolveTablePlaceholderConfig = (
   children: React.ReactNode
@@ -102,7 +137,7 @@ export const resolveTablePlaceholderConfig = (
     return undefined
   }
 
-  const props = (element.props || {}) as UXPinTablePlaceholderProps
+  const props = resolveTablePlaceholderRuntimeProps(element)
 
   return {
     size: props.size,

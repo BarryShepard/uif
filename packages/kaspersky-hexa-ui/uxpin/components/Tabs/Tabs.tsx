@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { Tabs as HexaTabs } from '@src/tabs'
-import { TabsProps } from '@src/tabs/types'
+import { TabsProps as HexaTabsProps } from '@src/tabs/types'
 
 import { mergeFrameStyle } from '../../preview'
 import {
@@ -14,9 +14,9 @@ import {
   tabChildrenToPanes
 } from '../TabItem/TabItem'
 
-export type UXPinTabsProps = TabsProps & {
-  overriddenCodeProps?: Partial<TabsProps>,
-  codeComponentProps?: Partial<TabsProps>
+export type UXPinTabsProps = HexaTabsProps & {
+  overriddenCodeProps?: Partial<HexaTabsProps>,
+  codeComponentProps?: Partial<HexaTabsProps>
 }
 
 type TabsComponent = React.FC<UXPinTabsProps> & {
@@ -69,12 +69,13 @@ const Tabs: TabsComponent = (rawProps: UXPinTabsProps): JSX.Element => {
     children,
     defaultActiveKey,
     onChange,
+    onTabClick,
     overriddenCodeProps: _overriddenCodeProps,
     style,
     ...runtimeProps
   } = resolveUXPinRuntimeProps(rawProps)
   const resolvedChildren = children
-  const { panes, selectedKey } = tabChildrenToPanes(resolvedChildren)
+  const { panes, selectedKey, tabClickHandlers } = tabChildrenToPanes(resolvedChildren)
   const renderedChildren = panes.length ? panes : resolvedChildren ?? null
   const firstPaneKey = panes.length ? getPaneKey(panes[0]) : undefined
   const resolvedInitialActiveKey = activeKey ?? defaultActiveKey ?? selectedKey ?? firstPaneKey ?? '1'
@@ -98,11 +99,17 @@ const Tabs: TabsComponent = (rawProps: UXPinTabsProps): JSX.Element => {
     return shouldContinue
   }
 
+  const handleTabClick: HexaTabsProps['onTabClick'] = (nextActiveKey, event) => {
+    void tabClickHandlers[nextActiveKey]?.(nextActiveKey, event)
+    onTabClick?.(nextActiveKey, event)
+  }
+
   return (
     <HexaTabs
       {...runtimeProps}
       activeKey={activeKey ?? localActiveKey}
       onChange={handleChange}
+      onTabClick={handleTabClick}
       style={mergeFrameStyle(style)}
     >
       {renderedChildren}

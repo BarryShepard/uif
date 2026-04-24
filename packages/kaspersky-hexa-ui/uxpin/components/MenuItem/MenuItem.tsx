@@ -6,6 +6,16 @@ import styled from 'styled-components'
 
 import Icons16Pack, { ArrowRightMini, Placeholder } from '@kaspersky/hexa-ui-icons/16'
 
+import {
+  getUXPinChildrenArray,
+  getUXPinElementProps,
+  getUXPinElementPropSources,
+  UXPinInteractionHandler,
+  resolveUXPinElementChildren,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
+import { isUXPinHiddenElement } from '../../visibility'
+
 export type MenuItemType = 'item' | 'header' | 'divider'
 
 export type MenuItemState = 'enabled' | 'disabled' | 'active' | 'hover'
@@ -37,7 +47,11 @@ export type UXPinMenuItemProps = {
   elementAfter?: boolean,
   /** Slot for the icon after the label */
   elementAfterSlot?: React.ReactNode,
-  children?: React.ReactNode
+  /** UXPin interaction hook for item click. */
+  onClick?: UXPinInteractionHandler,
+  children?: React.ReactNode,
+  codeComponentProps?: Partial<UXPinMenuItemProps>,
+  overriddenCodeProps?: Partial<UXPinMenuItemProps>
 }
 
 type MenuItemComponent = React.FC<UXPinMenuItemProps> & {
@@ -64,8 +78,35 @@ const hasMenuItemShape = (props: Record<string, unknown> = {}): boolean => (
   'notification' in props ||
   'elementAfter' in props ||
   'elementAfterSlot' in props ||
+  'onClick' in props ||
   'state' in props
 )
+
+const resolveMenuItemRuntimeProps = (
+  rawProps: UXPinMenuItemProps = {}
+): UXPinMenuItemProps => resolveUXPinRuntimeProps(rawProps, MenuItem.defaultProps)
+
+const isMenuItemIdentity = (value?: string): boolean => {
+  const normalizedValue = value?.toLowerCase()
+
+  return Boolean(
+    normalizedValue &&
+    (
+      normalizedValue.includes('menu-item') ||
+      normalizedValue.includes('menuitem')
+    )
+  )
+}
+
+const hasMenuItemIdentity = (
+  node: React.ReactNode
+): boolean => getUXPinElementPropSources(node).some((props) => (
+  props.name === 'MenuItem' ||
+  isMenuItemIdentity(typeof props.uxpId === 'string' ? props.uxpId : undefined) ||
+  isMenuItemIdentity(typeof props.id === 'string' ? props.id : undefined) ||
+  isMenuItemIdentity(typeof props.presetElementId === 'string' ? props.presetElementId : undefined) ||
+  isMenuItemIdentity(typeof props.uxpinPresetElementId === 'string' ? props.uxpinPresetElementId : undefined)
+))
 
 const resolvePreviewStateClassName = (state: MenuItemState): string => {
   switch (state) {
@@ -113,11 +154,11 @@ const resolveMenuItemState = (
 
 export const resolveMenuItemChildren = (
   children: React.ReactNode
-): Array<React.ReactElement<UXPinMenuItemProps>> => {
-  const menuItems: Array<React.ReactElement<UXPinMenuItemProps>> = []
+): React.ReactNode[] => {
+  const menuItems: React.ReactNode[] = []
 
-  React.Children.forEach(children, (child) => {
-    if (!child) {
+  getUXPinChildrenArray(children).forEach((child) => {
+    if (!child || isUXPinHiddenElement(child)) {
       return
     }
 
@@ -126,11 +167,10 @@ export const resolveMenuItemChildren = (
       return
     }
 
-    if (
-      React.isValidElement<{ children?: React.ReactNode }>(child) &&
-      child.props?.children
-    ) {
-      menuItems.push(...resolveMenuItemChildren(child.props.children))
+    const nestedChildren = resolveUXPinElementChildren(child)
+
+    if (nestedChildren) {
+      menuItems.push(...resolveMenuItemChildren(nestedChildren))
     }
   })
 
@@ -186,11 +226,11 @@ const buildElementAfter = ({
 }
 
 const buildStateKey = (
-  element: React.ReactElement<UXPinMenuItemProps>,
+  element: React.ReactNode,
   path: string,
   index: number
 ): string => {
-  const ownKey = typeof element.key === 'string' && element.key.length
+  const ownKey = React.isValidElement(element) && typeof element.key === 'string' && element.key.length
     ? element.key
     : `index-${index}`
 
@@ -199,14 +239,21 @@ const buildStateKey = (
 
 const MenuDividerComponent = (): JSX.Element => <NavDivider />
 
+const isPreviewActivationKey = (key: string): boolean => (
+  key === 'Enter' || key === ' '
+)
+
 export const menuItemElementsToNavItems = (
   children: React.ReactNode,
   depth = 1,
   parentPath = 'uxpin-menu-item'
 ): NavItemData[] => (
   resolveMenuItemChildren(children).map((element, index) => {
+    const runtimeProps = resolveMenuItemRuntimeProps(
+      (getUXPinElementProps(element) || {}) as UXPinMenuItemProps
+    )
     const {
-      children: nestedChildren,
+      children: ownChildren,
       collapsible,
       description,
       descriptionText,
@@ -216,10 +263,12 @@ export const menuItemElementsToNavItems = (
       elementBeforeIcon,
       elementBeforeSlot,
       label = `Menu item ${index + 1}`,
+      onClick,
       notification
-    } = element.props
-    const itemType = resolveMenuItemType(element.props as UXPinMenuItemProps & Record<string, unknown>)
-    const itemState = resolveMenuItemState(element.props as UXPinMenuItemProps & Record<string, unknown>)
+    } = runtimeProps
+    const nestedChildren = resolveUXPinElementChildren(element) ?? ownChildren
+    const itemType = resolveMenuItemType(runtimeProps as UXPinMenuItemProps & Record<string, unknown>)
+    const itemState = resolveMenuItemState(runtimeProps as UXPinMenuItemProps & Record<string, unknown>)
     const itemStateKey = buildStateKey(element, parentPath, index)
 
     if (itemType === 'divider') {
@@ -251,21 +300,25 @@ export const menuItemElementsToNavItems = (
       itemClass: itemState === 'hover' ? 'uxpin-menu-item-hover' : undefined,
       isRoot: depth === 1,
       expanded: collapsible ?? Boolean(items.length),
-      items: items.length ? items : undefined
+      items: items.length ? items : undefined,
+      onClick: itemType === 'item' ? (() => { void onClick?.() }) : undefined
     }
   })
 )
 
 export const isUXPinMenuItemElement = (
   node: React.ReactNode
-): node is React.ReactElement<UXPinMenuItemProps> => (
-  React.isValidElement(node) &&
-  (
-    (node.type as MenuItemComponent)?.uxpinRole === MENU_ITEM_ROLE ||
-    (node.type as { displayName?: string })?.displayName === 'MenuItem' ||
-    (node.type as { name?: string })?.name === 'MenuItem' ||
-    hasMenuItemShape((node.props as Record<string, unknown>) || {})
-  )
+): boolean => (
+  Boolean(
+    React.isValidElement(node) &&
+    (
+      (node.type as MenuItemComponent)?.uxpinRole === MENU_ITEM_ROLE ||
+      (node.type as { displayName?: string })?.displayName === 'MenuItem' ||
+      (node.type as { name?: string })?.name === 'MenuItem'
+    )
+  ) ||
+  hasMenuItemIdentity(node) ||
+  getUXPinElementPropSources(node).some(hasMenuItemShape)
 )
 
 export const isPlaceholderMenuItemElement = (
@@ -384,6 +437,7 @@ const PreviewRoot = styled.div`
 `
 
 const MenuItem: MenuItemComponent = (rawProps: UXPinMenuItemProps): JSX.Element => {
+  const resolvedProps = resolveMenuItemRuntimeProps(rawProps)
   const {
     children,
     collapsible,
@@ -396,13 +450,18 @@ const MenuItem: MenuItemComponent = (rawProps: UXPinMenuItemProps): JSX.Element 
     elementBeforeSlot,
     label = 'Menu item',
     notification = false,
+    onClick,
     state = 'enabled'
-  } = rawProps
+  } = resolvedProps
   const previewChildren = resolveMenuItemChildren(children)
   const hasNestedItems = previewChildren.length > 0
   const showExpandedChildren = collapsible ?? hasNestedItems
-  const resolvedType = resolveMenuItemType(rawProps as LegacyMenuItemRuntimeProps & Record<string, unknown>)
-  const resolvedState = resolveMenuItemState(rawProps as LegacyMenuItemRuntimeProps & Record<string, unknown>)
+  const resolvedType = resolveMenuItemType(resolvedProps as LegacyMenuItemRuntimeProps & Record<string, unknown>)
+  const resolvedState = resolveMenuItemState(resolvedProps as LegacyMenuItemRuntimeProps & Record<string, unknown>)
+  const isInteractive = resolvedType === 'item' && resolvedState !== 'disabled' && Boolean(onClick)
+  const handlePreviewClick = isInteractive
+    ? (() => { void onClick?.() })
+    : undefined
 
   if (resolvedType === 'divider') {
     return (
@@ -426,7 +485,21 @@ const MenuItem: MenuItemComponent = (rawProps: UXPinMenuItemProps): JSX.Element 
 
   return (
     <PreviewRoot>
-      <div className={`preview-entry ${resolvePreviewStateClassName(resolvedState)}`}>
+      <div
+        className={`preview-entry ${resolvePreviewStateClassName(resolvedState)}`}
+        onClick={handlePreviewClick}
+        onKeyDown={isInteractive
+          ? ((event) => {
+            if (isPreviewActivationKey(event.key)) {
+              event.preventDefault()
+              handlePreviewClick?.()
+            }
+          })
+          : undefined}
+        role={isInteractive ? 'button' : undefined}
+        style={isInteractive ? { cursor: 'pointer' } : undefined}
+        tabIndex={isInteractive ? 0 : undefined}
+      >
         {elementBefore && (
           <div className="preview-icon">
             {resolveNamedIcon(elementBeforeIcon) ?? elementBeforeSlot ?? <Placeholder />}
