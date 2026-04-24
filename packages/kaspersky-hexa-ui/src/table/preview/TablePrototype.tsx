@@ -332,7 +332,6 @@ export const TablePrototype = ({
   const rootRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
   const [scrollViewportHeight, setScrollViewportHeight] = useState<number | undefined>(undefined)
-  const [hasVerticalOverflow, setHasVerticalOverflow] = useState(false)
   const hasExplicitFrameHeight = fillFrameHeight || hasConcreteFrameHeightStyle(style)
   const resolvedRowsCount = normalizeNonNegativeInteger(rowsCount ?? rows, rows)
   const resolvedRowsPerPage = normalizePositiveInteger(rowsPerPage ?? pageSize, DEFAULT_PAGE_SIZE)
@@ -454,7 +453,6 @@ export const TablePrototype = ({
 
       if (!hasExplicitFrameHeight) {
         setScrollViewportHeight(undefined)
-        setHasVerticalOverflow(false)
         return
       }
 
@@ -498,9 +496,6 @@ export const TablePrototype = ({
 
       setScrollViewportHeight((currentHeight) => (
         currentHeight === nextScrollViewportHeight ? currentHeight : nextScrollViewportHeight
-      ))
-      setHasVerticalOverflow((currentValue) => (
-        currentValue === nextHasVerticalOverflow ? currentValue : nextHasVerticalOverflow
       ))
     }
 
@@ -780,7 +775,7 @@ export const TablePrototype = ({
             ? 'ant-table-row-selected'
             : ''
         )}
-        stickyFooter={hasExplicitFrameHeight && showPagination && hasVerticalOverflow}
+        stickyFooter={hasExplicitFrameHeight && showPagination}
         tableLayout={horizontalScrollX ? 'fixed' : undefined}
       />
     </PreviewRoot>

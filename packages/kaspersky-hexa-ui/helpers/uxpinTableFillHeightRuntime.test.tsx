@@ -3,6 +3,9 @@ import '@testing-library/jest-dom'
 import { act, render, waitFor } from '@testing-library/react'
 import React from 'react'
 
+const stickyFooterHistory: boolean[] = []
+let lastStickyFooter = false
+
 jest.mock('@src/action-button', () => ({
   ActionButton: ({ children }: { children?: React.ReactNode }) => <button>{children}</button>
 }))
@@ -51,27 +54,39 @@ jest.mock('@src/table', () => {
       dataSource = [],
       fullHeight,
       pagination,
-      scroll
+      scroll,
+      stickyFooter
     }: {
       dataSource?: unknown[],
       fullHeight?: boolean,
       pagination?: unknown,
-      scroll?: { y?: number }
+      scroll?: { y?: number },
+      stickyFooter?: boolean
     }) => (
-      <>
-        <div className={`table-scrolling-wrapper${fullHeight ? ' table-height-full' : ''}`}>
-          <div className="ant-table-header">
-            <div className="ant-table-thead" />
-          </div>
-          <div className="ant-table-body" style={scroll?.y ? { maxHeight: `${scroll.y}px` } : undefined}>
-            {dataSource.length
-              ? <div className="ant-table-tbody" />
-              : <div className="ant-table-placeholder" />}
-          </div>
-        </div>
-        <div className="table-horizontal-scrollbar" />
-        {pagination ? <div className="ant-pagination-container" /> : null}
-      </>
+      (() => {
+        lastStickyFooter = Boolean(stickyFooter)
+        stickyFooterHistory.push(lastStickyFooter)
+
+        return (
+          <>
+            <div
+              className={`table-scrolling-wrapper${fullHeight ? ' table-height-full' : ''}`}
+              data-sticky-footer={stickyFooter ? 'true' : 'false'}
+            >
+              <div className="ant-table-header">
+                <div className="ant-table-thead" />
+              </div>
+              <div className="ant-table-body" style={scroll?.y ? { maxHeight: `${scroll.y}px` } : undefined}>
+                {dataSource.length
+                  ? <div className="ant-table-tbody" />
+                  : <div className="ant-table-placeholder" />}
+              </div>
+            </div>
+            <div className="table-horizontal-scrollbar" />
+            {pagination ? <div className="ant-pagination-container" /> : null}
+          </>
+        )
+      })()
     )
   }
 })
@@ -139,10 +154,42 @@ const setRect = (
   })
 }
 
+const setRectFactory = (
+  element: Element,
+  factory: () => {
+    height: number,
+    width?: number
+  }
+): void => {
+  Object.defineProperty(element, 'getBoundingClientRect', {
+    configurable: true,
+    value: () => {
+      const { height, width = 800 } = factory()
+
+      return {
+        width,
+        height,
+        top: 0,
+        left: 0,
+        right: width,
+        bottom: height,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      }
+    }
+  })
+}
+
 describe('UXPin table fill-height runtime', () => {
   const originalResizeObserver = global.ResizeObserver
   const originalRequestAnimationFrame = global.requestAnimationFrame
   const originalCancelAnimationFrame = global.cancelAnimationFrame
+
+  beforeEach(() => {
+    stickyFooterHistory.splice(0, stickyFooterHistory.length)
+    lastStickyFooter = false
+  })
 
   beforeAll(() => {
     global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
@@ -211,5 +258,63 @@ describe('UXPin table fill-height runtime', () => {
 
       expect(tableBody).toHaveStyle('max-height: 304px')
     })
+  })
+
+  it('keeps sticky pagination enabled in fill-height mode instead of toggling with overflow measurements', async () => {
+    const { container } = render(
+      <div style={{ height: 400, width: 800 }}>
+        <TablePrototype
+          fillFrameHeight={true}
+          rowsCount={100}
+          rowsPerPage={20}
+          showPagination={true}
+        />
+      </div>
+    )
+
+    const root = container.querySelector('[data-table-prototype-selection-mode]') as HTMLElement
+    const scrollingWrapper = container.querySelector('.table-scrolling-wrapper') as HTMLElement
+    const header = (
+      container.querySelector('.ant-table-header') ||
+      container.querySelector('.ant-table-thead')
+    ) as HTMLElement
+    const bodyContent = (
+      container.querySelector('.ant-table-tbody') ||
+      container.querySelector('.ant-table-placeholder')
+    ) as HTMLElement
+    const pagination = container.querySelector('.ant-pagination-container') as HTMLElement
+    const horizontalScrollbar = container.querySelector('.table-horizontal-scrollbar') as HTMLElement
+
+    expect(root).not.toBeNull()
+    expect(scrollingWrapper).not.toBeNull()
+    expect(header).not.toBeNull()
+    expect(bodyContent).not.toBeNull()
+    expect(pagination).not.toBeNull()
+    expect(horizontalScrollbar).not.toBeNull()
+
+    setRect(root, { height: 400 })
+    setRect(scrollingWrapper, { height: 344 })
+    setRect(header, { height: 40 })
+    setRect(horizontalScrollbar, { height: 8 })
+    setRectFactory(bodyContent, () => ({
+      height: lastStickyFooter ? 300 : 306
+    }))
+    setRectFactory(pagination, () => ({
+      height: lastStickyFooter ? 52 : 48
+    }))
+
+    await act(async () => {
+      triggerResizeObservers()
+    })
+
+    await waitFor(() => {
+      expect(stickyFooterHistory).toContain(true)
+    })
+
+    await act(async () => {
+      triggerResizeObservers()
+    })
+
+    expect(lastStickyFooter).toBe(true)
   })
 })

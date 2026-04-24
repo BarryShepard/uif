@@ -47,6 +47,47 @@ import {
 } from '../uxpin/components/Dropdown/Dropdown'
 
 describe('UXPin dropdown runtime', () => {
+  it('keeps identifiable preset dropdown items when a newly added serialized child has no identity yet', () => {
+    const overlay = dropdownNodeToOverlay({
+      name: 'Dropdown',
+      children: [
+        {
+          uxpId: 'dropdown-item-1',
+          name: 'DropdownItem',
+          overriddenCodeProps: { text: 'Action 1' }
+        },
+        {
+          uxpId: 'dropdown-item-2',
+          name: 'DropdownItem',
+          overriddenCodeProps: { text: 'Action 2' }
+        },
+        {
+          uxpId: 'dropdown-item-3',
+          name: 'DropdownItem',
+          overriddenCodeProps: { text: 'Action 3' }
+        }
+      ] as unknown as React.ReactNode,
+      overriddenCodeProps: {
+        children: [
+          {
+            name: 'DropdownItem',
+            overriddenCodeProps: {
+              text: 'Added action'
+            }
+          }
+        ] as unknown as React.ReactNode
+      }
+    } as unknown as React.ReactNode)
+
+    expect(overlay).toBeDefined()
+    expect(overlay?.items).toEqual([
+      expect.objectContaining({ children: 'Action 1' }),
+      expect.objectContaining({ children: 'Action 2' }),
+      expect.objectContaining({ children: 'Action 3' }),
+      expect.objectContaining({ children: 'Added action' })
+    ])
+  })
+
   it('does not fabricate default overlay items for plain serialized dropdown wrappers without explicit children', () => {
     const overlay = dropdownNodeToOverlay({
       uxpinTargetElementType: 'CodeComponent',

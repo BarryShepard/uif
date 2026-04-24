@@ -311,7 +311,7 @@ export function mergeUXPinChildren (
     return overrideChildren
   }
 
-  if (!hasIdentifiableUXPinChildren(baseArray) || !hasIdentifiableUXPinChildren(overrideArray)) {
+  if (!hasIdentifiableUXPinChildren(baseArray)) {
     return overrideChildren
   }
 
