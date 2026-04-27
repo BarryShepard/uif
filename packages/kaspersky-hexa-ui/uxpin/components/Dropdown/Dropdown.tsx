@@ -286,7 +286,7 @@ const Dropdown: DropdownComponent = (props: UXPinDropdownProps): JSX.Element => 
   const rootRef = useAutoHeightMergeFrame()
   const runtimeProps = resolveDropdownRuntimeProps(props)
   const {
-    maxHeight = 280,
+    maxHeight = 200,
     stickyFooter = DEFAULT_STICKY_FOOTER,
     stickyHeader,
     style,
@@ -351,7 +351,7 @@ Dropdown.uxpinRole = DROPDOWN_ROLE
 Dropdown.displayName = 'Dropdown'
 Dropdown.defaultProps = {
   variant: 'single choice',
-  maxHeight: 280,
+  maxHeight: 200,
   stickyFooter: DEFAULT_STICKY_FOOTER,
   children: DEFAULT_DROPDOWN_CHILDREN
 }

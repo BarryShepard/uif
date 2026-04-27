@@ -486,16 +486,9 @@ export const TablePrototype = ({
         Math.floor(constrainedWrapperHeight - headerHeight),
         80
       )
-      const bodyContentElement = (
-        scrollingWrapper.querySelector('.ant-table-tbody') ||
-        scrollingWrapper.querySelector('.ant-table-placeholder')
-      ) as HTMLElement | null
-      const bodyContentHeight = bodyContentElement?.getBoundingClientRect().height ?? 0
-      const nextHasVerticalOverflow = bodyContentHeight > nextViewportHeight + 1
-      const nextScrollViewportHeight = nextHasVerticalOverflow ? nextViewportHeight : undefined
 
       setScrollViewportHeight((currentHeight) => (
-        currentHeight === nextScrollViewportHeight ? currentHeight : nextScrollViewportHeight
+        currentHeight === nextViewportHeight ? currentHeight : nextViewportHeight
       ))
     }
 
@@ -750,6 +743,7 @@ export const TablePrototype = ({
 
   return (
     <PreviewRoot
+      $fillFrameHeight={hasExplicitFrameHeight}
       ref={rootRef}
       data-table-prototype-selection-mode={selectionMode}
       data-table-prototype-size={size}
@@ -1967,7 +1961,9 @@ const PrototypeSelectionCell = ({
   </ChoiceCell>
 )
 
-const PreviewRoot = styled.div`
+const PreviewRoot = styled.div.withConfig<{ $fillFrameHeight: boolean }>({
+  shouldForwardProp: prop => prop !== '$fillFrameHeight'
+})`
   width: 100%;
   height: 100%;
   flex: 1 1 auto;
@@ -1976,10 +1972,12 @@ const PreviewRoot = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: ${({ $fillFrameHeight }) => $fillFrameHeight ? 'hidden' : 'visible'};
 
   > .table-scrolling-wrapper.table-height-full {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
+    overflow: hidden;
   }
 
   > .table-horizontal-scrollbar,

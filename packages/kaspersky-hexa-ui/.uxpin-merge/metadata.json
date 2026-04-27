@@ -132447,7 +132447,7 @@
   "name": "Kaspersky Hexa UI",
   "vcs": {
     "branchName": "master",
-    "commitHash": "ed16201285beae95caccac5ed0eaa1e921ba10e0",
+    "commitHash": "6c8e713de9d49b2fb09a7350bc28d43d735d764a",
     "paths": {
       "configPath": "/Users/dmitry/uif/packages/kaspersky-hexa-ui/uxpin.config.js",
       "projectRoot": "/Users/dmitry/uif/packages/kaspersky-hexa-ui"

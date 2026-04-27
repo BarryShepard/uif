@@ -8,7 +8,7 @@ export default (
   <Dropdown
     uxpId="dropdown-1"
     variant="single choice"
-    maxHeight={280}
+    maxHeight={200}
     stickyFooter={<Button text="Reset filter" mode="tertiary" size="small" />}
   >
     <DropdownItem

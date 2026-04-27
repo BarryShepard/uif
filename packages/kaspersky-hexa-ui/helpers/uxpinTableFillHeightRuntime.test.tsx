@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import 'jest-styled-components'
 
 import { act, render, waitFor } from '@testing-library/react'
 import React from 'react'
@@ -257,6 +258,80 @@ describe('UXPin table fill-height runtime', () => {
       const tableBody = container.querySelector('.ant-table-body') as HTMLElement
 
       expect(tableBody).toHaveStyle('max-height: 304px')
+    })
+  })
+
+  it('keeps a constrained body viewport even when current rows do not overflow', async () => {
+    const { container } = render(
+      <div style={{ height: 400, width: 800 }}>
+        <TablePrototype
+          fillFrameHeight={true}
+          rowsCount={10}
+          rowsPerPage={20}
+          showPagination={true}
+        />
+      </div>
+    )
+
+    const root = container.querySelector('[data-table-prototype-selection-mode]') as HTMLElement
+    const scrollingWrapper = container.querySelector('.table-scrolling-wrapper') as HTMLElement
+    const header = (
+      container.querySelector('.ant-table-header') ||
+      container.querySelector('.ant-table-thead')
+    ) as HTMLElement
+    const bodyContent = (
+      container.querySelector('.ant-table-tbody') ||
+      container.querySelector('.ant-table-placeholder')
+    ) as HTMLElement
+    const pagination = container.querySelector('.ant-pagination-container') as HTMLElement
+    const horizontalScrollbar = container.querySelector('.table-horizontal-scrollbar') as HTMLElement
+
+    expect(root).not.toBeNull()
+    expect(scrollingWrapper).not.toBeNull()
+    expect(header).not.toBeNull()
+    expect(bodyContent).not.toBeNull()
+    expect(pagination).not.toBeNull()
+    expect(horizontalScrollbar).not.toBeNull()
+
+    setRect(root, { height: 400 })
+    setRect(scrollingWrapper, { height: 344 })
+    setRect(header, { height: 40 })
+    setRect(bodyContent, { height: 120 })
+    setRect(pagination, { height: 48 })
+    setRect(horizontalScrollbar, { height: 8 })
+
+    await act(async () => {
+      triggerResizeObservers()
+    })
+
+    await waitFor(() => {
+      const tableBody = container.querySelector('.ant-table-body') as HTMLElement
+
+      expect(tableBody).toHaveStyle('max-height: 304px')
+    })
+  })
+
+  it('clips fill-height content at the table viewport boundary', () => {
+    const { container } = render(
+      <div style={{ height: 400, width: 800 }}>
+        <TablePrototype
+          fillFrameHeight={true}
+          rowsCount={100}
+          rowsPerPage={20}
+          showPagination={true}
+        />
+      </div>
+    )
+
+    const root = container.querySelector('[data-table-prototype-selection-mode]') as HTMLElement
+
+    expect(root).not.toBeNull()
+    expect(root).toHaveStyleRule('overflow', 'hidden')
+    expect(root).toHaveStyleRule('flex', '1 1 0', {
+      modifier: '> .table-scrolling-wrapper.table-height-full'
+    })
+    expect(root).toHaveStyleRule('overflow', 'hidden', {
+      modifier: '> .table-scrolling-wrapper.table-height-full'
     })
   })
 
