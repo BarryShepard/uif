@@ -14,7 +14,7 @@ export default (
     placeholder={true}
     placeholderText="Select value"
   >
-    <Dropdown uxpId="select-dropdown-1">
+    <Dropdown uxpId="select-dropdown-1" variant="single choice" maxHeight={200}>
       <DropdownItem uxpId="select-option-1" text="Option 1" selected />
       <DropdownItem uxpId="select-option-2" text="Option 2" />
       <DropdownItem uxpId="select-option-3" text="Option 3" />

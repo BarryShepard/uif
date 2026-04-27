@@ -36,4 +36,31 @@ describe('UXPin table runtime', () => {
       expect(container.querySelectorAll('.ant-pagination-item').length).toBeGreaterThanOrEqual(2)
     })
   })
+
+  it('contains the fill-height table merge shell width', async () => {
+    const { container } = render(
+      <ConfigProvider theme={ThemeKey.Light} locale="en-us">
+        <div style={{ width: 640 }}>
+          <div className="merge-component" data-testid="table-shell">
+            <Table
+              overriddenCodeProps={{
+                heightMode: 'fill',
+                rowsCount: 100
+              }}
+            />
+          </div>
+        </div>
+      </ConfigProvider>
+    )
+
+    const tableShell = container.querySelector('[data-testid="table-shell"]') as HTMLElement
+
+    await waitFor(() => {
+      expect(tableShell).not.toBeNull()
+      expect(tableShell).toHaveStyle('width: 100%')
+      expect(tableShell).toHaveStyle('min-width: 0')
+      expect(tableShell).toHaveStyle('max-width: 100%')
+      expect(tableShell).toHaveStyle('overflow-x: hidden')
+    })
+  })
 })

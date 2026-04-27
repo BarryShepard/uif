@@ -34,7 +34,7 @@ export default (
         iconAfter={true}
         indicator={false}
       >
-        <Dropdown uxpId="toolbar-left-button-2-dropdown">
+        <Dropdown uxpId="toolbar-left-button-2-dropdown" variant="single choice" maxHeight={200}>
           <DropdownItem uxpId="toolbar-left-button-2-dropdown-item-1" text="Action 1" />
           <DropdownItem uxpId="toolbar-left-button-2-dropdown-item-2" text="Action 2" />
           <DropdownItem uxpId="toolbar-left-button-2-dropdown-item-3" text="Action 3" />

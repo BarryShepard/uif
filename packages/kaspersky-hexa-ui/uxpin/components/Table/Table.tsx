@@ -169,6 +169,7 @@ const Table = (rawProps: UXPinTableProps): JSX.Element => {
   const resolvedRowsPerPage = resolveRowsPerPage(rowsPerPage)
   const shouldFillHeight = heightMode === 'fill'
   const rootRef = useAutoHeightMergeFrame({
+    containWidth: shouldFillHeight,
     disabled: shouldFillHeight,
     markFillShell: shouldFillHeight
   })
