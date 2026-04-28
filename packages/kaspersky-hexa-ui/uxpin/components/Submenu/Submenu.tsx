@@ -102,12 +102,22 @@ const getSubmenuFrameStyle = (
   minHeight: frameHeight
 })
 
+const getDirectMergeComponent = (element: HTMLDivElement | null): HTMLDivElement | null => {
+  const parentElement = element?.parentElement
+
+  if (!parentElement || !parentElement.classList.contains('merge-component')) {
+    return null
+  }
+
+  return parentElement as HTMLDivElement
+}
+
 const useSyncSubmenuFrameSize = (): React.RefObject<HTMLDivElement> => {
   const rootRef = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
     const rootElement = rootRef.current
-    const mergeComponent = rootElement?.closest('.merge-component') as HTMLDivElement | null
+    const mergeComponent = getDirectMergeComponent(rootElement)
 
     if (!rootElement || !mergeComponent || rootElement.closest('[data-hexa-uxpin-sidebar="true"]')) {
       return undefined

@@ -8,11 +8,13 @@ import GroupWrapper from '../uxpin/components/GroupWrapper/GroupWrapper'
 import Menu from '../uxpin/components/Menu/Menu'
 import PageWrapper from '../uxpin/components/PageWrapper/PageWrapper'
 import SectionWrapper from '../uxpin/components/SectionWrapper/SectionWrapper'
+import Submenu from '../uxpin/components/Submenu/Submenu'
 
 const PageWrapperRuntime = PageWrapper as React.ComponentType<Record<string, unknown>>
 const SectionWrapperRuntime = SectionWrapper as React.ComponentType<Record<string, unknown>>
 const GroupWrapperRuntime = GroupWrapper as React.ComponentType<Record<string, unknown>>
 const MenuRuntime = Menu as React.ComponentType<Record<string, unknown>>
+const SubmenuRuntime = Submenu as React.ComponentType<Record<string, unknown>>
 
 const mockElementRect = (element: HTMLElement, width: number, height: number): (() => void) => {
   const originalGetBoundingClientRect = element.getBoundingClientRect
@@ -151,6 +153,72 @@ describe('UXPin wrapper flex height runtime', () => {
       expect(menuShell.style.flex).toBe('0 0 280px')
     } finally {
       restoreMenuRootRect()
+    }
+  })
+
+  it('does not sync shared merge shell width from nested Menu content', () => {
+    const { container } = render(
+      <div className="merge-component" data-testid="shared-shell">
+        <div data-testid="shared-flex" style={{ display: 'flex', gap: 16 }}>
+          <div data-testid="menu-host">
+            <MenuRuntime />
+          </div>
+          <div data-testid="sibling-flex" style={{ display: 'flex', flex: '1 1 auto' }}>
+            <div>Sibling content</div>
+          </div>
+        </div>
+      </div>
+    )
+
+    const sharedShell = container.querySelector('[data-testid="shared-shell"]') as HTMLDivElement
+    const menuHost = container.querySelector('[data-testid="menu-host"]') as HTMLDivElement
+    const menuRoot = menuHost.firstElementChild as HTMLDivElement
+    const restoreMenuRootRect = mockElementRect(menuRoot, 280, 640)
+
+    try {
+      act(() => {
+        window.dispatchEvent(new Event('resize'))
+      })
+
+      expect(sharedShell.style.width).toBe('')
+      expect(sharedShell.style.minWidth).toBe('')
+      expect(sharedShell.style.maxWidth).toBe('')
+      expect(sharedShell.style.flex).toBe('')
+    } finally {
+      restoreMenuRootRect()
+    }
+  })
+
+  it('does not sync shared merge shell width from nested Submenu content', () => {
+    const { container } = render(
+      <div className="merge-component" data-testid="shared-shell">
+        <div data-testid="shared-flex" style={{ display: 'flex', gap: 16 }}>
+          <div data-testid="submenu-host">
+            <SubmenuRuntime />
+          </div>
+          <div data-testid="sibling-flex" style={{ display: 'flex', flex: '1 1 auto' }}>
+            <div>Sibling content</div>
+          </div>
+        </div>
+      </div>
+    )
+
+    const sharedShell = container.querySelector('[data-testid="shared-shell"]') as HTMLDivElement
+    const submenuHost = container.querySelector('[data-testid="submenu-host"]') as HTMLDivElement
+    const submenuRoot = submenuHost.firstElementChild as HTMLDivElement
+    const restoreSubmenuRootRect = mockElementRect(submenuRoot, 232, 640)
+
+    try {
+      act(() => {
+        window.dispatchEvent(new Event('resize'))
+      })
+
+      expect(sharedShell.style.width).toBe('')
+      expect(sharedShell.style.minWidth).toBe('')
+      expect(sharedShell.style.maxWidth).toBe('')
+      expect(sharedShell.style.flex).toBe('')
+    } finally {
+      restoreSubmenuRootRect()
     }
   })
 })
