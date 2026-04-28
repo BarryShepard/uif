@@ -89,14 +89,16 @@ const SubmenuRoot = styled.div`
 
 const DEFAULT_SUBMENU_FRAME_HEIGHT = '100vh'
 const DEFAULT_SUBMENU_MIN_WIDTH = 232
+const DEFAULT_STANDALONE_SUBMENU_MIN_WIDTH = 264
 
 const getSubmenuFrameStyle = (
   style: CSSProperties | undefined,
-  frameHeight: CSSProperties['height']
+  frameHeight: CSSProperties['height'],
+  minWidth: CSSProperties['minWidth']
 ): CSSProperties => mergeFrameStyle({
   ...style,
   width: 'fit-content',
-  minWidth: DEFAULT_SUBMENU_MIN_WIDTH,
+  minWidth,
   maxWidth: 'fit-content',
   height: frameHeight,
   minHeight: frameHeight
@@ -232,12 +234,13 @@ const Submenu: SubmenuComponent = (rawProps: UXPinSubmenuProps): JSX.Element => 
   const rootRef = useSyncSubmenuFrameSize()
   const resolvedChildren = children
   const resolvedFrameHeight = withinSidebar ? '100%' : style?.height ?? DEFAULT_SUBMENU_FRAME_HEIGHT
+  const resolvedMinWidth = withinSidebar ? DEFAULT_SUBMENU_MIN_WIDTH : DEFAULT_STANDALONE_SUBMENU_MIN_WIDTH
   const { items: resolvedItems, selectedKey } = resolveSubmenuItems(resolvedChildren)
   const items = applySubmenuItemSettings(resolvedItems, { draggable })
   const directContent = getDirectContentChildren(resolvedChildren)
 
   return (
-    <SubmenuRoot ref={rootRef} style={getSubmenuFrameStyle(style, resolvedFrameHeight)}>
+    <SubmenuRoot ref={rootRef} style={getSubmenuFrameStyle(style, resolvedFrameHeight, resolvedMinWidth)}>
       <HexaSubmenu
         defaultActiveKey={selectedKey ?? defaultActiveKey}
         elementAfter={bottomSlot}

@@ -206,7 +206,7 @@ describe('UXPin wrapper flex height runtime', () => {
     const sharedShell = container.querySelector('[data-testid="shared-shell"]') as HTMLDivElement
     const submenuHost = container.querySelector('[data-testid="submenu-host"]') as HTMLDivElement
     const submenuRoot = submenuHost.firstElementChild as HTMLDivElement
-    const restoreSubmenuRootRect = mockElementRect(submenuRoot, 232, 640)
+    const restoreSubmenuRootRect = mockElementRect(submenuRoot, 264, 640)
 
     try {
       act(() => {
@@ -220,5 +220,31 @@ describe('UXPin wrapper flex height runtime', () => {
     } finally {
       restoreSubmenuRootRect()
     }
+  })
+
+  it('keeps UXPin Submenu width aligned with production submenu rail width', () => {
+    const { container } = render(
+      <div data-testid="submenu-host">
+        <SubmenuRuntime />
+      </div>
+    )
+
+    const submenuHost = container.querySelector('[data-testid="submenu-host"]') as HTMLDivElement
+    const submenuRoot = submenuHost.firstElementChild as HTMLDivElement
+
+    expect(submenuRoot.style.minWidth).toBe('264px')
+  })
+
+  it('keeps legacy compact submenu frame width inside Sidebar runtime', () => {
+    const { container } = render(
+      <div data-testid="submenu-host">
+        <SubmenuRuntime {...({ withinSidebar: true } as Record<string, unknown>)} />
+      </div>
+    )
+
+    const submenuHost = container.querySelector('[data-testid="submenu-host"]') as HTMLDivElement
+    const submenuRoot = submenuHost.firstElementChild as HTMLDivElement
+
+    expect(submenuRoot.style.minWidth).toBe('232px')
   })
 })
