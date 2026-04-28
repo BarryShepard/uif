@@ -131,6 +131,54 @@ describe('UXPin wrapper flex height runtime', () => {
     }
   })
 
+  it('syncs top-level PageWrapper height to its merge shell', () => {
+    const { container } = render(
+      <div className="merge-component" data-testid="page-shell">
+        <PageWrapperRuntime />
+      </div>
+    )
+
+    const pageShell = container.querySelector('[data-testid="page-shell"]') as HTMLDivElement
+    const pageRoot = container.querySelector('[data-hexa-uxpin-page-wrapper="true"]') as HTMLDivElement
+    const restorePageRootRect = mockElementRect(pageRoot, 1200, 560)
+
+    try {
+      act(() => {
+        window.dispatchEvent(new Event('resize'))
+      })
+
+      expect(pageShell.style.height).toBe('560px')
+      expect(pageShell.style.minHeight).toBe('560px')
+    } finally {
+      restorePageRootRect()
+    }
+  })
+
+  it('applies fixed width when PageWrapper flexWidth is disabled', () => {
+    const { container } = render(
+      <PageWrapperRuntime flexWidth={false} width={960} />
+    )
+
+    const pageRoot = container.querySelector('[data-hexa-uxpin-page-wrapper="true"]') as HTMLDivElement
+
+    expect(pageRoot.style.width).toBe('960px')
+    expect(pageRoot.style.flex).toBe('0 1 960px')
+    expect(pageRoot.style.maxWidth).toBe('100%')
+    expect(pageRoot.style.alignSelf).toBe('flex-start')
+  })
+
+  it('keeps PageWrapper stretched when flexWidth is enabled', () => {
+    const { container } = render(
+      <PageWrapperRuntime flexWidth={true} width={960} />
+    )
+
+    const pageRoot = container.querySelector('[data-hexa-uxpin-page-wrapper="true"]') as HTMLDivElement
+
+    expect(pageRoot.style.width).toBe('100%')
+    expect(pageRoot.style.flex).toBe('1 1 auto')
+    expect(pageRoot.style.alignSelf).toBe('stretch')
+  })
+
   it('syncs top-level Menu width to its merge shell', () => {
     const { container } = render(
       <div className="merge-component" data-testid="menu-shell">
