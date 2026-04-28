@@ -8,30 +8,46 @@ import {
   previewLegend,
   previewWeeklyScheduleState
 } from '../../preview'
+import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+
+export type UXPinWeeklyScheduleProps = {
+  initialState?: WeeklyScheduleProps['initialState'],
+  daysOfWeek?: WeeklyScheduleProps['daysOfWeek'],
+  legend?: WeeklyScheduleProps['legend'],
+  codeComponentProps?: Partial<UXPinWeeklyScheduleProps>,
+  overriddenCodeProps?: Partial<UXPinWeeklyScheduleProps>
+}
 
 const WeeklySchedule = ({
-  daysOfWeek = previewDaysOfWeek,
-  initialState = previewWeeklyScheduleState,
-  legend = previewLegend,
-  onChange,
+  daysOfWeek,
+  initialState,
+  legend,
   ...props
-}: WeeklyScheduleProps): JSX.Element => {
-  const [state, setState] = React.useState(initialState)
+}: UXPinWeeklyScheduleProps): JSX.Element => {
+  const resolved = resolveUXPinRuntimeProps({ daysOfWeek, initialState, legend, ...props }) as UXPinWeeklyScheduleProps
+  const {
+    codeComponentProps: _codeComponentProps,
+    daysOfWeek: resolvedDaysOfWeek,
+    initialState: resolvedInitialState,
+    legend: resolvedLegend,
+    overriddenCodeProps: _overriddenCodeProps,
+    ...resolvedProps
+  } = resolved
+  const [state, setState] = React.useState(resolvedInitialState ?? previewWeeklyScheduleState)
 
   React.useEffect(() => {
-    setState(initialState)
-  }, [initialState])
+    setState(resolvedInitialState ?? previewWeeklyScheduleState)
+  }, [resolvedInitialState])
 
   return (
     <HexaWeeklySchedule
-      daysOfWeek={daysOfWeek}
+      daysOfWeek={resolvedDaysOfWeek ?? previewDaysOfWeek}
       initialState={state}
-      legend={legend}
+      legend={resolvedLegend ?? previewLegend}
       onChange={(nextValue) => {
         setState(nextValue)
-        onChange(nextValue)
       }}
-      {...props}
+      {...resolvedProps}
     />
   )
 }

@@ -4,32 +4,61 @@ import { Radio as HexaRadio } from '@src/radio'
 import { RadioProps } from '@src/radio/types'
 
 import { previewRadioOptions } from '../../preview'
+import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+
+type UXPinRadioOption = {
+  label: string,
+  value: string,
+  disabled?: boolean
+}
+
+export type UXPinRadioProps = {
+  vertical?: boolean,
+  disabled?: boolean,
+  readonly?: boolean,
+  invalid?: boolean,
+  role?: string,
+  value?: string,
+  onChange?: RadioProps['onChange'],
+  options?: UXPinRadioOption[],
+  codeComponentProps?: Partial<UXPinRadioProps>,
+  overriddenCodeProps?: Partial<UXPinRadioProps>
+}
 
 const Radio = ({
   onChange,
-  options = previewRadioOptions,
+  options,
   value,
   ...props
-}: RadioProps): JSX.Element => {
-  const [previewValue, setPreviewValue] = React.useState(value ?? previewRadioOptions[0]?.value)
+}: UXPinRadioProps): JSX.Element => {
+  const resolved = resolveUXPinRuntimeProps({ onChange, options, value, ...props }) as UXPinRadioProps
+  const {
+    codeComponentProps: _codeComponentProps,
+    onChange: resolvedOnChange,
+    options: resolvedOptions,
+    overriddenCodeProps: _overriddenCodeProps,
+    value: resolvedValue,
+    ...resolvedProps
+  } = resolved
+  const [previewValue, setPreviewValue] = React.useState(resolvedValue ?? previewRadioOptions[0]?.value)
 
   React.useEffect(() => {
-    if (value !== undefined) {
-      setPreviewValue(value as string)
+    if (resolvedValue !== undefined) {
+      setPreviewValue(resolvedValue as string)
     }
-  }, [value])
+  }, [resolvedValue])
 
   return (
     <HexaRadio
       onChange={(event) => {
-        if (value === undefined) {
+        if (resolvedValue === undefined) {
           setPreviewValue(event.target.value)
         }
-        onChange?.(event)
+        resolvedOnChange?.(event)
       }}
-      options={options}
-      value={value ?? previewValue}
-      {...props}
+      options={(resolvedOptions ?? previewRadioOptions) as RadioProps['options']}
+      value={resolvedValue ?? previewValue}
+      {...resolvedProps}
     />
   )
 }

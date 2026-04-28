@@ -32,6 +32,11 @@ export type UXPinMenuProps = {
 }
 
 const EMPTY_ITEMS: NavItemData[] = []
+const WRAPPER_BOUNDARY_SELECTOR = [
+  '[data-hexa-uxpin-page-wrapper="true"]',
+  '[data-hexa-uxpin-section-wrapper="true"]',
+  '[data-hexa-uxpin-group-wrapper="true"]'
+].join(', ')
 
 const PreviewRoot = styled.div`
   display: flex;
@@ -67,6 +72,9 @@ const useSyncMenuFrameSize = (): React.RefObject<HTMLDivElement> => {
       return undefined
     }
 
+    const wrapperBoundary = rootElement.parentElement?.closest(WRAPPER_BOUNDARY_SELECTOR)
+    const isWithinWrapperShell = Boolean(wrapperBoundary)
+
     const previousHeight = mergeComponent.style.height
     const previousMinHeight = mergeComponent.style.minHeight
     const previousWidth = mergeComponent.style.width
@@ -83,7 +91,7 @@ const useSyncMenuFrameSize = (): React.RefObject<HTMLDivElement> => {
         mergeComponent.style.minHeight = nextHeight
       }
 
-      if (width > 0) {
+      if (width > 0 && !isWithinWrapperShell) {
         const nextWidth = `${Math.ceil(width)}px`
         mergeComponent.style.width = nextWidth
         mergeComponent.style.minWidth = nextWidth

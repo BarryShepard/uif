@@ -8,25 +8,71 @@ import {
   previewTenantFilterData,
   previewTenantFilterSelectedKeys
 } from '../../preview'
+import { resolveUXPinRuntimeProps } from '../../uxpinRuntime'
+
+type UXPinTenantFilterDataItem = {
+  title: string,
+  key: string,
+  disabled?: boolean,
+  children?: UXPinTenantFilterDataItem[]
+}
+
+export type UXPinTenantFilterProps = {
+  allTenantsKeys?: string[],
+  buttonText?: string,
+  counterText?: string,
+  defaultSelectedKeys?: string[],
+  titleText?: string,
+  withButton?: boolean,
+  withSearch?: boolean,
+  withIcon?: boolean,
+  className?: string,
+  data?: UXPinTenantFilterDataItem[],
+  codeComponentProps?: Partial<UXPinTenantFilterProps>,
+  overriddenCodeProps?: Partial<UXPinTenantFilterProps>
+}
 
 const TenantFilter = ({
-  allTenantsKeys = previewTenantFilterAllKeys,
-  buttonText = 'Apply',
-  counterText = 'Selected',
-  data = previewTenantFilterData,
-  defaultSelectedKeys = previewTenantFilterSelectedKeys,
-  titleText = 'Tenant filter',
+  allTenantsKeys,
+  buttonText,
+  counterText,
+  data,
+  defaultSelectedKeys,
+  titleText,
   ...props
-}: TenantFilterProps): JSX.Element => (
-  <HexaTenantFilter
-    allTenantsKeys={allTenantsKeys}
-    buttonText={buttonText}
-    counterText={counterText}
-    data={data}
-    defaultSelectedKeys={defaultSelectedKeys}
-    titleText={titleText}
-    {...props}
-  />
-)
+}: UXPinTenantFilterProps): JSX.Element => {
+  const resolved = resolveUXPinRuntimeProps({
+    allTenantsKeys,
+    buttonText,
+    counterText,
+    data,
+    defaultSelectedKeys,
+    titleText,
+    ...props
+  }) as UXPinTenantFilterProps
+  const {
+    allTenantsKeys: resolvedAllTenantsKeys,
+    buttonText: resolvedButtonText,
+    codeComponentProps: _codeComponentProps,
+    counterText: resolvedCounterText,
+    data: resolvedData,
+    defaultSelectedKeys: resolvedDefaultSelectedKeys,
+    overriddenCodeProps: _overriddenCodeProps,
+    titleText: resolvedTitleText,
+    ...resolvedProps
+  } = resolved
+
+  return (
+    <HexaTenantFilter
+      allTenantsKeys={resolvedAllTenantsKeys ?? previewTenantFilterAllKeys}
+      buttonText={resolvedButtonText ?? 'Apply'}
+      counterText={resolvedCounterText ?? 'Selected'}
+      data={(resolvedData ?? previewTenantFilterData) as TenantFilterProps['data']}
+      defaultSelectedKeys={resolvedDefaultSelectedKeys ?? previewTenantFilterSelectedKeys}
+      titleText={resolvedTitleText ?? 'Tenant filter'}
+      {...resolvedProps}
+    />
+  )
+}
 
 export default TenantFilter

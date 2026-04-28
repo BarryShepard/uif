@@ -7,6 +7,7 @@ yarn-error.log
 .vscode/
 .npmrc
 .env
+/.uxpin-merge/
 lerna-debug.log
 config.json
 coverage
