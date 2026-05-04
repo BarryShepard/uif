@@ -46,6 +46,7 @@ import MenuItem from '../uxpin/components/MenuItem/MenuItem';
 import Modal from '../uxpin/components/Modal/Modal';
 import MultiSelect from '../uxpin/components/MultiSelect/MultiSelect';
 import Notification from '../uxpin/components/Notification/Notification';
+import Page from '../uxpin/components/Page/Page';
 import PageHeader from '../uxpin/components/PageHeader/PageHeader';
 import PageWrapper from '../uxpin/components/PageWrapper/PageWrapper';
 import Pagination from '../uxpin/components/Pagination/Pagination';
@@ -164,6 +165,7 @@ export {
   Modal,
   MultiSelect,
   Notification,
+  Page,
   PageHeader,
   PageWrapper,
   Pagination,

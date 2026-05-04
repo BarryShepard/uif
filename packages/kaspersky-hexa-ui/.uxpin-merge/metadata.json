@@ -5215,7 +5215,63 @@
           },
           "defaultExported": true,
           "name": "AnchorNavigation",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "title",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "children",
+              "type": {
+                "name": "node",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "items",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -7178,7 +7234,105 @@
           },
           "defaultExported": true,
           "name": "CodeCompare",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "compareMode",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "split"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "unified"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "oldValue",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "newValue",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "loading",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "options",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "oldVersion",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "newVersion",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -25166,7 +25320,51 @@
           "documentation": {
             "examples": []
           },
-          "presets": []
+          "presets": [
+            {
+              "elements": {
+                "dropdown-1": {
+                  "name": "Dropdown",
+                  "props": {
+                    "variant": "single choice",
+                    "maxHeight": 200,
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "dropdown-item-1"
+                      },
+                      {
+                        "uxpinPresetElementId": "dropdown-item-2"
+                      },
+                      {
+                        "uxpinPresetElementId": "dropdown-item-3"
+                      }
+                    ]
+                  }
+                },
+                "dropdown-item-1": {
+                  "name": "DropdownItem",
+                  "props": {
+                    "text": "Option 1",
+                    "selected": true
+                  }
+                },
+                "dropdown-item-2": {
+                  "name": "DropdownItem",
+                  "props": {
+                    "text": "Option 2"
+                  }
+                },
+                "dropdown-item-3": {
+                  "name": "DropdownItem",
+                  "props": {
+                    "text": "Option 3"
+                  }
+                }
+              },
+              "name": "default",
+              "rootId": "dropdown-1"
+            }
+          ]
         },
         {
           "info": {
@@ -41824,7 +42022,63 @@
           },
           "defaultExported": true,
           "name": "ExpandableText",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "children",
+              "type": {
+                "name": "node",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "altText",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "textType",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -43503,7 +43757,63 @@
           },
           "defaultExported": true,
           "name": "HorizontalNav",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "activeKey",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "borderless",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "items",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -44431,12 +44741,6 @@
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "transparent"
-                      }
-                    },
-                    {
-                      "name": "literal",
-                      "structure": {
                         "value": "turquoise"
                       }
                     },
@@ -44479,6 +44783,126 @@
                     {
                       "name": "literal",
                       "structure": {
+                        "value": "transparent"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "AccentColor"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "AccentColorText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "ActiveText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "ButtonBorder"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "ButtonFace"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "ButtonText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "Canvas"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "CanvasText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "Field"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "FieldText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "GrayText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "Highlight"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "HighlightText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "LinkText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "Mark"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "MarkText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "SelectedItem"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "SelectedItemText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "VisitedText"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
                         "value": "ActiveBorder"
                       }
                     },
@@ -44503,12 +44927,6 @@
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "ButtonFace"
-                      }
-                    },
-                    {
-                      "name": "literal",
-                      "structure": {
                         "value": "ButtonHighlight"
                       }
                     },
@@ -44521,31 +44939,7 @@
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "ButtonText"
-                      }
-                    },
-                    {
-                      "name": "literal",
-                      "structure": {
                         "value": "CaptionText"
-                      }
-                    },
-                    {
-                      "name": "literal",
-                      "structure": {
-                        "value": "GrayText"
-                      }
-                    },
-                    {
-                      "name": "literal",
-                      "structure": {
-                        "value": "Highlight"
-                      }
-                    },
-                    {
-                      "name": "literal",
-                      "structure": {
-                        "value": "HighlightText"
                       }
                     },
                     {
@@ -44641,7 +45035,7 @@
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "currentcolor"
+                        "value": "currentColor"
                       }
                     }
                   ]
@@ -74079,6 +74473,8 @@
                 "multi-select-dropdown-1": {
                   "name": "Dropdown",
                   "props": {
+                    "variant": "single choice",
+                    "maxHeight": 200,
                     "children": [
                       {
                         "uxpinPresetElementId": "multi-select-option-1"
@@ -74223,6 +74619,364 @@
             "examples": []
           },
           "presets": []
+        },
+        {
+          "info": {
+            "dirPath": "uxpin/components/Page",
+            "implementation": {
+              "framework": "reactjs",
+              "path": "uxpin/components/Page/Page.tsx",
+              "lang": "typescript"
+            },
+            "presets": [
+              {
+                "path": "/Users/dmitry/uif/packages/kaspersky-hexa-ui/uxpin/components/Page/uxpin-presets/Page.jsx"
+              }
+            ]
+          },
+          "defaultExported": true,
+          "name": "Page",
+          "properties": [
+            {
+              "description": "Shows the left product menu zone.",
+              "isRequired": false,
+              "name": "menu",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "Shows the secondary submenu zone.",
+              "isRequired": false,
+              "name": "submenu",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "Shows the page header zone.",
+              "isRequired": false,
+              "name": "pageHeader",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "Shows the page footer zone.",
+              "isRequired": false,
+              "name": "pageFooter",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "Page zones. Place Menu, Submenu, PageHeader, PageWrapper, and SidebarFooter here.",
+              "isRequired": false,
+              "name": "children",
+              "type": {
+                "name": "node",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "style",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
+          "documentation": {
+            "examples": []
+          },
+          "presets": [
+            {
+              "elements": {
+                "page-1": {
+                  "name": "Page",
+                  "props": {
+                    "menu": true,
+                    "submenu": true,
+                    "pageHeader": true,
+                    "pageFooter": true,
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-menu"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-submenu"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-header"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-wrapper"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-footer"
+                      }
+                    ]
+                  }
+                },
+                "page-menu": {
+                  "name": "Menu",
+                  "props": {
+                    "minimized": false,
+                    "header": true,
+                    "footer": true,
+                    "title": "Configuration Service",
+                    "description": "Kaspersky Next",
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-menu-item-1"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-menu-item-2"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-menu-item-3"
+                      }
+                    ]
+                  }
+                },
+                "page-menu-item-1": {
+                  "name": "MenuItem",
+                  "props": {
+                    "label": "Administration server",
+                    "elementBefore": true,
+                    "elementBeforeIcon": "StorageServer",
+                    "state": "enabled"
+                  }
+                },
+                "page-menu-item-2": {
+                  "name": "MenuItem",
+                  "props": {
+                    "label": "Console navigation",
+                    "elementBefore": true,
+                    "elementBeforeIcon": "Map",
+                    "state": "enabled"
+                  }
+                },
+                "page-menu-item-3": {
+                  "name": "MenuItem",
+                  "props": {
+                    "label": "Monitoring",
+                    "elementBefore": true,
+                    "elementBeforeIcon": "EngineeringStation",
+                    "state": "enabled"
+                  }
+                },
+                "page-submenu": {
+                  "name": "Submenu",
+                  "props": {
+                    "draggable": false,
+                    "truncateText": true,
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-submenu-item-1"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-submenu-item-2"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-submenu-item-3"
+                      }
+                    ]
+                  }
+                },
+                "page-submenu-item-1": {
+                  "name": "SubmenuItem",
+                  "props": {
+                    "variant": "item",
+                    "text": "Overview",
+                    "selected": true,
+                    "iconBefore": true,
+                    "iconBeforeSlot": "Browser"
+                  }
+                },
+                "page-submenu-item-2": {
+                  "name": "SubmenuItem",
+                  "props": {
+                    "variant": "item",
+                    "text": "Assets",
+                    "iconBefore": true,
+                    "iconBeforeSlot": "StorageServer"
+                  }
+                },
+                "page-submenu-item-3": {
+                  "name": "SubmenuItem",
+                  "props": {
+                    "variant": "item",
+                    "text": "Policies",
+                    "iconBefore": true,
+                    "iconBeforeSlot": "Shield"
+                  }
+                },
+                "page-header": {
+                  "name": "PageHeader",
+                  "props": {
+                    "title": "Page title",
+                    "description": false,
+                    "descriptionText": "Page description",
+                    "iconBefore": false,
+                    "breadcrumbs": false,
+                    "tagsAfter": false,
+                    "elementAfter": false,
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-header-breadcrumbs"
+                      }
+                    ]
+                  }
+                },
+                "page-header-breadcrumbs": {
+                  "name": "Breadcrumbs",
+                  "props": {
+                    "size": "small",
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-header-breadcrumb-current"
+                      }
+                    ]
+                  }
+                },
+                "page-header-breadcrumb-current": {
+                  "name": "BreadcrumbItem",
+                  "props": {
+                    "text": "Current page",
+                    "current": false,
+                    "disabled": false
+                  }
+                },
+                "page-wrapper": {
+                  "name": "PageWrapper",
+                  "props": {
+                    "flexWidth": true,
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-section-wrapper-1"
+                      }
+                    ]
+                  }
+                },
+                "page-section-wrapper-1": {
+                  "name": "SectionWrapper",
+                  "props": {
+                    "flexHeight": false,
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-group-wrapper-1"
+                      }
+                    ]
+                  }
+                },
+                "page-group-wrapper-1": {
+                  "name": "GroupWrapper",
+                  "props": {
+                    "flexHeight": false,
+                    "flexWidth": true
+                  }
+                },
+                "page-footer": {
+                  "name": "SidebarFooter",
+                  "props": {
+                    "additionalContent": false,
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-footer-left-items"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-footer-right-items"
+                      }
+                    ]
+                  }
+                },
+                "page-footer-left-items": {
+                  "name": "SidebarFooterLeftItems",
+                  "props": {
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-footer-save"
+                      },
+                      {
+                        "uxpinPresetElementId": "page-footer-cancel"
+                      }
+                    ]
+                  }
+                },
+                "page-footer-save": {
+                  "name": "Button",
+                  "props": {
+                    "mode": "primary",
+                    "size": "medium",
+                    "text": "Save",
+                    "style": {
+                      "width": "fit-content"
+                    }
+                  }
+                },
+                "page-footer-cancel": {
+                  "name": "Button",
+                  "props": {
+                    "mode": "secondary",
+                    "size": "medium",
+                    "text": "Cancel",
+                    "style": {
+                      "width": "fit-content"
+                    }
+                  }
+                },
+                "page-footer-right-items": {
+                  "name": "SidebarFooterRightItems",
+                  "props": {
+                    "children": [
+                      {
+                        "uxpinPresetElementId": "page-footer-delete"
+                      }
+                    ]
+                  }
+                },
+                "page-footer-delete": {
+                  "name": "Button",
+                  "props": {
+                    "mode": "dangerOutlined",
+                    "size": "medium",
+                    "text": "Delete",
+                    "style": {
+                      "width": "fit-content"
+                    }
+                  }
+                }
+              },
+              "name": "default",
+              "rootId": "page-1"
+            }
+          ]
         },
         {
           "info": {
@@ -74429,6 +75183,24 @@
               }
             },
             {
+              "description": "When enabled, the page stretches to available width. When disabled, width is fixed to the `width` value.",
+              "isRequired": false,
+              "name": "flexWidth",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "Fixed page width in px used when `flexWidth` is disabled.",
+              "isRequired": false,
+              "name": "width",
+              "type": {
+                "name": "number",
+                "structure": {}
+              }
+            },
+            {
               "description": "",
               "isRequired": false,
               "name": "style",
@@ -74466,6 +75238,7 @@
                 "page-wrapper-1": {
                   "name": "PageWrapper",
                   "props": {
+                    "flexWidth": true,
                     "children": [
                       {
                         "uxpinPresetElementId": "section-wrapper-1"
@@ -76162,7 +76935,78 @@
           },
           "defaultExported": true,
           "name": "QuickFilter",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "labelPosition",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "top"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "before"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "disabled",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "filters",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -76180,7 +77024,99 @@
           },
           "defaultExported": true,
           "name": "Radio",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "vertical",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "disabled",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "readonly",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "invalid",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "role",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "value",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "onChange",
+              "type": {
+                "name": "func",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "options",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -91626,7 +92562,93 @@
           },
           "defaultExported": true,
           "name": "SegmentedControl",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "defaultActiveTab",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "size",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "large"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "medium"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "small"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "tabsData",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "contentData",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -97877,6 +98899,8 @@
                 "select-dropdown-1": {
                   "name": "Dropdown",
                   "props": {
+                    "variant": "single choice",
+                    "maxHeight": 200,
                     "children": [
                       {
                         "uxpinPresetElementId": "select-option-1"
@@ -104430,7 +105454,171 @@
           },
           "defaultExported": true,
           "name": "StatusCard",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "title",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "mode",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "success"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "warning"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "error"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "critical"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "size",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "large"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "medium"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "small"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "image",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "iconVariant",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "default"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "shield"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "width",
+              "type": {
+                "name": "number",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "actions",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "description",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "children",
+              "type": {
+                "name": "node",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -110871,13 +112059,13 @@
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "tag-group"
+                        "value": "actions"
                       }
                     },
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "actions"
+                        "value": "tag-group"
                       }
                     },
                     {
@@ -112198,7 +113386,117 @@
           },
           "defaultExported": true,
           "name": "TenantFilter",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "allTenantsKeys",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "buttonText",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "counterText",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "defaultSelectedKeys",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "titleText",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "withButton",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "withSearch",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "withIcon",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "data",
+              "type": {
+                "name": "array",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -112480,7 +113778,162 @@
           },
           "defaultExported": true,
           "name": "TextDiff",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "newText",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "oldText",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "textType",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "H1"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "H2"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "H3"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "MTR3"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "MTR4"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTM2"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTM3"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTM4"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTM5"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTR2"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTR3"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTR4"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "BTR5"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "H4"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "H5"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "H6"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -117100,7 +118553,191 @@
           },
           "defaultExported": true,
           "name": "TimePicker",
-          "properties": [],
+          "properties": [
+            {
+              "description": "Disabled",
+              "isRequired": false,
+              "name": "disabled",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "Read only",
+              "isRequired": false,
+              "name": "readOnly",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "value",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "className",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "onBlur",
+              "type": {
+                "name": "func",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "onChange",
+              "type": {
+                "name": "func",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "theme",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "enum",
+                      "structure": {
+                        "label": "Light",
+                        "value": "light"
+                      }
+                    },
+                    {
+                      "name": "enum",
+                      "structure": {
+                        "label": "Dark",
+                        "value": "dark"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Actual identifier for autotesting, will be passed to HTML attribute data-testid",
+              "isRequired": false,
+              "name": "testId",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "klId",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "componentId",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "dataTestId",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "componentType",
+              "type": {
+                "name": "string",
+                "structure": {}
+              }
+            },
+            {
+              "description": "Validation status",
+              "isRequired": false,
+              "name": "validationStatus",
+              "type": {
+                "name": "union",
+                "structure": {
+                  "elements": [
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "default"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "success"
+                      }
+                    },
+                    {
+                      "name": "literal",
+                      "structure": {
+                        "value": "error"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Shows the placeholder mask.",
+              "isRequired": false,
+              "name": "placeholder",
+              "type": {
+                "name": "boolean",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -117652,13 +119289,13 @@
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "after"
+                        "value": "before"
                       }
                     },
                     {
                       "name": "literal",
                       "structure": {
-                        "value": "before"
+                        "value": "after"
                       }
                     }
                   ]
@@ -118523,6 +120160,8 @@
                 "toolbar-left-button-2-dropdown": {
                   "name": "Dropdown",
                   "props": {
+                    "variant": "single choice",
+                    "maxHeight": 200,
                     "children": [
                       {
                         "uxpinPresetElementId": "toolbar-left-button-2-dropdown-item-1"
@@ -129704,6 +131343,8 @@
                 "toolbar-left-button-2-dropdown": {
                   "name": "Dropdown",
                   "props": {
+                    "variant": "single choice",
+                    "maxHeight": 200,
                     "children": [
                       {
                         "uxpinPresetElementId": "toolbar-left-button-2-dropdown-item-1"
@@ -132186,7 +133827,54 @@
           },
           "defaultExported": true,
           "name": "WeeklySchedule",
-          "properties": [],
+          "properties": [
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "initialState",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "daysOfWeek",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "legend",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "codeComponentProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            },
+            {
+              "description": "",
+              "isRequired": false,
+              "name": "overriddenCodeProps",
+              "type": {
+                "name": "shape",
+                "structure": {}
+              }
+            }
+          ],
+          "wrappers": [],
           "documentation": {
             "examples": []
           },
@@ -132447,7 +134135,7 @@
   "name": "Kaspersky Hexa UI",
   "vcs": {
     "branchName": "master",
-    "commitHash": "6c8e713de9d49b2fb09a7350bc28d43d735d764a",
+    "commitHash": "f8f98c70246c2123e59c95946e811813a5f0009c",
     "paths": {
       "configPath": "/Users/dmitry/uif/packages/kaspersky-hexa-ui/uxpin.config.js",
       "projectRoot": "/Users/dmitry/uif/packages/kaspersky-hexa-ui"
