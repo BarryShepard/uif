@@ -9,6 +9,7 @@ import {
   getUXPinElementProps,
   hasUXPinChildrenProp,
   resolveUXPinChildrenFromProps,
+  resolveUXPinMergedChildrenFromProps,
   resolveUXPinRuntimeProps
 } from '../../uxpinRuntime'
 import { isUXPinHiddenElement } from '../../visibility'
@@ -376,8 +377,8 @@ const renderSidebarFooter = (element: React.ReactNode | undefined): React.ReactN
 }
 
 const Page: PageComponent = (rawProps: UXPinPageProps): JSX.Element => {
+  const resolvedChildren = resolveUXPinMergedChildrenFromProps(rawProps)
   const {
-    children,
     codeComponentProps: _codeComponentProps,
     menu = true,
     overriddenCodeProps: _overriddenCodeProps,
@@ -393,7 +394,7 @@ const Page: PageComponent = (rawProps: UXPinPageProps): JSX.Element => {
     menuElement,
     pageWrapperElement,
     submenuElement
-  } = resolvePageChildren(children)
+  } = resolvePageChildren(resolvedChildren)
 
   return (
     <PageRoot

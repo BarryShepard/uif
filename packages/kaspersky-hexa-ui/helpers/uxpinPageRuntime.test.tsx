@@ -163,6 +163,27 @@ describe('UXPin Page runtime', () => {
     expect(screen.queryByText('Page title')).not.toBeInTheDocument()
   })
 
+  it('keeps preset page zones when UXPin overrides nested page content', () => {
+    render(
+      <PageRuntime
+        codeComponentProps={{
+          children: pageChildren()
+        }}
+        overriddenCodeProps={{
+          children: [
+            pageSlotDescriptor('PageWrapper', 'page-wrapper', {
+              children: <div>Edited page body content</div>
+            })
+          ]
+        }}
+      />
+    )
+
+    expect(screen.getByText('Custom page title')).toBeVisible()
+    expect(screen.getByText('Edited page body content')).toBeVisible()
+    expect(screen.queryByText('Page body content')).not.toBeInTheDocument()
+  })
+
   it('syncs the inserted UXPin component size from the frame viewport', () => {
     const createFrameRect = (width: number, height: number): DOMRect => ({
       bottom: height,
