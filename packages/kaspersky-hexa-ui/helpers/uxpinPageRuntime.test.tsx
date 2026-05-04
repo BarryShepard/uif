@@ -93,9 +93,9 @@ describe('UXPin Page runtime', () => {
     expect(pageRoot).toBeInTheDocument()
     expect(pageRoot).toHaveStyle({
       display: 'flex',
-      height: '100%',
+      height: '100vh',
       overflow: 'hidden',
-      width: '100%'
+      width: '100vw'
     })
     expect(pageContent).toHaveStyle({
       display: 'flex',
@@ -163,37 +163,73 @@ describe('UXPin Page runtime', () => {
     expect(screen.queryByText('Page title')).not.toBeInTheDocument()
   })
 
-  it('overrides the inserted UXPin component height so Page follows the parent frame', () => {
-    const { container } = render(
-      <div style={{ height: 900, width: 1440 }}>
+  it('syncs the inserted UXPin component size from the frame viewport', () => {
+    const createFrameRect = (width: number, height: number): DOMRect => ({
+      bottom: height,
+      height,
+      left: 0,
+      right: width,
+      top: 0,
+      width,
+      x: 0,
+      y: 0,
+      toJSON: () => ({})
+    } as DOMRect)
+    let frameRect = createFrameRect(1195, 881)
+    const rectSpy = jest.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+
+    rectSpy.mockImplementation(function getBoundingClientRectMock (this: HTMLElement): DOMRect {
+      if (this.getAttribute('data-hexa-uxpin-page') === 'true') {
+        return frameRect
+      }
+
+      return createFrameRect(0, 0)
+    })
+
+    try {
+      const { container } = render(
         <div
           className="merge-component"
           data-testid="page-shell"
           style={{
             height: 640,
             minHeight: 640,
-            width: 1024
+            minWidth: 875,
+            width: 875
           }}
         >
           <PageRuntime
             codeComponentProps={{
               children: [
                 pageSlotDescriptor('PageWrapper', 'page-wrapper', {
-                  children: <div>Resizable page body</div>
+                  children: <div>Frame-sized page body</div>
                 })
               ]
             }}
           />
         </div>
-      </div>
-    )
+      )
 
-    const pageShell = container.querySelector('[data-testid="page-shell"]') as HTMLDivElement
+      const pageShell = container.querySelector('[data-testid="page-shell"]') as HTMLDivElement
+      const pageRoot = container.querySelector('[data-hexa-uxpin-page="true"]') as HTMLDivElement
 
-    expect(pageShell.style.height).toBe('100%')
-    expect(pageShell.style.minHeight).toBe('0')
-    expect(pageShell.style.maxHeight).toBe('100%')
-    expect(pageShell.style.width).toBe('100%')
-    expect(screen.getByText('Resizable page body')).toBeVisible()
+      expect(pageRoot.style.width).toBe('100vw')
+      expect(pageRoot.style.height).toBe('100vh')
+      expect(pageShell.style.height).toBe('881px')
+      expect(pageShell.style.minHeight).toBe('881px')
+      expect(pageShell.style.width).toBe('1195px')
+      expect(pageShell.style.minWidth).toBe('1195px')
+
+      frameRect = createFrameRect(1440, 900)
+      window.dispatchEvent(new Event('resize'))
+
+      expect(pageShell.style.height).toBe('900px')
+      expect(pageShell.style.minHeight).toBe('900px')
+      expect(pageShell.style.width).toBe('1440px')
+      expect(pageShell.style.minWidth).toBe('1440px')
+      expect(screen.getByText('Frame-sized page body')).toBeVisible()
+    } finally {
+      rectSpy.mockRestore()
+    }
   })
 })

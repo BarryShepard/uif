@@ -5,7 +5,6 @@ import { FILL_SHELL_ATTRIBUTE } from './components/wrapperFlexLayout'
 type AutoHeightMergeFrameOptions = {
   containWidth?: boolean,
   disabled?: boolean,
-  fillParentHeight?: boolean,
   markFillShell?: boolean,
   width?: React.CSSProperties['width'],
   minWidth?: React.CSSProperties['minWidth'],
@@ -25,7 +24,6 @@ export const useAutoHeightMergeFrame = (
   const {
     containWidth = false,
     disabled,
-    fillParentHeight = false,
     markFillShell = false,
     minWidth,
     skipIfWithinSelector,
@@ -54,7 +52,6 @@ export const useAutoHeightMergeFrame = (
     }
 
     const previousHeight = mergeComponent.style.height
-    const previousMaxHeight = mergeComponent.style.maxHeight
     const previousMinHeight = mergeComponent.style.minHeight
     const previousWidth = mergeComponent.style.width
     const previousMinWidth = mergeComponent.style.minWidth
@@ -94,12 +91,8 @@ export const useAutoHeightMergeFrame = (
         mergeComponent.style.overflowX = 'hidden'
       }
 
-      if (fillParentHeight || !previousHeight) {
+      if (!previousHeight) {
         mergeComponent.style.height = '100%'
-      }
-
-      if (fillParentHeight) {
-        mergeComponent.style.maxHeight = '100%'
       }
     }
 
@@ -126,14 +119,13 @@ export const useAutoHeightMergeFrame = (
     return () => {
       restoreFillShell()
       mergeComponent.style.height = previousHeight
-      mergeComponent.style.maxHeight = previousMaxHeight
       mergeComponent.style.minHeight = previousMinHeight
       mergeComponent.style.width = previousWidth
       mergeComponent.style.minWidth = previousMinWidth
       mergeComponent.style.maxWidth = previousMaxWidth
       mergeComponent.style.overflowX = previousOverflowX
     }
-  }, [containWidth, disabled, fillParentHeight, markFillShell, minWidth, skipIfWithinSelector, width])
+  }, [containWidth, disabled, markFillShell, minWidth, skipIfWithinSelector, width])
 
   return rootRef
 }

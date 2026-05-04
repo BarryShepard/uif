@@ -2,7 +2,7 @@ import React, { CSSProperties } from 'react'
 import styled from 'styled-components'
 
 import { mergeFrameStyle } from '../../preview'
-import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
+import { useSyncMergeFrameSize } from '../../useSyncMergeFrameSize'
 import {
   getUXPinChildrenArray,
   getUXPinElementPropSources,
@@ -59,6 +59,8 @@ type PageComponent = React.FC<UXPinPageProps> & {
 }
 
 const PAGE_ROLE = 'hexa-uxpin-page'
+const DEFAULT_PAGE_FRAME_WIDTH = '100vw'
+const DEFAULT_PAGE_FRAME_HEIGHT = '100vh'
 
 const PageRoot = styled.div`
   display: flex;
@@ -70,6 +72,15 @@ const PageRoot = styled.div`
   background: var(--bg--base, #fff);
   box-sizing: border-box;
 `
+
+const getPageFrameStyle = (
+  style?: CSSProperties
+): CSSProperties => mergeFrameStyle({
+  ...style,
+  width: DEFAULT_PAGE_FRAME_WIDTH,
+  height: DEFAULT_PAGE_FRAME_HEIGHT,
+  minHeight: DEFAULT_PAGE_FRAME_HEIGHT
+})
 
 const PageRailZone = styled.div.attrs<{ $testId: string, $visible: boolean }>(({ $testId }) => ({
   'data-testid': $testId
@@ -375,12 +386,7 @@ const Page: PageComponent = (rawProps: UXPinPageProps): JSX.Element => {
     style,
     submenu = true
   } = resolveUXPinRuntimeProps(rawProps)
-  const rootRef = useAutoHeightMergeFrame({
-    containWidth: true,
-    disabled: true,
-    fillParentHeight: true,
-    markFillShell: true
-  })
+  const rootRef = useSyncMergeFrameSize()
   const {
     footerElement,
     headerElement,
@@ -393,7 +399,7 @@ const Page: PageComponent = (rawProps: UXPinPageProps): JSX.Element => {
     <PageRoot
       ref={rootRef}
       data-hexa-uxpin-page="true"
-      style={mergeFrameStyle(style)}
+      style={getPageFrameStyle(style)}
     >
       {menuElement && (
         <PageRailZone
