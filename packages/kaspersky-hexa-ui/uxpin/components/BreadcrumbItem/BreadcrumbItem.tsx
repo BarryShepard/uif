@@ -2,6 +2,14 @@ import { Route } from '@src/breadcrumbs/types'
 import React from 'react'
 import styled from 'styled-components'
 
+import {
+  getUXPinChildrenArray,
+  getUXPinElementPropSources,
+  getUXPinElementProps,
+  resolveUXPinChildrenFromProps,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
+
 export type UXPinBreadcrumbItemProps = {
   /** Visible text for the breadcrumb item. */
   text?: string,
@@ -25,6 +33,18 @@ const hasBreadcrumbItemShape = (props: Record<string, unknown> = {}): boolean =>
   'disabled' in props
 )
 
+const hasBreadcrumbItemIdentity = (
+  node: React.ReactNode
+): boolean => (
+  getUXPinElementPropSources(node).some((props) => (
+    props.name === 'BreadcrumbItem' ||
+    (typeof props.uxpId === 'string' && props.uxpId.includes('breadcrumb-item')) ||
+    (typeof props.id === 'string' && props.id.includes('breadcrumb-item')) ||
+    (typeof props.presetElementId === 'string' && props.presetElementId.includes('breadcrumb-item')) ||
+    (typeof props.uxpinPresetElementId === 'string' && props.uxpinPresetElementId.includes('breadcrumb-item'))
+  ))
+)
+
 export const isUXPinBreadcrumbItemElement = (
   node: React.ReactNode
 ): node is React.ReactElement<UXPinBreadcrumbItemProps> => (
@@ -37,45 +57,79 @@ export const isUXPinBreadcrumbItemElement = (
   )
 )
 
+const getBreadcrumbItemProps = (
+  node: React.ReactNode
+): UXPinBreadcrumbItemProps | undefined => {
+  if (React.isValidElement<UXPinBreadcrumbItemProps>(node) && isUXPinBreadcrumbItemElement(node)) {
+    return node.props
+  }
+
+  const props = getUXPinElementProps(node)
+
+  if (!props) {
+    return undefined
+  }
+
+  const runtimeProps = resolveUXPinRuntimeProps(props) as UXPinBreadcrumbItemProps
+
+  return hasBreadcrumbItemShape(runtimeProps) || hasBreadcrumbItemIdentity(node)
+    ? runtimeProps
+    : undefined
+}
+
 export const resolveBreadcrumbItemChildren = (
   children: React.ReactNode
 ): Array<React.ReactElement<UXPinBreadcrumbItemProps>> => {
-  const items: Array<React.ReactElement<UXPinBreadcrumbItemProps>> = []
+  return resolveBreadcrumbItemPropsChildren(children).map((props, index) => (
+    <BreadcrumbItem key={`${props.text ?? DEFAULT_BREADCRUMB_ITEM_TEXT}-${index}`} {...props} />
+  ))
+}
 
-  React.Children.forEach(children, (child) => {
+const resolveBreadcrumbItemPropsChildren = (
+  children: React.ReactNode
+): UXPinBreadcrumbItemProps[] => {
+  const itemProps: UXPinBreadcrumbItemProps[] = []
+
+  getUXPinChildrenArray(children).forEach((child) => {
     if (!child) {
       return
     }
 
-    if (isUXPinBreadcrumbItemElement(child)) {
-      items.push(child)
+    const props = getBreadcrumbItemProps(child)
+
+    if (props) {
+      itemProps.push(props)
       return
     }
 
-    if (
-      React.isValidElement<{ children?: React.ReactNode }>(child) &&
-      child.props?.children
-    ) {
-      items.push(...resolveBreadcrumbItemChildren(child.props.children))
+    const childProps = getUXPinElementProps(child)
+    const nestedChildren = childProps
+      ? resolveUXPinChildrenFromProps(childProps)
+      : React.isValidElement<{ children?: React.ReactNode }>(child)
+        ? child.props.children
+        : undefined
+
+    if (nestedChildren) {
+      itemProps.push(...resolveBreadcrumbItemPropsChildren(nestedChildren))
     }
   })
 
-  return items
+  return itemProps
 }
 
 export const breadcrumbItemElementsToRoutes = (
   children: React.ReactNode
 ): Route[] => {
-  const items = resolveBreadcrumbItemChildren(children)
+  const items = resolveBreadcrumbItemPropsChildren(children)
 
   if (!items.length) {
     return []
   }
 
-  const hasExplicitCurrent = items.some((item) => item.props.current === true)
+  const hasExplicitCurrent = items.some((item) => item.current === true)
 
   return items.map((item, index) => {
-    const { current, disabled, text } = item.props
+    const { current, disabled, text } = item
     const isCurrent = hasExplicitCurrent ? current === true : index === items.length - 1
 
     return {

@@ -43,6 +43,15 @@ const childDescriptor = (
   uxpinTargetElementType: 'CodeComponent'
 } as unknown as React.ReactNode)
 
+const codeComponentDescriptor = (
+  codeComponentProps: Record<string, unknown>,
+  overriddenCodeProps: Record<string, unknown> = {}
+): React.ReactNode => ({
+  codeComponentProps,
+  overriddenCodeProps,
+  uxpinTargetElementType: 'CodeComponent'
+} as unknown as React.ReactNode)
+
 const pageChildren = (): React.ReactNode[] => [
   pageSlotDescriptor('Menu', 'page-menu', {
     children: [
@@ -182,6 +191,36 @@ describe('UXPin Page runtime', () => {
     expect(screen.getByText('Custom page title')).toBeVisible()
     expect(screen.getByText('Edited page body content')).toBeVisible()
     expect(screen.queryByText('Page body content')).not.toBeInTheDocument()
+  })
+
+  it('routes PageHeader children that UXPin serializes without slot identity', () => {
+    render(
+      <PageRuntime
+        codeComponentProps={{
+          children: [
+            codeComponentDescriptor({
+              breadcrumbs: true,
+              children: childDescriptor('Breadcrumbs', 'breadcrumbs-1', {
+                children: [
+                  childDescriptor('BreadcrumbItem', 'breadcrumb-item-1', {
+                    current: false,
+                    disabled: false,
+                    text: 'Section'
+                  })
+                ]
+              }),
+              title: 'Identity-free page header'
+            }),
+            pageSlotDescriptor('PageWrapper', 'page-wrapper', {
+              children: <div>Page body under identity-free header</div>
+            })
+          ]
+        }}
+      />
+    )
+
+    expect(screen.getByText('Identity-free page header')).toBeVisible()
+    expect(screen.getByText('Page body under identity-free header')).toBeVisible()
   })
 
   it('syncs the inserted UXPin component size from the frame viewport', () => {

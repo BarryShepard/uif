@@ -181,9 +181,42 @@ const isSubmenuSlotElement = (node: React.ReactNode): boolean => (
   isConcreteUXPinElement(node, 'hexa-uxpin-submenu', 'Submenu')
 )
 
+const hasPageHeaderSlotProps = (
+  node: React.ReactNode
+): boolean => (
+  getUXPinElementPropSources(node).some((props) => (
+    typeof props.title === 'string' &&
+    (
+      'breadcrumbs' in props ||
+      'descriptionText' in props ||
+      'elementAfter' in props ||
+      'iconBefore' in props ||
+      'tagsAfter' in props
+    )
+  ))
+)
+
+const isLikelyCodeComponentSlotWrapper = (
+  node: React.ReactNode
+): boolean => (
+  getUXPinElementPropSources(node).some((props) => (
+    props.uxpinTargetElementType === 'CodeComponent' ||
+    'codeComponentProps' in props ||
+    'overriddenCodeProps' in props
+  ))
+)
+
+const isLikelyPageHeaderSlotWrapper = (
+  node: React.ReactNode
+): boolean => (
+  isLikelyCodeComponentSlotWrapper(node) &&
+  hasPageHeaderSlotProps(node)
+)
+
 const isPageHeaderSlotElement = (node: React.ReactNode): boolean => (
   hasUXPinSlotIdentity(node, 'page-header', 'PageHeader') ||
-  isConcreteUXPinElement(node, 'hexa-uxpin-page-header', 'PageHeader')
+  isConcreteUXPinElement(node, 'hexa-uxpin-page-header', 'PageHeader') ||
+  isLikelyPageHeaderSlotWrapper(node)
 )
 
 const isPageWrapperSlotElement = (node: React.ReactNode): boolean => (

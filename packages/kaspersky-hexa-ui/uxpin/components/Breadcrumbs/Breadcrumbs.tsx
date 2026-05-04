@@ -2,6 +2,14 @@ import { Breadcrumbs as HexaBreadcrumbs } from '@src/breadcrumbs'
 import { BreadcrumbsProps, BreadcrumbsSize, Route } from '@src/breadcrumbs/types'
 import React from 'react'
 
+import {
+  getUXPinChildrenArray,
+  getUXPinElementPropSources,
+  getUXPinElementProps,
+  resolveUXPinChildrenFromProps,
+  resolveUXPinRuntimeProps
+} from '../../uxpinRuntime'
+
 import BreadcrumbItem, {
   breadcrumbItemElementsToRoutes
 } from '../BreadcrumbItem/BreadcrumbItem'
@@ -41,6 +49,18 @@ const hasBreadcrumbsShape = (props: Record<string, unknown> = {}): boolean => (
   'size' in props
 )
 
+const hasBreadcrumbsIdentity = (
+  node: React.ReactNode
+): boolean => (
+  getUXPinElementPropSources(node).some((props) => (
+    props.name === 'Breadcrumbs' ||
+    (typeof props.uxpId === 'string' && props.uxpId.includes('breadcrumbs')) ||
+    (typeof props.id === 'string' && props.id.includes('breadcrumbs')) ||
+    (typeof props.presetElementId === 'string' && props.presetElementId.includes('breadcrumbs')) ||
+    (typeof props.uxpinPresetElementId === 'string' && props.uxpinPresetElementId.includes('breadcrumbs'))
+  ))
+)
+
 const normalizeRoutes = (routes: Route[]): Route[] => (
   routes.map((route, index, list) => ({
     ...route,
@@ -63,10 +83,18 @@ export const resolveUXPinBreadcrumbsProps = (
 ): BreadcrumbsProps => {
   const {
     children,
+    codeComponentProps: _codeComponentProps,
+    id: _id,
+    name: _name,
+    overriddenCodeProps: _overriddenCodeProps,
+    presetElementId: _presetElementId,
     routes,
     size: rawSize,
+    uxpinPresetElementId: _uxpinPresetElementId,
+    uxpinTargetElementType: _uxpinTargetElementType,
+    uxpId: _uxpId,
     ...rest
-  } = rawProps
+  } = rawProps as BreadcrumbsRuntimeProps & Record<string, unknown>
 
   const size = rawSize ?? defaults.size ?? 'medium'
   const resolvedChildren = children ?? DEFAULT_BREADCRUMB_CHILD
@@ -94,26 +122,56 @@ export const isUXPinBreadcrumbsElement = (
   )
 )
 
+const getBreadcrumbsProps = (
+  node: React.ReactNode
+): BreadcrumbsRuntimeProps | undefined => {
+  if (React.isValidElement<BreadcrumbsRuntimeProps>(node) && isUXPinBreadcrumbsElement(node)) {
+    return node.props
+  }
+
+  const props = getUXPinElementProps(node)
+
+  if (!props) {
+    return undefined
+  }
+
+  const runtimeProps = resolveUXPinRuntimeProps(props) as BreadcrumbsRuntimeProps
+
+  return hasBreadcrumbsShape(runtimeProps) || hasBreadcrumbsIdentity(node)
+    ? runtimeProps
+    : undefined
+}
+
 export const resolveBreadcrumbsChildren = (
   children: React.ReactNode
 ): Array<React.ReactElement<BreadcrumbsRuntimeProps>> => {
   const breadcrumbs: Array<React.ReactElement<BreadcrumbsRuntimeProps>> = []
 
-  React.Children.forEach(children, (child) => {
+  getUXPinChildrenArray(children).forEach((child, index) => {
     if (!child) {
       return
     }
 
-    if (isUXPinBreadcrumbsElement(child)) {
-      breadcrumbs.push(child)
+    const props = getBreadcrumbsProps(child)
+
+    if (props) {
+      breadcrumbs.push(
+        <Breadcrumbs key={`${props.size ?? 'breadcrumbs'}-${index}`} {...props}>
+          {props.children}
+        </Breadcrumbs>
+      )
       return
     }
 
-    if (
-      React.isValidElement<{ children?: React.ReactNode }>(child) &&
-      child.props?.children
-    ) {
-      breadcrumbs.push(...resolveBreadcrumbsChildren(child.props.children))
+    const childProps = getUXPinElementProps(child)
+    const nestedChildren = childProps
+      ? resolveUXPinChildrenFromProps(childProps)
+      : React.isValidElement<{ children?: React.ReactNode }>(child)
+        ? child.props.children
+        : undefined
+
+    if (nestedChildren) {
+      breadcrumbs.push(...resolveBreadcrumbsChildren(nestedChildren))
     }
   })
 
