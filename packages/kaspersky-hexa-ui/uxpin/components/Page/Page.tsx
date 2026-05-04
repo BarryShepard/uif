@@ -378,6 +378,7 @@ const Page: PageComponent = (rawProps: UXPinPageProps): JSX.Element => {
   const rootRef = useAutoHeightMergeFrame({
     containWidth: true,
     disabled: true,
+    fillParentHeight: true,
     markFillShell: true
   })
   const {

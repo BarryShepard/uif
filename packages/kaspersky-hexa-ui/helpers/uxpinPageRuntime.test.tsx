@@ -162,4 +162,38 @@ describe('UXPin Page runtime', () => {
     expect(screen.queryByText('Administration server')).not.toBeInTheDocument()
     expect(screen.queryByText('Page title')).not.toBeInTheDocument()
   })
+
+  it('overrides the inserted UXPin component height so Page follows the parent frame', () => {
+    const { container } = render(
+      <div style={{ height: 900, width: 1440 }}>
+        <div
+          className="merge-component"
+          data-testid="page-shell"
+          style={{
+            height: 640,
+            minHeight: 640,
+            width: 1024
+          }}
+        >
+          <PageRuntime
+            codeComponentProps={{
+              children: [
+                pageSlotDescriptor('PageWrapper', 'page-wrapper', {
+                  children: <div>Resizable page body</div>
+                })
+              ]
+            }}
+          />
+        </div>
+      </div>
+    )
+
+    const pageShell = container.querySelector('[data-testid="page-shell"]') as HTMLDivElement
+
+    expect(pageShell.style.height).toBe('100%')
+    expect(pageShell.style.minHeight).toBe('0')
+    expect(pageShell.style.maxHeight).toBe('100%')
+    expect(pageShell.style.width).toBe('100%')
+    expect(screen.getByText('Resizable page body')).toBeVisible()
+  })
 })
