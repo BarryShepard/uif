@@ -8,7 +8,6 @@ import { TagGroupProps } from '@src/tag/types'
 import { Placeholder } from '@kaspersky/hexa-ui-icons/24'
 
 import { FrameFill, previewPageHeaderTags } from '../../preview'
-import { useAutoHeightMergeFrame } from '../../useAutoHeightMergeFrame'
 
 import BreadcrumbItem from '../BreadcrumbItem/BreadcrumbItem'
 import Breadcrumbs from '../Breadcrumbs/Breadcrumbs'
@@ -34,6 +33,48 @@ export type UXPinPageHeaderProps = {
   /** Slot content for the trailing area. */
   elementAfterSlot?: React.ReactNode,
   children?: React.ReactNode
+}
+
+type PageHeaderComponent = React.FC<UXPinPageHeaderProps> & {
+  uxpinRole?: string
+}
+
+const PAGE_HEADER_ROLE = 'hexa-uxpin-page-header'
+
+const getDirectMergeComponent = (element: HTMLDivElement | null): HTMLDivElement | null => {
+  const parentElement = element?.parentElement
+
+  if (!parentElement || !parentElement.classList.contains('merge-component')) {
+    return null
+  }
+
+  return parentElement as HTMLDivElement
+}
+
+const useDirectAutoHeightMergeFrame = (): React.RefObject<HTMLDivElement> => {
+  const rootRef = React.useRef<HTMLDivElement>(null)
+
+  React.useLayoutEffect(() => {
+    const rootElement = rootRef.current
+    const mergeComponent = getDirectMergeComponent(rootElement)
+
+    if (!rootElement || !mergeComponent) {
+      return undefined
+    }
+
+    const previousHeight = mergeComponent.style.height
+    const previousMinHeight = mergeComponent.style.minHeight
+
+    mergeComponent.style.height = 'auto'
+    mergeComponent.style.minHeight = '0'
+
+    return () => {
+      mergeComponent.style.height = previousHeight
+      mergeComponent.style.minHeight = previousMinHeight
+    }
+  }, [])
+
+  return rootRef
 }
 
 const resolveToggleSlot = (
@@ -78,7 +119,7 @@ const DEFAULT_PAGE_HEADER_CHILDREN = (
   </Breadcrumbs>
 )
 
-const PageHeader = ({
+const PageHeader: PageHeaderComponent = ({
   breadcrumbs = false,
   children = DEFAULT_PAGE_HEADER_CHILDREN,
   description = false,
@@ -90,10 +131,14 @@ const PageHeader = ({
   tagsAfter = false,
   title = 'Page title',
 }: UXPinPageHeaderProps): JSX.Element => {
-  const rootRef = useAutoHeightMergeFrame()
+  const rootRef = useDirectAutoHeightMergeFrame()
 
   return (
-    <div ref={rootRef} style={{ width: '100%' }}>
+    <div
+      ref={rootRef}
+      data-hexa-uxpin-page-header="true"
+      style={{ minWidth: 0, width: '100%' }}
+    >
       <FrameFill style={{ height: 'fit-content' }}>
         <HexaPageHeader
           breadcrumbs={resolveBreadcrumbs(breadcrumbs, children)}
@@ -124,5 +169,8 @@ PageHeader.defaultProps = {
   iconBefore: false,
   tagsAfter: false
 }
+
+PageHeader.uxpinRole = PAGE_HEADER_ROLE
+PageHeader.displayName = 'PageHeader'
 
 export default PageHeader
